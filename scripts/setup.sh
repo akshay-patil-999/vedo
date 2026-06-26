@@ -15,8 +15,13 @@ PROJECT_DIR="/workspaces/Edu3"
 echo ""
 echo "Checking Java..."
 
-if [ -d "/usr/local/sdkman/candidates/java/21.0.10-ms" ]; then
-    export JAVA_HOME="/usr/local/sdkman/candidates/java/21.0.10-ms"
+JAVA_DIR=$(find /usr/local/sdkman/candidates/java \
+-maxdepth 1 \
+-type d \
+-name "21*" | head -n 1)
+
+if [ -n "$JAVA_DIR" ]; then
+    export JAVA_HOME="$JAVA_DIR"
 
 elif [ -d "/usr/local/sdkman/candidates/java/current" ]; then
     export JAVA_HOME="/usr/local/sdkman/candidates/java/current"
@@ -30,6 +35,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 
 hash -r
 
+echo "Using:"
 java -version
 
 #############################################
