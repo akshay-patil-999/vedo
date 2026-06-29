@@ -1,0 +1,1 @@
+Redirecting to /@babel/standalone@8.0.3/babel.min.js
