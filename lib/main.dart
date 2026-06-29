@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'dart:async';
 
 void main() => runApp(const VedoApp());
 
@@ -30,16 +32,24 @@ class _VedoWebViewState extends State<VedoWebView> {
   @override
   void initState() {
     super.initState();
+    _loadApp();
+  }
+
+  Future<void> _loadApp() async {
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageFinished: (_) {
-            setState(() => isLoading = false);
-          },
-        ),
-      )
+      ..setNavigationDelegate(NavigationDelegate(
+        onPageFinished: (_) => setState(() => isLoading = false),
+        onWebResourceError: (_) => _loadOffline(),
+      ))
       ..loadRequest(Uri.parse('https://member2vedo.github.io/vedo/'));
+    setState(() {});
+  }
+
+  Future<void> _loadOffline() async {
+    final html = await rootBundle.loadString('assets/index.html');
+    await controller.loadHtmlString(html,
+        baseUrl: 'https://member2vedo.github.io');
   }
 
   @override
@@ -54,13 +64,9 @@ class _VedoWebViewState extends State<VedoWebView> {
                   children: [
                     CircularProgressIndicator(color: Color(0xFF6366F1)),
                     SizedBox(height: 16),
-                    Text(
-                      'Loading Vedo...',
-                      style: TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 14,
-                      ),
-                    ),
+                    Text('Loading Vedo...',
+                        style: TextStyle(
+                            color: Color(0xFF94A3B8), fontSize: 14)),
                   ],
                 ),
               )
