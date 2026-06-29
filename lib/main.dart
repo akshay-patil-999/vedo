@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 void main() => runApp(const VedoApp());
@@ -31,11 +30,6 @@ class _VedoWebViewState extends State<VedoWebView> {
   @override
   void initState() {
     super.initState();
-    _loadApp();
-  }
-
-  Future<void> _loadApp() async {
-    final html = await rootBundle.loadString('assets/index.html');
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
@@ -45,8 +39,7 @@ class _VedoWebViewState extends State<VedoWebView> {
           },
         ),
       )
-      ..loadHtmlString(html, baseUrl: 'https://vedo-01.firebaseapp.com');
-    setState(() {});
+      ..loadRequest(Uri.parse('https://member2vedo.github.io/vedo/'));
   }
 
   @override
