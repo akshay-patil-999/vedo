@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 PROJECT_DIR="/workspaces/Edu3"
@@ -10,37 +9,23 @@ echo "========================================"
 echo "🚀 Edu3 Release Builder"
 echo "========================================"
 
-# Java
-# Java
-# Java
+# Java setup
 JAVA_BIN=$(which java)
-
 export JAVA_HOME=$(dirname $(dirname $(readlink -f "$JAVA_BIN")))
 export PATH="$JAVA_HOME/bin:$PATH"
 
-hash -r
-
 echo "Using Java:"
 java -version
 
-hash -r
-
-echo "Using Java:"
-java -version
-
-# Flutter
-if [ -d "$HOME/flutter" ]; then
-    export PATH="$HOME/flutter/bin:$PATH"
-fi
+# Flutter setup
+export PATH="/home/codespace/flutter/bin:$PATH"
 
 # Android SDK
-if [ -d "$HOME/android-sdk" ]; then
-    export ANDROID_HOME="$HOME/android-sdk"
-    export ANDROID_SDK_ROOT="$HOME/android-sdk"
-    export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
-fi
+export ANDROID_HOME="/home/vscode/android-sdk"
+export ANDROID_SDK_ROOT="/home/vscode/android-sdk"
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
 
-# ---------- Read Version ----------
+# Read version
 VERSION=$(grep "^version:" pubspec.yaml | awk '{print $2}')
 
 VERSION_NAME=$(echo "$VERSION" | cut -d'+' -f1)
@@ -50,35 +35,30 @@ echo ""
 echo "Version Name : $VERSION_NAME"
 echo "Version Code : $VERSION_CODE"
 
-# ---------- Update local.properties ----------
+# local.properties
 cat > android/local.properties <<EOF
-sdk.dir=$HOME/android-sdk
-flutter.sdk=$HOME/flutter
+sdk.dir=/home/vscode/android-sdk
+flutter.sdk=/home/codespace/flutter
 flutter.buildMode=release
 flutter.versionName=$VERSION_NAME
 flutter.versionCode=$VERSION_CODE
 EOF
 
-echo ""
 echo "✔ local.properties updated"
 
+flutter clean
 flutter pub get
 
 echo ""
-echo "Building Release APK..."
+echo "Building APK..."
 
-cd android
-
-./gradlew \
---no-daemon \
---stacktrace \
--Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -Dkotlin.daemon.jvm.options=-Xmx2g" \
-assembleRelease
-cd ..
+flutter build apk --release \
+--no-shrink \
+--android-skip-build-dependency-validation
 
 mkdir -p release
 
-APK_NAME="Vedo-v${VERSION_NAME}+${VERSION_CODE}.apk"
+APK_NAME="VEDO-v${VERSION_NAME}+${VERSION_CODE}.apk"
 
 cp build/app/outputs/flutter-apk/app-release.apk "release/$APK_NAME"
 
@@ -86,6 +66,6 @@ echo ""
 echo "========================================"
 echo "✅ BUILD SUCCESSFUL"
 echo "========================================"
-echo ""
+
 echo "APK:"
 echo "release/$APK_NAME"

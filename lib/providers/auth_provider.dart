@@ -34,26 +34,30 @@ class AuthProvider extends ChangeNotifier {
       final firebaseUser = _authService.currentUser;
       
       if (firebaseUser != null) {
-        // Fetch role from Firestore with error handling
-        String role = 'student'; // Default fallback
-        
         try {
-          final fetchedRole = await _firestoreService.getUserRole(firebaseUser.uid);
-          if (fetchedRole != null && fetchedRole.isNotEmpty) {
-            role = fetchedRole;
+          final firestoreUser = await _firestoreService.getUser(firebaseUser.uid);
+          if (firestoreUser != null) {
+            _currentUser = UserModel.fromMap(firestoreUser);
+            debugPrint('AuthProvider: Loaded user profile from Firestore');
+          } else {
+            final fetchedRole = await _firestoreService.getUserRole(firebaseUser.uid);
+            _currentUser = UserModel(
+              uid: firebaseUser.uid,
+              name: firebaseUser.email?.split('@')[0] ?? 'User',
+              email: firebaseUser.email ?? '',
+              role: fetchedRole ?? 'student',
+            );
+            debugPrint('AuthProvider: No Firestore profile found, using defaults');
           }
         } catch (e) {
-          debugPrint('AuthProvider: Failed to fetch role, using default: $e');
+          debugPrint('AuthProvider: Failed to initialize user from Firestore: $e');
+          _currentUser = UserModel(
+            uid: firebaseUser.uid,
+            name: firebaseUser.email?.split('@')[0] ?? 'User',
+            email: firebaseUser.email ?? '',
+            role: 'student',
+          );
         }
-        
-        _currentUser = UserModel(
-          uid: firebaseUser.uid,
-          name: firebaseUser.email?.split('@')[0] ?? 'User',
-          email: firebaseUser.email ?? '',
-          role: role,
-        );
-        
-        debugPrint('AuthProvider: User initialized with role: $role');
       } else {
         debugPrint('AuthProvider: No Firebase user found');
       }
@@ -77,26 +81,31 @@ class AuthProvider extends ChangeNotifier {
       final user = credential.user;
       
       if (user != null) {
-        // Fetch role from Firestore with error handling
-        String role = 'student'; // Default fallback
-        
         try {
-          final fetchedRole = await _firestoreService.getUserRole(user.uid);
-          if (fetchedRole != null && fetchedRole.isNotEmpty) {
-            role = fetchedRole;
+          final firestoreUser = await _firestoreService.getUser(user.uid);
+          if (firestoreUser != null) {
+            _currentUser = UserModel.fromMap(firestoreUser);
+            debugPrint('AuthProvider: User logged in and loaded from Firestore');
+          } else {
+            final fetchedRole = await _firestoreService.getUserRole(user.uid);
+            _currentUser = UserModel(
+              uid: user.uid,
+              name: user.email?.split('@')[0] ?? 'User',
+              email: user.email ?? '',
+              role: fetchedRole ?? 'student',
+            );
+            debugPrint('AuthProvider: User logged in without Firestore profile');
           }
         } catch (e) {
-          debugPrint('AuthProvider: Failed to fetch role after login, using default: $e');
+          debugPrint('AuthProvider: Failed to load user profile after login: $e');
+          _currentUser = UserModel(
+            uid: user.uid,
+            name: user.email?.split('@')[0] ?? 'User',
+            email: user.email ?? '',
+            role: 'student',
+          );
         }
-        
-        _currentUser = UserModel(
-          uid: user.uid,
-          name: user.email?.split('@')[0] ?? 'User',
-          email: user.email ?? '',
-          role: role,
-        );
-        
-        debugPrint('AuthProvider: User logged in with role: $role');
+
         _isLoading = false;
         notifyListeners();
         return true;
@@ -115,7 +124,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Sign up with email, password, and role
-  Future<bool> signUp(String email, String password, String name, String role) async {
+  Future<bool> signUp(String email, String password, String name, String role, {String? linkedStudentId}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -125,13 +134,34 @@ class AuthProvider extends ChangeNotifier {
       final user = credential.user;
       
       if (user != null) {
-        // Save user data to Firestore
+        // Save user data to Firestore (include parent link if provided)
         await _firestoreService.saveUserData(
           uid: user.uid,
           name: name,
           email: user.email ?? '',
           role: role,
+          linkedStudentId: linkedStudentId,
         );
+
+        // If parent signed up with a child identifier, try to link both ways
+        if (role == 'parent' && linkedStudentId != null && linkedStudentId.isNotEmpty) {
+          try {
+            String? studentUid;
+            if (linkedStudentId.contains('@')) {
+              studentUid = await _firestoreService.findUserByEmail(linkedStudentId);
+            } else {
+              // assume it's UID
+              final doc = await _firestoreService.getUser(linkedStudentId);
+              if (doc != null) studentUid = linkedStudentId;
+            }
+
+            if (studentUid != null) {
+              await _firestoreService.addParentToStudent(studentUid, user.uid);
+            }
+          } catch (e) {
+            debugPrint('AuthProvider: Failed to link parent to student: $e');
+          }
+        }
         
         _currentUser = UserModel(
           uid: user.uid,
@@ -218,16 +248,32 @@ class AuthProvider extends ChangeNotifier {
   Future<void> setUserRole(String role) async {
     if (_currentUser == null) return;
 
+    final uid = _currentUser!.uid;
     _currentUser = _currentUser!.copyWith(role: role);
     notifyListeners();
+
+    // Persist to Firestore
+    try {
+      await _firestoreService.setUserRole(uid, role);
+    } catch (e) {
+      debugPrint('AuthProvider: Failed to persist role change - $e');
+    }
   }
 
-  /// Set tuition ID (local only, no Firestore)
+  /// Set tuition ID locally and persist it to Firestore
   Future<void> setTuitionId(String tuitionId) async {
     if (_currentUser == null) return;
 
+    final uid = _currentUser!.uid;
     _currentUser = _currentUser!.copyWith(tuitionId: tuitionId);
     notifyListeners();
+
+    try {
+      await _firestoreService.setUserTuitionId(uid, tuitionId);
+      debugPrint('AuthProvider: Tuition ID persisted for user $uid');
+    } catch (e) {
+      debugPrint('AuthProvider: Failed to persist tuition ID: $e');
+    }
   }
 
   /// Toggle and persist Dark Mode

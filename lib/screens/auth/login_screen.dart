@@ -6,9 +6,12 @@ import '../../core/theme/app_theme.dart';
 import '../../core/constants/app_constants.dart';
 import '../teacher/teacher_dashboard.dart';
 import '../student/student_dashboard.dart';
+import '../owner/owner_home_screen.dart';
+import '../parent/parent_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String? initialRole;
+  const LoginScreen({super.key, this.initialRole});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -19,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _linkedStudentController = TextEditingController();
   
   bool _isSignUp = false;
   bool _isLoading = false;
@@ -42,6 +46,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
     _fadeController.forward();
     _loadSavedCredentials();
+    if (widget.initialRole != null) {
+      _selectedRole = widget.initialRole!;
+    }
   }
 
   @override
@@ -49,6 +56,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
+    _linkedStudentController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -89,12 +97,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     final authProvider = context.read<AuthProvider>();
     bool success;
 
-    if (_isSignUp) {
+      if (_isSignUp) {
       success = await authProvider.signUp(
         _emailController.text.trim(),
         _passwordController.text,
         _nameController.text.trim(),
         _selectedRole,
+        linkedStudentId: _selectedRole == 'parent' ? _linkedStudentController.text.trim() : null,
       );
       
       if (success) {
@@ -122,8 +131,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       if (success) {
         await _saveCredentials();
         final userRole = authProvider.userRole;
-        Widget dashboard = userRole == 'teacher' ? const TeacherDashboard() : const StudentDashboard();
-        
+        Widget dashboard;
+        if (userRole == 'teacher') {
+          dashboard = const TeacherDashboard();
+        } else if (userRole == 'owner') {
+          dashboard = const OwnerHomeScreen();
+        } else if (userRole == 'parent') {
+          dashboard = const ParentHomeScreen();
+        } else {
+          dashboard = const StudentDashboard();
+        }
+
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
@@ -345,7 +364,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   },
                                 ),
                                 const SizedBox(height: 16),
-                                
+
                                 // Role Selection
                                 Text(
                                   'Join as a:',
@@ -356,28 +375,59 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                Row(
+                                GridView.count(
+                                  crossAxisCount: 2,
+                                  shrinkWrap: true,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                  physics: const NeverScrollableScrollPhysics(),
                                   children: [
-                                    Expanded(
-                                      child: _RoleCard(
-                                        icon: Icons.school_outlined,
-                                        label: 'Student',
-                                        isSelected: _selectedRole == 'student',
-                                        onTap: () => setState(() => _selectedRole = 'student'),
-                                      ),
+                                    _RoleCard(
+                                      icon: Icons.school_outlined,
+                                      label: 'Student',
+                                      isSelected: _selectedRole == 'student',
+                                      onTap: () => setState(() => _selectedRole = 'student'),
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: _RoleCard(
-                                        icon: Icons.groups_outlined,
-                                        label: 'Teacher',
-                                        isSelected: _selectedRole == 'teacher',
-                                        onTap: () => setState(() => _selectedRole = 'teacher'),
-                                      ),
+                                    _RoleCard(
+                                      icon: Icons.groups_outlined,
+                                      label: 'Teacher',
+                                      isSelected: _selectedRole == 'teacher',
+                                      onTap: () => setState(() => _selectedRole = 'teacher'),
+                                    ),
+                                    _RoleCard(
+                                      icon: Icons.family_restroom,
+                                      label: 'Parent',
+                                      isSelected: _selectedRole == 'parent',
+                                      onTap: () => setState(() => _selectedRole = 'parent'),
+                                    ),
+                                    _RoleCard(
+                                      icon: Icons.business,
+                                      label: 'Owner',
+                                      isSelected: _selectedRole == 'owner',
+                                      onTap: () => setState(() => _selectedRole = 'owner'),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
+                                if (_selectedRole == 'parent') ...[
+                                  TextFormField(
+                                    controller: _linkedStudentController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Child Student ID or Email',
+                                      prefixIcon: Icon(Icons.person_search_outlined),
+                                    ),
+                                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                                    validator: (value) {
+                                      if (_selectedRole == 'parent') {
+                                        if (value == null || value.trim().isEmpty) {
+                                          return 'Please enter your child\'s student ID or email';
+                                        }
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
                               ],
 
                               // Email Field

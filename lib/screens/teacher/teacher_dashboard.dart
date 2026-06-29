@@ -14,6 +14,7 @@ import '../auth/login_screen.dart';
 import '../common/class_hub_screen.dart';
 import '../common/test_practice_screen.dart';
 import '../../widgets/custom_chart.dart';
+import '../../widgets/explore_institute_section.dart';
 import 'create_tuition_screen.dart';
 
 class TeacherDashboard extends StatefulWidget {
@@ -317,6 +318,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             values: const [24, 35, 18, 45, 52, 38, 40],
             labels: const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
           ),
+          const SizedBox(height: 24),
+          const ExploreInstituteSection(title: 'Explore Coaching Institutes'),
           const SizedBox(height: 24),
 
           // Productivity Tip card

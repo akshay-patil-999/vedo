@@ -8,6 +8,9 @@ import 'providers/tuition_provider.dart';
 import 'providers/task_provider.dart';
 import 'firebase_options.dart';
 import 'screens/auth/splash_screen.dart';
+import 'screens/owner/owner_home_screen.dart';
+import 'screens/parent/parent_home_screen.dart';
+import 'screens/discover/discover_screen.dart';
 
 void main() async {
   // Ensure bindings are initialized first
@@ -41,6 +44,11 @@ class VedoApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: authProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             home: const SplashScreen(),
+            routes: {
+              '/owner': (context) => const OwnerHomeScreen(),
+              '/parent': (context) => const ParentHomeScreen(),
+              '/discover': (context) => const DiscoverScreen(),
+            },
           );
         },
       ),

@@ -5,7 +5,9 @@ import '../../providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/app_constants.dart';
 import 'onboarding_screen.dart';
-import 'login_screen.dart';
+import 'role_selection_screen.dart';
+import '../owner/owner_home_screen.dart';
+import '../parent/parent_home_screen.dart';
 import '../teacher/teacher_dashboard.dart';
 import '../../services/update_service.dart';
 import '../student/student_dashboard.dart';
@@ -74,10 +76,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           transitionDuration: const Duration(milliseconds: 600),
         ),
       );
-    } else {
+        } else {
       if (authProvider.isLoggedIn) {
         final role = authProvider.userRole;
-        Widget dashboard = role == 'teacher' ? const TeacherDashboard() : const StudentDashboard();
+        Widget dashboard;
+        if (role == 'teacher') {
+          dashboard = const TeacherDashboard();
+        } else if (role == 'owner') {
+          dashboard = const OwnerHomeScreen();
+        } else if (role == 'parent') {
+          dashboard = const ParentHomeScreen();
+        } else {
+          dashboard = const StudentDashboard();
+        }
 
         if (mounted) {
           final canContinue = await checkForUpdate(context);
@@ -96,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       } else {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (context, anim1, anim2) => const LoginScreen(),
+            pageBuilder: (context, anim1, anim2) => const RoleSelectionScreen(),
             transitionsBuilder: (context, anim1, anim2, child) => FadeTransition(opacity: anim1, child: child),
             transitionDuration: const Duration(milliseconds: 600),
           ),

@@ -186,6 +186,7 @@ class FirestoreService {
     required String name,
     required String email,
     required String role,
+    String? linkedStudentId,
   }) async {
     try {
       debugPrint('FirestoreService: Saving user data for $uid with role $role');
@@ -196,23 +197,27 @@ class FirestoreService {
       if (userDoc.exists) {
         debugPrint('FirestoreService: User $uid already exists, updating instead of creating');
         // Update existing user data
-        await _firestore.collection('users').doc(uid).update({
+        final updateData = {
           'name': name,
           'email': email,
           'role': role,
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        };
+        if (linkedStudentId != null) updateData['linkedStudentId'] = linkedStudentId;
+        await _firestore.collection('users').doc(uid).update(updateData);
         debugPrint('FirestoreService: User data updated successfully');
       } else {
         // Create new user document
-        await _firestore.collection('users').doc(uid).set({
+        final createData = {
           'uid': uid,
           'name': name,
           'email': email,
           'role': role,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        };
+        if (linkedStudentId != null) createData['linkedStudentId'] = linkedStudentId;
+        await _firestore.collection('users').doc(uid).set(createData);
         debugPrint('FirestoreService: User data created successfully');
       }
     } catch (e) {
@@ -253,6 +258,30 @@ class FirestoreService {
     }
   }
 
+  /// Find a user document by email, returns UID or null
+  Future<String?> findUserByEmail(String email) async {
+    try {
+      final q = await _firestore.collection('users').where('email', isEqualTo: email).limit(1).get();
+      if (q.docs.isEmpty) return null;
+      return q.docs.first.id;
+    } catch (e) {
+      debugPrint('FirestoreService: Error finding user by email - $e');
+      return null;
+    }
+  }
+
+  /// Add parent UID to student's `parentIds` array
+  Future<void> addParentToStudent(String studentUid, String parentUid) async {
+    try {
+      await _firestore.collection('users').doc(studentUid).set({
+        'parentIds': FieldValue.arrayUnion([parentUid]),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('FirestoreService: Error adding parent to student - $e');
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>?> getUser(String userId) async {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
@@ -268,6 +297,18 @@ class FirestoreService {
       await _firestore.collection('users').doc(userId).update({'role': role});
     } catch (e) {
       debugPrint('FirestoreService: Error setting user role - $e');
+      rethrow;
+    }
+  }
+
+  Future<void> setUserTuitionId(String userId, String tuitionId) async {
+    try {
+      await _firestore.collection('users').doc(userId).set(
+        {'tuitionId': tuitionId},
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      debugPrint('FirestoreService: Error setting user tuitionId - $e');
       rethrow;
     }
   }

@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/update_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/explore_institute_section.dart';
 import '../../models/tuition_model.dart';
 import '../../models/task_model.dart';
 import '../../services/firestore_service.dart';
@@ -484,6 +485,8 @@ class _StudentDashboardState extends State<StudentDashboard> with TickerProvider
             values: const [25, 50, 0, 75, 100, 25, 25],
             labels: const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
           ),
+          const SizedBox(height: 24),
+          const ExploreInstituteSection(title: 'Explore Institutes'),
           const SizedBox(height: 24),
 
           // Daily notes diary preview
