@@ -52,7 +52,7 @@ class _VedoWebViewState extends State<VedoWebView> {
           _handleGoogleSignInRequest();
         },
       )
-      ..firebase(NavigationDelegate(
+      ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) => setState(() => isLoading = false),
         onWebResourceError: (error) {
           if (error.isForMainFrame ?? true) {

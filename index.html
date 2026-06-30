@@ -428,12 +428,18 @@
             return;
           }
           const snapshot = await firestoreRef.collection('users').doc(user.uid).get();
+          let profileData;
           if (snapshot.exists) {
-            const data = snapshot.data();
-            setProfile({ id: user.uid, ...data });
+            profileData = { id: user.uid, ...snapshot.data() };
           } else {
-            setProfile({ id: user.uid, role: 'student', name: user.email, instituteIds: [], classIds: [] });
+            profileData = { id: user.uid, role: 'student', name: user.email, instituteIds: [], classIds: [] };
           }
+          setProfile(profileData);
+          const target = profileData.role === 'owner' ? '/owner'
+            : profileData.role === 'teacher' ? '/teacher'
+            : profileData.role === 'parent' ? '/parent'
+            : '/student';
+          navigateTo(target);
           setLoading(false);
         });
         return unsubscribe;
