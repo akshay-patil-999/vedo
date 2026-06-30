@@ -100,6 +100,8 @@
       }
       firestoreRef = firebase.firestore();
       authRef = firebase.auth();
+      authRef.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .catch((err) => console.warn('Auth persistence set failed:', err));
       googleProviderRef = new firebase.auth.GoogleAuthProvider();
       googleProviderRef.setCustomParameters({ prompt: 'select_account' });
       backendReady = true;
