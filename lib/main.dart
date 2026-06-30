@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'dart:async';
 
 void main() => runApp(const VedoApp());
 
@@ -38,6 +37,7 @@ class _VedoWebViewState extends State<VedoWebView> {
   Future<void> _loadApp() async {
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..enableZoom(false)
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) => setState(() => isLoading = false),
         onWebResourceError: (_) => _loadOffline(),
