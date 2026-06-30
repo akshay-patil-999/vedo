@@ -107,8 +107,6 @@
       console.warn('Firebase unavailable, using local fallback.', error);
     }
 
-    // No mock/demo data — every collection starts empty and is fully populated
-    // from Firestore in real time (or grows from real user actions if offline).
     const initialState = {
       institutes: [], classes: [], users: [], joinRequests: [], announcements: [],
       fees: [], schedules: [], notes: [], homeworks: [], doubts: [], feedbacks: [], marks: []
@@ -800,7 +798,7 @@
                 {role === 'owner' && <>
                   <input value={instituteName} onChange={(event) => setInstituteName(event.target.value)} placeholder="Institute name" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
                   <input value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
-                </>} 
+                </>}
               </>}
               <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email address" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
               <input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
