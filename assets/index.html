@@ -336,6 +336,12 @@
         return payload;
       };
 
+      const updateFee = async (feeDoc) => {
+        setFees((prev) => prev.map((item) => (item.id === feeDoc.id ? feeDoc : item)));
+        if (backendReady && firestoreRef) await firestoreRef.collection('fees').doc(feeDoc.id).set(feeDoc, { merge: true });
+        return feeDoc;
+      };
+
       const createSchedule = async ({ title, time, classId, instituteId, createdBy }) => {
         const payload = { id: `SCH-${Date.now()}`, title, time, classId: classId || null, instituteId: instituteId || null, createdBy, createdAt: stamp() };
         setSchedules((prev) => [payload, ...prev]);
@@ -396,7 +402,7 @@
         return payload;
       };
 
-      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, createSchedule, createNote, createHomework, submitHomework, saveAttendance, addDoubt, addFeedback, addMark, updateUser };
+      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, createNote, createHomework, submitHomework, saveAttendance, addDoubt, addFeedback, addMark, updateUser };
       return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
     }
 
@@ -821,7 +827,7 @@
 
     function StudentDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, joinRequests, announcements, fees, notes, homeworks, marks, doubts, createJoinRequest, submitHomework, addDoubt } = useAppData();
+      const { institutes, classes, joinRequests, announcements, fees, notes, homeworks, marks, doubts, createJoinRequest, submitHomework, addDoubt, updateFee } = useAppData();
       const [joinCode, setJoinCode] = useState('');
       const [activeTab, setActiveTab] = useState('home');
       const [doubtText, setDoubtText] = useState('');
@@ -849,6 +855,20 @@
       };
       const visibleInstitutes = institutes.filter((item) => item.studentIds?.includes(profile?.id) || item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.id) || item.id === profile?.instituteIds?.[0]);
       const visibleClasses = classes.filter((item) => item.studentIds?.includes(profile?.id) || item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'class' && req.targetId === item.id) || item.id === profile?.classIds?.[0]);
+      const visibleAnnouncements = announcements.filter((item) => {
+        if (item.classId) return visibleClasses.some((cls) => cls.id === item.classId);
+        if (item.instituteId) return visibleInstitutes.some((inst) => inst.id === item.instituteId);
+        return false;
+      });
+      const getInstituteName = (id) => institutes.find((item) => item.id === id)?.name || 'Institute';
+      const getClassName = (id) => classes.find((item) => item.id === id)?.name || 'Class';
+      const studentFees = fees.filter((item) => item.studentId === profile?.id);
+      const markFeePaid = async (feeId) => {
+        const feeItem = fees.find((item) => item.id === feeId);
+        if (!feeItem) return;
+        await updateFee({ ...feeItem, status: 'paid' });
+        addToast('Payment status updated', 'success');
+      };
       const joinByCode = async (targetType) => {
         const target = targetType === 'class' ? classes.find((item) => item.code?.toLowerCase() === joinCode.toLowerCase()) : institutes.find((item) => item.code?.toLowerCase() === joinCode.toLowerCase());
         if (!joinCode.trim()) return addToast('Please enter a class or institute code', 'error');
@@ -905,7 +925,7 @@
                 </div>
                 <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                   <h3 className="text-lg font-semibold">Announcements & schedule</h3>
-                  <div className="mt-3 space-y-2">{announcements.length ? announcements.slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div></div>) : <div className="text-sm text-slate-400">No updates yet.</div>}</div>
+                  <div className="mt-3 space-y-2">{visibleAnnouncements.length ? visibleAnnouncements.slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div><div className="mt-1 text-xs text-slate-400">{item.instituteId ? getInstituteName(item.instituteId) : item.classId ? getClassName(item.classId) : 'General announcement'}{item.classId ? ` • ${getClassName(item.classId)}` : ''}</div></div>) : <div className="text-sm text-slate-400">No updates yet.</div>}</div>
                 </div>
                 <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                   <h3 className="text-lg font-semibold">Homework</h3>
@@ -916,10 +936,14 @@
             {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Your join request activity</h3><div className="mt-3 space-y-4">{pendingRequests.length ? <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4"><div className="font-medium">Pending requests</div><div className="mt-2 space-y-3">{pendingRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4"><div className="font-medium">Requested to join {item.targetName}</div><div className="text-sm text-slate-400">Type: {item.targetType} • Status: {item.status}</div><div className="mt-2 text-xs text-slate-400">{contactHintFor(item)}</div></div>)}</div></div> : null}
               {requestHistory.length ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"><div className="font-medium">Request history</div><div className="mt-2 space-y-3">{requestHistory.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4"><div className="font-medium">{item.targetName} — {item.targetType}</div><div className="mt-1 text-sm text-slate-400">Status: {item.status} • Requested at {item.createdAt?.slice(0, 10) || 'unknown'}</div></div>)}</div></div> : null}
               {!pendingRequests.length && !requestHistory.length ? <div className="text-sm text-slate-400">No request activity yet. Use a join code to request batch or institute access.</div> : null}</div></div>}
-            {activeTab === 'lectures' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Live lectures & recordings</h3><div className="mt-3 space-y-2">{announcements.length ? announcements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div></div>) : <div className="text-sm text-slate-400">No lecture updates yet.</div>}</div></div>}
+            {activeTab === 'lectures' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Live lectures & recordings</h3><div className="mt-3 space-y-2">{visibleAnnouncements.length ? visibleAnnouncements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div><div className="mt-1 text-xs text-slate-400">{item.instituteId ? getInstituteName(item.instituteId) : item.classId ? getClassName(item.classId) : 'General announcement'}{item.classId ? ` • ${getClassName(item.classId)}` : ''}</div></div>) : <div className="text-sm text-slate-400">No lecture updates yet.</div>}</div></div>}
             {activeTab === 'notes' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Shared notes</h3><div className="mt-3 space-y-2">{notes.length ? notes.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.content}</div></div>) : <div className="text-sm text-slate-400">No notes shared yet.</div>}</div></div>}
             {activeTab === 'doubts' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Ask your doubt</h3><form onSubmit={saveDoubt} className="mt-3 space-y-3"><textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Write your doubt here" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send to teacher</button></form><div className="mt-4 space-y-2">{doubts.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.question}</div><div className="text-sm text-slate-400">Status: {item.status}</div></div>)}</div></div>}
-            {activeTab === 'fees' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Fee status</h3><div className="mt-3 space-y-2">{fees.filter((item) => item.studentId === profile?.id).length ? fees.filter((item) => item.studentId === profile?.id).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="flex items-center justify-between"><span>₹{item.amount}</span><span className="text-xs text-slate-400">{item.dueDate}</span></div></div>) : <div className="text-sm text-slate-400">Fee records will appear here.</div>}</div></div>}
+            {activeTab === 'fees' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Fee status</h3><div className="mt-3 space-y-2">{studentFees.length ? studentFees.map((item) => {
+                const cls = classes.find((c) => c.id === item.classId);
+                const inst = cls ? institutes.find((instItem) => instItem.id === cls.instituteId) : null;
+                return <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{inst?.name || 'Institute'} • {cls?.name || 'Class'}</div><div className="mt-1 text-sm text-slate-400">₹{item.amount} • Due: {item.dueDate} • Status: {item.status}</div>{item.status === 'pending' ? <button onClick={() => markFeePaid(item.id)} className="mt-3 rounded-full bg-emerald-600 px-3 py-2 text-xs">Mark as paid</button> : null}</div>;
+              }) : <div className="text-sm text-slate-400">Fee records will appear here.</div>}</div></div>}
             {activeTab === 'profile' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Profile</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4"><div className="font-semibold">{profile?.name}</div><div className="text-sm text-slate-400">ID: {profile?.id}</div><div className="mt-2 text-sm text-slate-400">Joined classes: {visibleClasses.length}</div></div><div className="mt-4 grid gap-2 md:grid-cols-2">{marks.filter((item) => item.studentId === profile?.id).slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Score: {item.score}/{item.maxScore}</div></div>)}</div></div>}
             <BottomNavBar items={tabs} active={activeTab} onChange={setActiveTab} />
           </div>
@@ -1142,7 +1166,7 @@
 
     function OwnerDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, joinRequests, announcements, fees, schedules, createInstitute, createClass, createAnnouncement, createFee, approveRequest, rejectRequest } = useAppData();
+      const { institutes, classes, users, joinRequests, announcements, fees, schedules, createInstitute, createClass, createAnnouncement, createFee, approveRequest, rejectRequest } = useAppData();
       const [activeTab, setActiveTab] = useState('overview');
       const [instituteName, setInstituteName] = useState('');
       const [city, setCity] = useState('Pune');
@@ -1152,10 +1176,17 @@
       const [scheduleText, setScheduleText] = useState('');
       const [selectedInstitute, setSelectedInstitute] = useState('');
       const [selectedClass, setSelectedClass] = useState('');
+      const [selectedStudent, setSelectedStudent] = useState('');
+      const [feeDueDate, setFeeDueDate] = useState(new Date().toISOString().slice(0, 10));
       const [announcementTitle, setAnnouncementTitle] = useState('');
       const [announcementBody, setAnnouncementBody] = useState('');
       const { addToast } = useToast();
       const myInstitutes = institutes.filter((item) => item.ownerId === profile?.id);
+      const ownerClasses = classes.filter((item) => item.ownerId === profile?.id);
+      const selectedClassObj = ownerClasses.find((item) => item.id === selectedClass) || null;
+      const classStudents = users.filter((item) => item.role === 'student' && selectedClassObj?.studentIds?.includes(item.id));
+      const classInstitute = institutes.find((item) => item.id === selectedClassObj?.instituteId) || null;
+      const ownerFees = fees.filter((item) => ownerClasses.some((cls) => cls.id === item.classId));
       const relevantRequests = [...joinRequests].filter((item) => myInstitutes.some((institute) => institute.id === item.targetId) || classes.some((cls) => cls.ownerId === profile?.id && cls.id === item.targetId)).sort((a, b) => Number(b.status === 'pending') - Number(a.status === 'pending'));
       const addInstitute = async (event) => {
         event.preventDefault();
@@ -1183,8 +1214,23 @@
       };
       const addNewFee = async (event) => {
         event.preventDefault();
-        await createFee({ studentId: profile.id, studentName: profile.name, classId: selectedClass || null, amount: fee, dueDate: '2026-08-01' });
+        if (!selectedClass) return addToast('Select a class before sending a fee reminder', 'error');
+        if (!selectedStudent) return addToast('Select a student before sending a fee reminder', 'error');
+        if (!fee.trim()) return addToast('Enter a fee amount', 'error');
+        if (!feeDueDate) return addToast('Select a due date', 'error');
+        const student = users.find((item) => item.id === selectedStudent);
+        if (!student) return addToast('Selected student not found', 'error');
+        await createFee({ studentId: student.id, studentName: student.name, classId: selectedClass, amount: fee, dueDate: feeDueDate });
         addToast('Fee reminder created', 'success');
+        setFee('');
+      };
+      const sendFeeReminder = async (feeItem) => {
+        const cls = classes.find((item) => item.id === feeItem.classId);
+        const inst = cls ? institutes.find((item) => item.id === cls.instituteId) : null;
+        const title = `Fee reminder for ${feeItem.studentName}`;
+        const message = `Dear ${feeItem.studentName}, your fee of ₹${feeItem.amount} for ${cls?.name || 'the class'}${inst ? ` at ${inst.name}` : ''} is due on ${feeItem.dueDate}.`;
+        await createAnnouncement({ title, message, instituteId: inst?.id || null, classId: cls?.id || null, createdBy: profile.name });
+        addToast('Payment reminder sent', 'success');
       };
       const tabs = [
         { id: 'overview', label: 'Overview', icon: '🏢' },
@@ -1204,8 +1250,12 @@
             {activeTab === 'overview' && <div className="grid gap-4 xl:grid-cols-2"><div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Create institute</h3><form onSubmit={addInstitute} className="mt-3 space-y-3"><input value={instituteName} onChange={(event) => setInstituteName(event.target.value)} placeholder="Institute name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Create institute</button></form></div><div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Announcements</h3><div className="mt-3 space-y-2">{announcements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div></div>)}</div></div></div>}
             {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Pending approvals</h3><div className="mt-3 space-y-2">{relevantRequests.length ? relevantRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.requesterName} wants to join</div><div className="text-sm text-slate-400">{item.targetName}</div>{item.status === 'pending' ? <div className="mt-2 flex gap-2"><button onClick={() => approveRequest(item.id)} className="rounded-full bg-emerald-600 px-3 py-2 text-xs">Approve</button><button onClick={() => rejectRequest(item.id)} className="rounded-full bg-rose-500 px-3 py-2 text-xs">Reject</button></div> : <div className="mt-2 text-xs font-medium text-emerald-400">{item.status === 'approved' ? 'Approved' : 'Rejected'}</div>}</div>) : <div className="text-sm text-slate-400">No requests yet.</div>}</div></div>}
             {activeTab === 'batches' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Create batch</h3><form onSubmit={addClass} className="mt-3 space-y-3"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select institute</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Batch name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={scheduleText} onChange={(event) => setScheduleText(event.target.value)} placeholder="Schedule" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Create batch</button></form><div className="mt-4 space-y-2">{classes.filter((item) => item.ownerId === profile?.id).slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Fee: {item.fee} • Code: {item.code}</div></div>)}</div></div>}
-            {activeTab === 'announcements' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Send notification</h3><form onSubmit={sendAnnouncement} className="mt-3 space-y-3"><input value={announcementTitle} onChange={(event) => setAnnouncementTitle(event.target.value)} placeholder="Title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={announcementBody} onChange={(event) => setAnnouncementBody(event.target.value)} placeholder="Message" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><select value={selectedClass} onChange={(event) => setSelectedClass(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">All batches</option>{classes.filter((item) => item.ownerId === profile?.id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send notification</button></form></div>}
-            {activeTab === 'fees' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Fee reminders</h3><form onSubmit={addNewFee} className="mt-3 space-y-3"><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee amount" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Create reminder</button></form><div className="mt-4 space-y-2">{fees.slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">₹{item.amount}</div><div className="text-sm text-slate-400">Due: {item.dueDate} • {item.studentName}</div></div>)}</div></div>}
+            {activeTab === 'announcements' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Send notification</h3><form onSubmit={sendAnnouncement} className="mt-3 space-y-3"><input value={announcementTitle} onChange={(event) => setAnnouncementTitle(event.target.value)} placeholder="Title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={announcementBody} onChange={(event) => setAnnouncementBody(event.target.value)} placeholder="Message" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><div className="grid gap-3 md:grid-cols-2"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">All institutes</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select value={selectedClass} onChange={(event) => setSelectedClass(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">All batches</option>{ownerClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send notification</button></form></div>}
+            {activeTab === 'fees' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Fee reminders</h3><form onSubmit={addNewFee} className="mt-3 space-y-3"><div className="grid gap-3 md:grid-cols-2"><select value={selectedClass} onChange={(event) => { setSelectedClass(event.target.value); setSelectedStudent(''); }} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select class</option>{ownerClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select value={selectedStudent} onChange={(event) => setSelectedStudent(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select student</option>{classStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select></div><div className="grid gap-3 md:grid-cols-2"><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee amount" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input type="date" value={feeDueDate} onChange={(event) => setFeeDueDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /></div><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Create reminder</button></form><div className="mt-4 space-y-2">{ownerFees.length ? ownerFees.map((item) => {
+                const cls = classes.find((clsItem) => clsItem.id === item.classId);
+                const inst = cls ? institutes.find((instItem) => instItem.id === cls.instituteId) : null;
+                return <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.studentName} • {cls?.name || 'Class'}{inst ? ` • ${inst.name}` : ''}</div><div className="mt-1 text-sm text-slate-400">₹{item.amount} • Due: {item.dueDate} • Status: {item.status}</div>{item.status === 'pending' ? <button onClick={() => sendFeeReminder(item)} className="mt-3 rounded-full bg-indigo-600 px-3 py-2 text-xs">Send reminder</button> : null}</div>;
+              }) : <div className="text-sm text-slate-400">No fee reminders yet.</div>}</div></div>}
             {activeTab === 'settings' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Settings</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-300">Owner controls are now directly available from the bottom bar for institute, batch, alert and fee management.</div></div>}
             <BottomNavBar items={tabs} active={activeTab} onChange={setActiveTab} />
           </div>
