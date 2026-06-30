@@ -1,0 +1,337 @@
+.
+├── analysis_options.yaml
+├── analyze_output.txt
+├── android
+│   ├── app
+│   │   ├── build.gradle.kts
+│   │   ├── google-services.json
+│   │   └── src
+│   │       ├── debug
+│   │       │   └── AndroidManifest.xml
+│   │       ├── main
+│   │       │   ├── AndroidManifest.xml
+│   │       │   ├── java
+│   │       │   │   └── io
+│   │       │   │       └── flutter
+│   │       │   │           └── plugins
+│   │       │   │               └── GeneratedPluginRegistrant.java
+│   │       │   ├── kotlin
+│   │       │   │   └── com
+│   │       │   │       └── vedo
+│   │       │   │           └── vedo
+│   │       │   │               └── MainActivity.kt
+│   │       │   └── res
+│   │       │       ├── drawable
+│   │       │       │   └── launch_background.xml
+│   │       │       ├── drawable-v21
+│   │       │       │   └── launch_background.xml
+│   │       │       ├── mipmap-hdpi
+│   │       │       │   └── ic_launcher.png
+│   │       │       ├── mipmap-mdpi
+│   │       │       │   └── ic_launcher.png
+│   │       │       ├── mipmap-xhdpi
+│   │       │       │   └── ic_launcher.png
+│   │       │       ├── mipmap-xxhdpi
+│   │       │       │   └── ic_launcher.png
+│   │       │       ├── mipmap-xxxhdpi
+│   │       │       │   └── ic_launcher.png
+│   │       │       ├── values
+│   │       │       │   └── styles.xml
+│   │       │       └── values-night
+│   │       │           └── styles.xml
+│   │       └── profile
+│   │           └── AndroidManifest.xml
+│   ├── build.gradle.kts
+│   ├── gradle
+│   │   └── wrapper
+│   │       ├── gradle-wrapper.jar
+│   │       └── gradle-wrapper.properties
+│   ├── gradle.properties
+│   ├── gradlew
+│   ├── gradlew.bat
+│   ├── local.properties
+│   ├── release
+│   ├── settings.gradle.kts
+│   └── vedo_android.iml
+├── assets
+│   ├── index.html
+│   └── js
+│       ├── babel.js
+│       ├── firebase-app.js
+│       ├── firebase-auth.js
+│       ├── firebase-firestore.js
+│       ├── react-dom.js
+│       ├── react.js
+│       └── tailwind.js
+├── backup_devcontainer
+│   ├── build.sh
+│   ├── devcontainer.json
+│   ├── postCreate.sh
+│   ├── release.sh
+│   └── run.sh
+├── devtools_options.yaml
+├── EMAIL_AUTH_MIGRATION.md
+├── EMAIL_PASSWORD_COMPLETE.md
+├── firebase.json
+├── firestore.indexes.json
+├── fix_google_signin.ps1
+├── index.html
+├── ios
+│   ├── Flutter
+│   │   ├── AppFrameworkInfo.plist
+│   │   ├── Debug.xcconfig
+│   │   ├── ephemeral
+│   │   │   ├── flutter_lldb_helper.py
+│   │   │   ├── flutter_lldbinit
+│   │   │   ├── flutter_native_integration.env
+│   │   │   └── Packages
+│   │   │       └── FlutterGeneratedPluginSwiftPackage
+│   │   │           ├── Package.swift
+│   │   │           └── Sources
+│   │   │               └── FlutterGeneratedPluginSwiftPackage
+│   │   │                   └── FlutterGeneratedPluginSwiftPackage.swift
+│   │   ├── flutter_export_environment.sh
+│   │   ├── Generated.xcconfig
+│   │   └── Release.xcconfig
+│   ├── Runner
+│   │   ├── AppDelegate.swift
+│   │   ├── Assets.xcassets
+│   │   │   ├── AppIcon.appiconset
+│   │   │   │   ├── Contents.json
+│   │   │   │   ├── Icon-App-1024x1024@1x.png
+│   │   │   │   ├── Icon-App-20x20@1x.png
+│   │   │   │   ├── Icon-App-20x20@2x.png
+│   │   │   │   ├── Icon-App-20x20@3x.png
+│   │   │   │   ├── Icon-App-29x29@1x.png
+│   │   │   │   ├── Icon-App-29x29@2x.png
+│   │   │   │   ├── Icon-App-29x29@3x.png
+│   │   │   │   ├── Icon-App-40x40@1x.png
+│   │   │   │   ├── Icon-App-40x40@2x.png
+│   │   │   │   ├── Icon-App-40x40@3x.png
+│   │   │   │   ├── Icon-App-60x60@2x.png
+│   │   │   │   ├── Icon-App-60x60@3x.png
+│   │   │   │   ├── Icon-App-76x76@1x.png
+│   │   │   │   ├── Icon-App-76x76@2x.png
+│   │   │   │   └── Icon-App-83.5x83.5@2x.png
+│   │   │   └── LaunchImage.imageset
+│   │   │       ├── Contents.json
+│   │   │       ├── LaunchImage@2x.png
+│   │   │       ├── LaunchImage@3x.png
+│   │   │       ├── LaunchImage.png
+│   │   │       └── README.md
+│   │   ├── Base.lproj
+│   │   │   ├── LaunchScreen.storyboard
+│   │   │   └── Main.storyboard
+│   │   ├── GeneratedPluginRegistrant.h
+│   │   ├── GeneratedPluginRegistrant.m
+│   │   ├── Info.plist
+│   │   ├── Runner-Bridging-Header.h
+│   │   └── SceneDelegate.swift
+│   ├── RunnerTests
+│   │   └── RunnerTests.swift
+│   ├── Runner.xcodeproj
+│   │   ├── project.pbxproj
+│   │   ├── project.xcworkspace
+│   │   │   ├── contents.xcworkspacedata
+│   │   │   └── xcshareddata
+│   │   │       ├── IDEWorkspaceChecks.plist
+│   │   │       └── WorkspaceSettings.xcsettings
+│   │   └── xcshareddata
+│   │       └── xcschemes
+│   │           └── Runner.xcscheme
+│   └── Runner.xcworkspace
+│       ├── contents.xcworkspacedata
+│       └── xcshareddata
+│           ├── IDEWorkspaceChecks.plist
+│           └── WorkspaceSettings.xcsettings
+├── lib
+│   ├── core
+│   │   ├── constants
+│   │   │   └── app_constants.dart
+│   │   ├── theme
+│   │   │   └── app_theme.dart
+│   │   └── utils
+│   │       └── helpers.dart
+│   ├── firebase_options.dart
+│   ├── main.dart
+│   ├── models
+│   │   ├── feedback_model.dart
+│   │   ├── study_session_model.dart
+│   │   ├── submission_model.dart
+│   │   ├── task_model.dart
+│   │   ├── tuition_model.dart
+│   │   └── user_model.dart
+│   ├── providers
+│   │   ├── auth_provider.dart
+│   │   ├── task_provider.dart
+│   │   └── tuition_provider.dart
+│   ├── screens
+│   │   ├── auth
+│   │   │   ├── login_screen.dart
+│   │   │   ├── onboarding_screen.dart
+│   │   │   ├── role_selection_screen.dart
+│   │   │   ├── signup_screen.dart
+│   │   │   └── splash_screen.dart
+│   │   ├── common
+│   │   │   ├── class_hub_screen.dart
+│   │   │   ├── my_tuition_screen.dart
+│   │   │   ├── notifications_center.dart
+│   │   │   ├── profile_screen.dart
+│   │   │   └── test_practice_screen.dart
+│   │   ├── dashboard_screen.dart
+│   │   ├── discover
+│   │   │   ├── all_classes_screen.dart
+│   │   │   ├── all_institutes_screen.dart
+│   │   │   ├── class_detail_screen.dart
+│   │   │   ├── discover_screen.dart
+│   │   │   └── institute_detail_screen.dart
+│   │   ├── owner
+│   │   │   ├── add_standard_screen.dart
+│   │   │   ├── enrollment_requests_screen.dart
+│   │   │   ├── institute_setup_screen.dart
+│   │   │   ├── owner_home_screen.dart
+│   │   │   └── standards_list_screen.dart
+│   │   ├── parent
+│   │   │   └── parent_home_screen.dart
+│   │   ├── student
+│   │   │   ├── feedback_screen.dart
+│   │   │   ├── homework_details_screen.dart
+│   │   │   ├── join_tuition_screen.dart
+│   │   │   ├── student_dashboard.dart
+│   │   │   └── study_timer_screen.dart
+│   │   └── teacher
+│   │       ├── add_feedback_screen.dart
+│   │       ├── add_task_screen.dart
+│   │       ├── create_tuition_screen.dart
+│   │       ├── student_list_screen.dart
+│   │       └── teacher_dashboard.dart
+│   ├── services
+│   │   ├── auth_service.dart
+│   │   ├── firestore_service.dart
+│   │   ├── storage_service.dart
+│   │   └── update_service.dart
+│   └── widgets
+│       ├── custom_button.dart
+│       ├── custom_chart.dart
+│       ├── custom_textfield.dart
+│       ├── dashboard_card.dart
+│       ├── explore_institute_section.dart
+│       ├── feedback_card.dart
+│       └── task_card.dart
+├── linux
+│   ├── CMakeLists.txt
+│   ├── flutter
+│   │   ├── CMakeLists.txt
+│   │   ├── ephemeral
+│   │   ├── generated_plugin_registrant.cc
+│   │   ├── generated_plugin_registrant.h
+│   │   └── generated_plugins.cmake
+│   └── runner
+│       ├── CMakeLists.txt
+│       ├── main.cc
+│       ├── my_application.cc
+│       └── my_application.h
+├── macos
+│   ├── Flutter
+│   │   ├── ephemeral
+│   │   │   ├── flutter_export_environment.sh
+│   │   │   ├── Flutter-Generated.xcconfig
+│   │   │   ├── flutter_native_integration.env
+│   │   │   └── Packages
+│   │   │       └── FlutterGeneratedPluginSwiftPackage
+│   │   │           ├── Package.swift
+│   │   │           └── Sources
+│   │   │               └── FlutterGeneratedPluginSwiftPackage
+│   │   │                   └── FlutterGeneratedPluginSwiftPackage.swift
+│   │   ├── Flutter-Debug.xcconfig
+│   │   ├── Flutter-Release.xcconfig
+│   │   └── GeneratedPluginRegistrant.swift
+│   ├── Runner
+│   │   ├── AppDelegate.swift
+│   │   ├── Assets.xcassets
+│   │   │   └── AppIcon.appiconset
+│   │   │       ├── app_icon_1024.png
+│   │   │       ├── app_icon_128.png
+│   │   │       ├── app_icon_16.png
+│   │   │       ├── app_icon_256.png
+│   │   │       ├── app_icon_32.png
+│   │   │       ├── app_icon_512.png
+│   │   │       ├── app_icon_64.png
+│   │   │       └── Contents.json
+│   │   ├── Base.lproj
+│   │   │   └── MainMenu.xib
+│   │   ├── Configs
+│   │   │   ├── AppInfo.xcconfig
+│   │   │   ├── Debug.xcconfig
+│   │   │   ├── Release.xcconfig
+│   │   │   └── Warnings.xcconfig
+│   │   ├── DebugProfile.entitlements
+│   │   ├── Info.plist
+│   │   ├── MainFlutterWindow.swift
+│   │   └── Release.entitlements
+│   ├── RunnerTests
+│   │   └── RunnerTests.swift
+│   ├── Runner.xcodeproj
+│   │   ├── project.pbxproj
+│   │   ├── project.xcworkspace
+│   │   │   └── xcshareddata
+│   │   │       └── IDEWorkspaceChecks.plist
+│   │   └── xcshareddata
+│   │       └── xcschemes
+│   │           └── Runner.xcscheme
+│   └── Runner.xcworkspace
+│       ├── contents.xcworkspacedata
+│       └── xcshareddata
+│           └── IDEWorkspaceChecks.plist
+├── project_start.txt
+├── project_structure.txt
+├── pubspec.lock
+├── pubspec.yaml
+├── README.md
+├── release
+│   ├── Vedo-v1.0.3+4.apk
+│   ├── Vedo-v1.0.4+5.apk
+│   ├── VEDO-v1.0.5+6.apk
+│   ├── VEDO-v1.0.7+8.apk
+│   └── VEDO-v1.0.7+8\015.apk
+├── scripts
+│   ├── build.sh
+│   ├── release.sh
+│   └── setup.sh
+├── test
+│   ├── update_service_test.dart
+│   └── widget_test.dart
+├── vedo.iml
+├── web
+│   ├── favicon.png
+│   ├── icons
+│   │   ├── Icon-192.png
+│   │   ├── Icon-512.png
+│   │   ├── Icon-maskable-192.png
+│   │   └── Icon-maskable-512.png
+│   ├── index.html
+│   └── manifest.json
+└── windows
+    ├── CMakeLists.txt
+    ├── flutter
+    │   ├── CMakeLists.txt
+    │   ├── ephemeral
+    │   ├── generated_plugin_registrant.cc
+    │   ├── generated_plugin_registrant.h
+    │   └── generated_plugins.cmake
+    └── runner
+        ├── CMakeLists.txt
+        ├── flutter_window.cpp
+        ├── flutter_window.h
+        ├── main.cpp
+        ├── resource.h
+        ├── resources
+        │   └── app_icon.ico
+        ├── runner.exe.manifest
+        ├── Runner.rc
+        ├── utils.cpp
+        ├── utils.h
+        ├── win32_window.cpp
+        └── win32_window.h
+
+102 directories, 233 files
