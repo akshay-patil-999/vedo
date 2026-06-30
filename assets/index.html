@@ -455,36 +455,73 @@
         }
       };
 
+      // Detects whether this page is running inside the Vedo Flutter WebView,
+      // where Firebase's signInWithPopup is blocked by Google
+      // ("disallowed_useragent"). In that case we ask Flutter to do a native
+      // Google Sign-In and hand back an idToken/accessToken we can exchange
+      // for a Firebase credential instead of opening a popup.
+      const isInsideFlutterApp = () => typeof window.FlutterGoogleAuth !== 'undefined';
+
+      const finishGoogleProfile = async (user, preferredRole) => {
+        const snapshot = await firestoreRef.collection('users').doc(user.uid).get();
+        let profileData;
+        if (snapshot.exists) {
+          profileData = { id: user.uid, ...snapshot.data() };
+        } else {
+          profileData = {
+            id: user.uid,
+            authUid: user.uid,
+            email: user.email,
+            name: user.displayName || user.email,
+            photoURL: user.photoURL || null,
+            role: preferredRole || 'student',
+            instituteIds: [],
+            classIds: [],
+            createdAt: stamp()
+          };
+          await firestoreRef.collection('users').doc(user.uid).set(profileData);
+        }
+        setProfile(profileData);
+        setAuthUser(user);
+        const target = profileData.role === 'owner' ? '/owner' : profileData.role === 'teacher' ? '/teacher' : profileData.role === 'parent' ? '/parent' : '/student';
+        navigateTo(target);
+        return { ok: true };
+      };
+
+      const loginWithGoogleNative = (preferredRole) => {
+        return new Promise((resolve) => {
+          window.onFlutterGoogleAuth = async (result) => {
+            window.onFlutterGoogleAuth = null;
+            if (!result || !result.success) {
+              resolve({ ok: false, message: result?.error === 'cancelled' ? 'Google sign-in was cancelled.' : 'Google sign-in failed. Please try again.' });
+              return;
+            }
+            try {
+              const credential = firebase.auth.GoogleAuthProvider.credential(result.idToken, result.accessToken);
+              const signInResult = await authRef.signInWithCredential(credential);
+              const outcome = await finishGoogleProfile(signInResult.user, preferredRole);
+              resolve(outcome);
+            } catch (error) {
+              resolve({ ok: false, message: error.message || 'Google sign-in failed.' });
+            }
+          };
+          window.FlutterGoogleAuth.postMessage('login');
+        });
+      };
+
       const loginWithGoogle = async (preferredRole) => {
-        if (!backendReady || !authRef || !googleProviderRef) {
+        if (!backendReady || !authRef) {
           return { ok: false, message: 'Google sign-in needs backend connection. Please try again shortly.' };
+        }
+        if (isInsideFlutterApp()) {
+          return loginWithGoogleNative(preferredRole);
+        }
+        if (!googleProviderRef) {
+          return { ok: false, message: 'Google sign-in is not available right now.' };
         }
         try {
           const result = await authRef.signInWithPopup(googleProviderRef);
-          const user = result.user;
-          const snapshot = await firestoreRef.collection('users').doc(user.uid).get();
-          let profileData;
-          if (snapshot.exists) {
-            profileData = { id: user.uid, ...snapshot.data() };
-          } else {
-            profileData = {
-              id: user.uid,
-              authUid: user.uid,
-              email: user.email,
-              name: user.displayName || user.email,
-              photoURL: user.photoURL || null,
-              role: preferredRole || 'student',
-              instituteIds: [],
-              classIds: [],
-              createdAt: stamp()
-            };
-            await firestoreRef.collection('users').doc(user.uid).set(profileData);
-          }
-          setProfile(profileData);
-          setAuthUser(user);
-          const target = profileData.role === 'owner' ? '/owner' : profileData.role === 'teacher' ? '/teacher' : profileData.role === 'parent' ? '/parent' : '/student';
-          navigateTo(target);
-          return { ok: true };
+          return await finishGoogleProfile(result.user, preferredRole);
         } catch (error) {
           return { ok: false, message: error.message || 'Google sign-in failed.' };
         }

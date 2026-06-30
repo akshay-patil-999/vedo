@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "1881105365-ijqg2k07i2dipogrlbj3m4akp640ndu8.apps.googleusercontent.com",
+          "client_id": "1881105365-og0qqj1snr3gj34vqofpogm2a6kvle3q.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.vedo.vedo",
-            "certificate_hash": "4a7fc64c51156e9a080eeaf18620438f62d3cb78"
+            "certificate_hash": "2f0a765d1ec4ccc2dd183599a8d5a5737d545f58"
           }
         },
         {
