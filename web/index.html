@@ -179,6 +179,46 @@
       return '';
     }
 
+    // Mirrors getStudentRosterForClass, but resolves every teacher linked to a
+    // batch (the primary teacherId plus any co-teachers in teacherIds, plus
+    // anyone with an approved teacher join-request for that batch/institute).
+    function getTeacherRosterForClass(classItem, users = [], joinRequests = []) {
+      if (!classItem) return [];
+      const classId = classItem.id;
+      const teacherIds = new Set();
+      const addTeacher = (teacherId) => { if (teacherId) teacherIds.add(teacherId); };
+
+      addTeacher(classItem.teacherId);
+      (classItem.teacherIds || []).forEach(addTeacher);
+      (joinRequests || []).forEach((request) => {
+        if (request?.status === 'approved' && request.role === 'teacher'
+          && ((request.targetType === 'class' && request.targetId === classId)
+            || (request.targetType === 'institute' && classItem.instituteId && request.targetId === classItem.instituteId))) {
+          addTeacher(request.requesterId);
+        }
+      });
+
+      const resolveName = (id) => {
+        const user = (users || []).find((item) => item.id === id) || null;
+        if (user?.name) return user.name;
+        if (user?.email) return user.email;
+        if (id === classItem.teacherId && classItem.teacherName) return classItem.teacherName;
+        const approvedRequest = (joinRequests || []).find((request) => request.requesterId === id
+          && request.status === 'approved'
+          && request.role === 'teacher'
+          && ((request.targetType === 'class' && request.targetId === classId)
+            || (request.targetType === 'institute' && classItem.instituteId && request.targetId === classItem.instituteId)));
+        if (approvedRequest?.requesterName) return approvedRequest.requesterName;
+        return null;
+      };
+
+      return Array.from(teacherIds).map((id) => {
+        const user = (users || []).find((item) => item.id === id) || null;
+        const resolvedName = resolveName(id) || 'Unnamed teacher';
+        return { id, name: resolvedName, email: user?.email || '', role: 'teacher', classId, className: classItem.name, displayName: resolvedName };
+      });
+    }
+
     const AuthContext = createContext(null);
     const NavContext = createContext(null);
     const ToastContext = createContext(null);
@@ -1172,6 +1212,7 @@
       const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
       const [attendancePresent, setAttendancePresent] = useState(true);
       const [doubtText, setDoubtText] = useState('');
+      const [expandedClassId, setExpandedClassId] = useState('');
       const { addToast } = useToast();
       const approvedMemberships = joinRequests.filter((item) => item.requesterId === profile?.id && item.status === 'approved');
       const visibleInstitutes = institutes.filter((item) => item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.id) || item.id === profile?.instituteIds?.[0]);
@@ -1301,7 +1342,38 @@
                 </div>
                 {pendingRequestCount ? <div className="rounded-2xl bg-indigo-600/10 px-3 py-2 text-sm text-indigo-100">{pendingRequestCount} pending approval{pendingRequestCount > 1 ? 's' : ''}</div> : null}
               </div>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">{visibleClasses.length ? visibleClasses.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Code: {item.code} • Students: {getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords).length}</div></div>) : <div className="text-sm text-slate-400">Create a class to start teaching.</div>}</div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">{visibleClasses.length ? visibleClasses.map((item) => {
+                const roster = getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords);
+                const teacherRoster = getTeacherRosterForClass(item, users, joinRequests);
+                const isOpen = expandedClassId === item.id;
+                return (
+                  <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
+                    <button type="button" onClick={() => setExpandedClassId(isOpen ? '' : item.id)} className="w-full text-left">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-medium">{item.name}</div>
+                        <span className="text-xs text-indigo-300">{isOpen ? 'Hide roster ▲' : 'View roster ▼'}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-2 text-sm text-slate-400">
+                        <span>Code: {item.code}</span>
+                        <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">👨‍🎓 {roster.length} student{roster.length === 1 ? '' : 's'}</span>
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">👩‍🏫 {teacherRoster.length} teacher{teacherRoster.length === 1 ? '' : 's'}</span>
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Students ({roster.length})</div>
+                          <div className="mt-1 space-y-1">{roster.length ? roster.map((student) => <div key={student.id} className="text-sm text-slate-200">• {getStudentDisplayName(student)}</div>) : <div className="text-sm text-slate-400">No students linked yet.</div>}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Teachers ({teacherRoster.length})</div>
+                          <div className="mt-1 space-y-1">{teacherRoster.length ? teacherRoster.map((teacher) => <div key={teacher.id} className="text-sm text-slate-200">• {teacher.name}{teacher.id === profile?.id ? ' (you)' : ''}</div>) : <div className="text-sm text-slate-400">No teachers linked yet.</div>}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }) : <div className="text-sm text-slate-400">Create a class to start teaching.</div>}</div>
             </div>
             {activeTab === 'home' && (
               <div className="grid gap-4 xl:grid-cols-2">
@@ -1359,7 +1431,7 @@
                 </form>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
-                    <div className="font-medium">Students in this batch</div>
+                    <div className="font-medium">Students in this batch ({attendanceOptions.length})</div>
                     <div className="mt-2 space-y-2">
                       {attendanceOptions.length ? attendanceOptions.map((item) => (
                         <div key={`${item.id}-${item.classId}`} className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-slate-300">
@@ -1408,12 +1480,15 @@
       const [feeDueDate, setFeeDueDate] = useState(new Date().toISOString().slice(0, 10));
       const [announcementTitle, setAnnouncementTitle] = useState('');
       const [announcementBody, setAnnouncementBody] = useState('');
+      const [expandedBatchId, setExpandedBatchId] = useState('');
       const { addToast } = useToast();
       const myInstitutes = institutes.filter((item) => item.ownerId === profile?.id);
       const ownerClasses = classes.filter((item) => item.ownerId === profile?.id);
       const selectedClassObj = ownerClasses.find((item) => item.id === selectedClass) || null;
       const knownStudentNameRecords = [...(fees || []), ...(marks || []), ...(feedbacks || []), ...(attendances || []), ...((homeworks || []).flatMap((hw) => hw.submissions || []))];
       const classStudents = selectedClassObj ? getStudentRosterForClass(selectedClassObj, users, joinRequests, knownStudentNameRecords) : [];
+      const totalUniqueStudents = new Set(ownerClasses.flatMap((item) => getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords).map((student) => student.id))).size;
+      const totalUniqueTeachers = new Set(ownerClasses.flatMap((item) => getTeacherRosterForClass(item, users, joinRequests).map((teacher) => teacher.id))).size;
       const classInstitute = institutes.find((item) => item.id === selectedClassObj?.instituteId) || null;
       const ownerFees = fees.filter((item) => ownerClasses.some((cls) => cls.id === item.classId));
       const relevantRequests = [...joinRequests].filter((item) => myInstitutes.some((institute) => institute.id === item.targetId) || classes.some((cls) => cls.ownerId === profile?.id && cls.id === item.targetId)).sort((a, b) => Number(b.status === 'pending') - Number(a.status === 'pending'));
@@ -1474,11 +1549,56 @@
           <div className="space-y-5">
             <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
               <h2 className="text-xl font-semibold">Institute overview</h2>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-indigo-400/20 bg-indigo-500/10 p-3 card-hover">
+                  <div className="text-2xl font-bold text-indigo-200">{totalUniqueStudents}</div>
+                  <div className="text-sm text-indigo-200/80">👨‍🎓 Total students</div>
+                </div>
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-3 card-hover">
+                  <div className="text-2xl font-bold text-emerald-200">{totalUniqueTeachers}</div>
+                  <div className="text-sm text-emerald-200/80">👩‍🏫 Total teachers</div>
+                </div>
+                <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-3 card-hover">
+                  <div className="text-2xl font-bold text-amber-200">{ownerClasses.length}</div>
+                  <div className="text-sm text-amber-200/80">📚 Total batches</div>
+                </div>
+              </div>
               <div className="mt-3 grid gap-3 md:grid-cols-3">{myInstitutes.length ? myInstitutes.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Code: {item.code}</div></div>) : <div className="text-sm text-slate-400">Create an institute first.</div>}<div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">Pending</div><div className="text-sm text-slate-400">{relevantRequests.filter((item) => item.status === 'pending').length} approvals</div></div></div>
             </div>
             {activeTab === 'overview' && <div className="grid gap-4 xl:grid-cols-2"><div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Create institute</h3><form onSubmit={addInstitute} className="mt-3 space-y-3"><input value={instituteName} onChange={(event) => setInstituteName(event.target.value)} placeholder="Institute name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Create institute</button></form></div><div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Announcements</h3><div className="mt-3 space-y-2">{announcements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div></div>)}</div></div></div>}
             {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Pending approvals</h3><div className="mt-3 space-y-2">{relevantRequests.length ? relevantRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.requesterName} wants to join</div><div className="text-sm text-slate-400">{item.targetName}</div>{item.status === 'pending' ? <div className="mt-2 flex gap-2"><button onClick={() => approveRequest(item.id)} className="rounded-full bg-emerald-600 px-3 py-2 text-xs">Approve</button><button onClick={() => rejectRequest(item.id)} className="rounded-full bg-rose-500 px-3 py-2 text-xs">Reject</button></div> : <div className="mt-2 text-xs font-medium text-emerald-400">{item.status === 'approved' ? 'Approved' : 'Rejected'}</div>}</div>) : <div className="text-sm text-slate-400">No requests yet.</div>}</div></div>}
-            {activeTab === 'batches' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Create batch</h3><form onSubmit={addClass} className="mt-3 space-y-3"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select institute</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Batch name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={scheduleText} onChange={(event) => setScheduleText(event.target.value)} placeholder="Schedule" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Create batch</button></form><div className="mt-4 space-y-2">{classes.filter((item) => item.ownerId === profile?.id).slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Fee: {item.fee} • Code: {item.code}</div></div>)}</div></div>}
+            {activeTab === 'batches' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Create batch</h3><form onSubmit={addClass} className="mt-3 space-y-3"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select institute</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Batch name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={scheduleText} onChange={(event) => setScheduleText(event.target.value)} placeholder="Schedule" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Create batch</button></form><div className="mt-4 space-y-2">{ownerClasses.length ? ownerClasses.map((item) => {
+              const roster = getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords);
+              const teacherRoster = getTeacherRosterForClass(item, users, joinRequests);
+              const isOpen = expandedBatchId === item.id;
+              return (
+                <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
+                  <button type="button" onClick={() => setExpandedBatchId(isOpen ? '' : item.id)} className="w-full text-left">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-medium">{item.name}</div>
+                      <span className="text-xs text-indigo-300">{isOpen ? 'Hide roster ▲' : 'View roster ▼'}</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-2 text-sm text-slate-400">
+                      <span>Fee: {item.fee} • Code: {item.code}</span>
+                      <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">👨‍🎓 {roster.length} student{roster.length === 1 ? '' : 's'}</span>
+                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">👩‍🏫 {teacherRoster.length} teacher{teacherRoster.length === 1 ? '' : 's'}</span>
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Students ({roster.length})</div>
+                        <div className="mt-1 space-y-1">{roster.length ? roster.map((student) => <div key={student.id} className="text-sm text-slate-200">• {getStudentDisplayName(student)}</div>) : <div className="text-sm text-slate-400">No students linked yet.</div>}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Teachers ({teacherRoster.length})</div>
+                        <div className="mt-1 space-y-1">{teacherRoster.length ? teacherRoster.map((teacher) => <div key={teacher.id} className="text-sm text-slate-200">• {teacher.name}</div>) : <div className="text-sm text-slate-400">No teachers linked yet.</div>}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }) : <div className="text-sm text-slate-400">Create a batch to get started.</div>}</div></div>}
             {activeTab === 'announcements' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Send notification</h3><form onSubmit={sendAnnouncement} className="mt-3 space-y-3"><input value={announcementTitle} onChange={(event) => setAnnouncementTitle(event.target.value)} placeholder="Title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={announcementBody} onChange={(event) => setAnnouncementBody(event.target.value)} placeholder="Message" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><div className="grid gap-3 md:grid-cols-2"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">All institutes</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select value={selectedClass} onChange={(event) => setSelectedClass(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">All batches</option>{ownerClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send notification</button></form></div>}
             {activeTab === 'fees' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Fee reminders</h3><form onSubmit={addNewFee} className="mt-3 space-y-3"><div className="grid gap-3 md:grid-cols-2"><select value={selectedClass} onChange={(event) => { setSelectedClass(event.target.value); setSelectedStudent(''); }} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select class</option>{ownerClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select value={selectedStudent} onChange={(event) => setSelectedStudent(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select student</option>{classStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select></div><div className="grid gap-3 md:grid-cols-2"><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee amount" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input type="date" value={feeDueDate} onChange={(event) => setFeeDueDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /></div><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Create reminder</button></form><div className="mt-4 space-y-2">{ownerFees.length ? ownerFees.map((item) => {
                 const cls = classes.find((clsItem) => clsItem.id === item.classId);

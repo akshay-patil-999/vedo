@@ -18,13 +18,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     :root { color-scheme: light; }
-    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overscroll-behavior-y: none; }
-    body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; overflow-x: hidden; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+    body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; }
     * { box-sizing: border-box; }
-    .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    button, input, select, textarea { font-family: inherit; -webkit-tap-highlight-color: transparent; }
-    button { touch-action: manipulation; }
     .glass { background: rgba(255,255,255,0.9); backdrop-filter: blur(16px); border: 1px solid rgba(15,23,42,0.08); }
     .animate-in { animation: slideIn .25s ease; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
@@ -57,6 +52,9 @@
     .status-partial { color: #f59e0b; }
     .status-overdue { color: #ef4444; }
     .btn-google { display:flex; align-items:center; justify-content:center; gap:.5rem; }
+    .status-pill { display:inline-flex; align-items:center; gap:.4rem; border-radius:999px; border:1px solid rgba(255,255,255,0.16); padding:0.4rem 0.7rem; font-size:0.8rem; font-weight:600; }
+    .metric-card { border: 1px solid rgba(255,255,255,0.1); background: rgba(15,23,42,0.55); backdrop-filter: blur(12px); }
+    .empty-state { color: #94a3b8; font-size: 0.95rem; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -68,7 +66,7 @@
     const { createContext, useContext, useEffect, useMemo, useState } = React;
     const { createRoot } = ReactDOM;
 
-    const StorageKeys = { USER: 'vedo_user', DATA: 'vedo_app_data' };
+    const StorageKeys = { USER: 'vedo_user', DATA: 'vedo_app_data', OFFLINE: 'vedo_offline_queue' };
 
     const db = {
       get: (key, fallback) => {
@@ -121,6 +119,106 @@
 
     const roleLabels = { student: 'Student', teacher: 'Teacher', owner: 'Owner', parent: 'Parent' };
 
+    function getStudentRosterForClass(classItem, users = [], joinRequests = [], extraRecords = []) {
+      if (!classItem) return [];
+      const classId = classItem.id;
+      const studentIds = new Set();
+      const addStudent = (studentId) => {
+        if (studentId) studentIds.add(studentId);
+      };
+
+      (classItem.studentIds || []).forEach(addStudent);
+      (users || []).forEach((user) => {
+        if (!user || user.role !== 'student') return;
+        const classIds = Array.isArray(user.classIds) ? user.classIds : [];
+        if (classIds.includes(classId)) addStudent(user.id);
+        if (classItem.instituteId && Array.isArray(user.instituteIds) && user.instituteIds.includes(classItem.instituteId)) addStudent(user.id);
+      });
+      (joinRequests || []).forEach((request) => {
+        if (request?.status === 'approved' && request.targetType === 'class' && request.targetId === classId && request.role === 'student') {
+          addStudent(request.requesterId);
+        }
+      });
+
+      const resolveName = (id) => {
+        const user = (users || []).find((item) => item.id === id) || null;
+        if (user?.name) return user.name;
+        if (user?.email) return user.email;
+        const approvedRequest = (joinRequests || []).find((request) => request.requesterId === id
+          && request.status === 'approved'
+          && request.role === 'student'
+          && ((request.targetType === 'class' && request.targetId === classId)
+            || (request.targetType === 'institute' && classItem.instituteId && request.targetId === classItem.instituteId)));
+        if (approvedRequest?.requesterName) return approvedRequest.requesterName;
+        const knownRecord = (extraRecords || []).find((record) => record?.studentId === id && record?.studentName);
+        if (knownRecord?.studentName) return knownRecord.studentName;
+        return null;
+      };
+
+      return Array.from(studentIds).map((id) => {
+        const user = (users || []).find((item) => item.id === id) || null;
+        const resolvedName = resolveName(id) || 'Unnamed student';
+        return {
+          id,
+          name: resolvedName,
+          email: user?.email || '',
+          role: user?.role || 'student',
+          classId,
+          className: classItem.name,
+          displayName: resolvedName
+        };
+      });
+    }
+
+    function getStudentDisplayName(student) {
+      if (!student) return 'Student';
+      return student.studentName || student.name || student.displayName || student.email || 'Unnamed student';
+    }
+
+    function getStudentIdLabel() {
+      return '';
+    }
+
+    // Mirrors getStudentRosterForClass, but resolves every teacher linked to a
+    // batch (the primary teacherId plus any co-teachers in teacherIds, plus
+    // anyone with an approved teacher join-request for that batch/institute).
+    function getTeacherRosterForClass(classItem, users = [], joinRequests = []) {
+      if (!classItem) return [];
+      const classId = classItem.id;
+      const teacherIds = new Set();
+      const addTeacher = (teacherId) => { if (teacherId) teacherIds.add(teacherId); };
+
+      addTeacher(classItem.teacherId);
+      (classItem.teacherIds || []).forEach(addTeacher);
+      (joinRequests || []).forEach((request) => {
+        if (request?.status === 'approved' && request.role === 'teacher'
+          && ((request.targetType === 'class' && request.targetId === classId)
+            || (request.targetType === 'institute' && classItem.instituteId && request.targetId === classItem.instituteId))) {
+          addTeacher(request.requesterId);
+        }
+      });
+
+      const resolveName = (id) => {
+        const user = (users || []).find((item) => item.id === id) || null;
+        if (user?.name) return user.name;
+        if (user?.email) return user.email;
+        if (id === classItem.teacherId && classItem.teacherName) return classItem.teacherName;
+        const approvedRequest = (joinRequests || []).find((request) => request.requesterId === id
+          && request.status === 'approved'
+          && request.role === 'teacher'
+          && ((request.targetType === 'class' && request.targetId === classId)
+            || (request.targetType === 'institute' && classItem.instituteId && request.targetId === classItem.instituteId)));
+        if (approvedRequest?.requesterName) return approvedRequest.requesterName;
+        return null;
+      };
+
+      return Array.from(teacherIds).map((id) => {
+        const user = (users || []).find((item) => item.id === id) || null;
+        const resolvedName = resolveName(id) || 'Unnamed teacher';
+        return { id, name: resolvedName, email: user?.email || '', role: 'teacher', classId, className: classItem.name, displayName: resolvedName };
+      });
+    }
+
     const AuthContext = createContext(null);
     const NavContext = createContext(null);
     const ToastContext = createContext(null);
@@ -153,6 +251,62 @@
 
     function stamp() {
       return new Date().toISOString();
+    }
+
+    const API_BASE = (window.__VEDO_BACKEND_BASE__ || '/api').replace(/\/$/, '');
+    const OFFLINE_QUEUE_KEY = StorageKeys.OFFLINE;
+
+    function queueOfflineAction(path, body) {
+      try {
+        const queue = db.get(OFFLINE_QUEUE_KEY, []);
+        queue.push({ path, body, createdAt: stamp() });
+        db.set(OFFLINE_QUEUE_KEY, queue);
+      } catch (err) {
+        console.warn('Failed to queue offline action', err);
+      }
+    }
+
+    async function apiPost(path, body) {
+      const payload = { ...body, source: 'vedo-web', timestamp: Date.now() };
+      try {
+        const res = await fetch(`${API_BASE}/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const contentType = res.headers.get('content-type') || '';
+        return contentType.includes('application/json') ? await res.json() : { ok: true };
+      } catch (err) {
+        queueOfflineAction(path, payload);
+        console.warn('API POST failed; queued locally', path, err);
+        return { queued: true, path };
+      }
+    }
+
+    async function apiGet(path) {
+      try {
+        const res = await fetch(`${API_BASE}/${path}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const contentType = res.headers.get('content-type') || '';
+        return contentType.includes('application/json') ? await res.json() : { ok: true };
+      } catch (err) {
+        console.warn('API GET failed', path, err);
+        return null;
+      }
+    }
+
+    function flushOfflineQueue() {
+      try {
+        if (!navigator.onLine) return;
+        const queue = db.get(OFFLINE_QUEUE_KEY, []);
+        if (!queue.length) return;
+        db.set(OFFLINE_QUEUE_KEY, []);
+        queue.forEach((item) => apiPost(item.path, item.body).catch(() => {}));
+      } catch (err) {
+        console.warn('Failed to flush offline queue', err);
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', flushOfflineQueue);
+      window.addEventListener('load', flushOfflineQueue);
     }
 
     function NavProvider({ children }) {
@@ -207,6 +361,22 @@
       const [feedbacks, setFeedbacks] = useState(() => db.get(StorageKeys.DATA, initialState)?.feedbacks || initialState.feedbacks);
       const [marks, setMarks] = useState(() => db.get(StorageKeys.DATA, initialState)?.marks || initialState.marks);
       const [attendances, setAttendances] = useState(() => db.get(StorageKeys.DATA, initialState)?.attendances || initialState.attendances);
+      const [backendStatus, setBackendStatus] = useState(() => backendReady ? 'live' : (navigator.onLine ? 'local' : 'offline'));
+
+      useEffect(() => {
+        const syncStatus = () => setBackendStatus(backendReady && firestoreRef ? 'live' : (navigator.onLine ? 'local' : 'offline'));
+        syncStatus();
+        window.addEventListener('online', syncStatus);
+        window.addEventListener('offline', syncStatus);
+        return () => {
+          window.removeEventListener('online', syncStatus);
+          window.removeEventListener('offline', syncStatus);
+        };
+      }, []);
+
+      useEffect(() => {
+        if (navigator.onLine) flushOfflineQueue();
+      }, []);
 
       useEffect(() => {
         if (!backendReady || !firestoreRef) return;
@@ -409,7 +579,7 @@
         return payload;
       };
 
-      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, createNote, createHomework, submitHomework, saveAttendance, addDoubt, addFeedback, addMark, updateUser };
+      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, createNote, createHomework, submitHomework, saveAttendance, addDoubt, addFeedback, addMark, updateUser };
       return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
     }
 
@@ -574,12 +744,12 @@
 
     function BottomNavBar({ items, active, onChange }) {
       return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-slate-900/98 px-1.5 pb-[calc(env(safe-area-inset-bottom)+6px)] pt-1.5 shadow-2xl backdrop-blur">
-          <div className="mx-auto flex max-w-7xl gap-1 px-1 overflow-x-auto no-scrollbar">
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-slate-900/98 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-2xl backdrop-blur">
+          <div className="mx-auto flex max-w-7xl flex-wrap gap-2 px-2 pb-2">
             {items.map((item) => (
-              <button key={item.id} onClick={() => onChange(item.id)} className={`flex flex-1 min-w-[58px] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] leading-tight font-medium transition-all card-hover ${active === item.id ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}>
-                <span className="text-[15px]">{item.icon}</span>
-                <span className="whitespace-nowrap">{item.label}</span>
+              <button key={item.id} onClick={() => onChange(item.id)} className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium transition-all card-hover ${active === item.id ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}>
+                <span className="text-base">{item.icon}</span>
+                <span>{item.label}</span>
               </button>
             ))}
           </div>
@@ -591,20 +761,24 @@
       const { profile, logout } = useAuth();
       const { navigateTo } = useNav();
       const { theme, toggleTheme } = useTheme();
+      const { backendStatus } = useAppData();
       return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
-          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-3 py-4 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
-            <div className="glass rounded-2xl border border-white/10 p-3 shadow-2xl sm:rounded-3xl sm:p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-                <div className="min-w-0">
-                  <div className="text-[11px] uppercase tracking-[0.3em] gradient-text font-black">Vedo</div>
-                  <h1 className="text-lg font-semibold leading-tight sm:text-2xl">{title}</h1>
-                  <p className="text-xs text-slate-400 sm:text-sm">{subtitle}</p>
+        <div className="min-h-screen bg-slate-950 text-slate-100 pb-24">
+          <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="glass rounded-3xl border border-white/10 p-4 shadow-2xl">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm uppercase tracking-[0.3em] gradient-text font-black">Vedo</div>
+                  <h1 className="text-2xl font-semibold">{title}</h1>
+                  <p className="text-sm text-slate-400">{subtitle}</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <button onClick={toggleTheme} className="rounded-full border border-slate-200 bg-white/80 px-2.5 py-1.5 text-xs text-slate-700 sm:px-3 sm:py-2 sm:text-sm">{theme === 'light' ? '🌙' : '☀️'}</button>
-                  <button onClick={() => navigateTo('/discover')} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm">Home</button>
-                  {profile ? <button onClick={logout} className="rounded-full bg-rose-500 px-2.5 py-1.5 text-xs font-medium text-white sm:px-3 sm:py-2 sm:text-sm">Logout</button> : <button onClick={() => navigateTo('/discover')} className="rounded-full bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white sm:px-3 sm:py-2 sm:text-sm">Login</button>}
+                <div className="flex items-center gap-2">
+                  <div className={`status-pill ${backendStatus === 'live' ? 'bg-emerald-500/10 text-emerald-200 border-emerald-400/20' : backendStatus === 'offline' ? 'bg-amber-500/10 text-amber-200 border-amber-400/20' : 'bg-slate-500/10 text-slate-200 border-slate-400/20'}`}>
+                    {backendStatus === 'live' ? '● Live sync' : backendStatus === 'offline' ? '● Offline' : '● Local mode'}
+                  </div>
+                  <button onClick={toggleTheme} className="rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-700">{theme === 'light' ? '🌙 Dark' : '☀️ Light'}</button>
+                  <button onClick={() => navigateTo('/discover')} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm">Home</button>
+                  {profile ? <button onClick={logout} className="rounded-full bg-rose-500 px-3 py-2 text-sm font-medium text-white">Logout</button> : <button onClick={() => navigateTo('/discover')} className="rounded-full bg-indigo-600 px-3 py-2 text-sm font-medium text-white">Login</button>}
                   {right}
                 </div>
               </div>
@@ -648,68 +822,83 @@
 
       return (
         <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.25),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.18),_transparent_30%)] bg-slate-950 text-slate-100">
-          <div className="mx-auto flex max-w-7xl flex-col gap-6 px-3 py-6 sm:gap-8 sm:px-6 sm:py-10 lg:px-8">
-            <div className="glass rounded-[22px] border border-white/10 p-4 shadow-2xl sm:rounded-[32px] sm:p-8">
-              <div className="grid gap-6 sm:gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-                <div className="space-y-4 sm:space-y-5">
-                  <div className="inline-flex rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs text-indigo-200 sm:text-sm">Live coaching, classes, fees and communication in one place</div>
-                  <h1 className="text-2xl font-semibold leading-tight sm:text-4xl lg:text-5xl">Create institutes, batches, classes and student groups with code-based joining.</h1>
-                  <p className="max-w-2xl text-sm text-slate-400 sm:text-lg">Owners can onboard institutes; teachers can create classes and manage lecture groups; students join with special codes and track notes, fees, homework and marks.</p>
-                  <div className="flex flex-wrap gap-2 sm:gap-3">
-                    <button onClick={() => navigateTo('/discover')} className="rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white sm:px-5 sm:py-3">Start free</button>
-                    <button onClick={() => navigateTo('/student')} className="rounded-full border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white sm:px-5 sm:py-3">Explore dashboard</button>
+          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
+            <div className="glass rounded-[32px] border border-white/10 p-8 shadow-2xl">
+              <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+                <div className="space-y-5">
+                  <div className="inline-flex rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-sm text-indigo-200">Live coaching, classes, fees and communication in one place</div>
+                  <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">Create institutes, batches, classes and student groups with code-based joining.</h1>
+                  <p className="max-w-2xl text-lg text-slate-400">Owners can onboard institutes; teachers can create classes and manage lecture groups; students join with special codes and track notes, fees, homework and marks.</p>
+                  <div className="flex flex-wrap gap-3">
+                    <button onClick={() => navigateTo('/discover')} className="rounded-full bg-indigo-600 px-5 py-3 font-medium text-white">Start free</button>
+                    <button onClick={() => navigateTo('/student')} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 font-medium text-white">Explore dashboard</button>
                   </div>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 sm:rounded-3xl sm:p-6">
+                <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
                   <AuthScreen compact />
                 </div>
               </div>
             </div>
 
-            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="metric-card rounded-3xl p-4">
+                <div className="text-sm text-slate-400">Institutes</div>
+                <div className="mt-2 text-2xl font-semibold">{institutes.length}</div>
+              </div>
+              <div className="metric-card rounded-3xl p-4">
+                <div className="text-sm text-slate-400">Batches</div>
+                <div className="mt-2 text-2xl font-semibold">{classes.length}</div>
+              </div>
+              <div className="metric-card rounded-3xl p-4">
+                <div className="text-sm text-slate-400">Teachers</div>
+                <div className="mt-2 text-2xl font-semibold">{users.filter((item) => item.role === 'teacher').length}</div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {publicInstitutes.map((item) => {
                 const batchCount = classes.filter((classItem) => classItem.instituteId === item.id).length;
                 return (
-                  <div key={item.id} className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
+                  <div key={item.id} className="glass rounded-3xl border border-white/10 p-5 card-hover">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="text-base font-semibold sm:text-lg">{item.name}</h3>
-                        <p className="mt-1 text-xs text-slate-400 sm:text-sm">{item.city}</p>
+                      <div>
+                        <h3 className="text-lg font-semibold">{item.name}</h3>
+                        <p className="mt-1 text-sm text-slate-400">{item.city}</p>
                       </div>
-                      <span className="shrink-0 rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">{batchCount} batches</span>
+                      <span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">{batchCount} batches</span>
                     </div>
-                    <p className="mt-3 text-xs text-slate-400 sm:text-sm">{item.description}</p>
-                    <div className="mt-4 flex items-center justify-between gap-2">
-                      <span className="text-[10px] uppercase tracking-[0.25em] text-slate-500 sm:text-xs">Code {item.code}</span>
-                      <button onClick={() => handleInstituteAction(item)} className="rounded-full bg-indigo-600 px-3 py-2 text-xs font-medium text-white sm:text-sm">View details</button>
+                    <p className="mt-3 text-sm text-slate-400">{item.description}</p>
+                    <div className="mt-4 flex items-center justify-between">
+                      <span className="text-xs uppercase tracking-[0.25em] text-slate-500">Code {item.code}</span>
+                      <button onClick={() => handleInstituteAction(item)} className="rounded-full bg-indigo-600 px-3 py-2 text-sm font-medium text-white">View details</button>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-base font-semibold sm:text-lg">Featured teachers</h3>
-                  <span className="text-xs text-slate-400 sm:text-sm">Login required for full profile</span>
+            <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Featured teachers</h3>
+                  <span className="text-sm text-slate-400">Login required for full profile</span>
                 </div>
                 <div className="mt-4 space-y-3">
                   {publicTeachers.map((teacher) => (
                     <div key={teacher.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="truncate font-medium">{teacher.name}</div>
-                          <div className="truncate text-sm text-slate-400">{teacher.email}</div>
+                        <div>
+                          <div className="font-medium">{teacher.name}</div>
+                          <div className="text-sm text-slate-400">{teacher.email}</div>
                         </div>
-                        <button onClick={() => handleTeacherAction(teacher)} className="shrink-0 rounded-full bg-emerald-600 px-3 py-2 text-xs font-medium text-white sm:text-sm">View profile</button>
+                        <button onClick={() => handleTeacherAction(teacher)} className="rounded-full bg-emerald-600 px-3 py-2 text-sm font-medium text-white">View profile</button>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-                <h3 className="text-base font-semibold sm:text-lg">How it works</h3>
+              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                <h3 className="text-lg font-semibold">How it works</h3>
                 <div className="mt-4 space-y-3">
                   {[
                     ['Owner controls', 'Create institutes, approve student and teacher requests, send notifications and manage batches.'],
@@ -839,7 +1028,7 @@
 
       return (
         <div className={compact ? '' : 'min-h-screen bg-slate-950 px-4 py-10'}>
-          <div className={compact ? 'space-y-3' : 'mx-auto max-w-md rounded-[24px] border border-white/10 bg-slate-900/70 p-4 shadow-2xl animate-fade-in sm:rounded-[32px] sm:p-6'}>
+          <div className={compact ? 'space-y-4' : 'mx-auto max-w-md rounded-[32px] border border-white/10 bg-slate-900/70 p-6 shadow-2xl animate-fade-in'}>
             {!compact && <div className="mb-4 text-center"><span className="text-2xl font-black gradient-text">Vedo</span><p className="text-xs text-slate-400 mt-1">Virtual Education Desk Operator</p></div>}
             <div className="flex rounded-full border border-white/10 bg-white/5 p-1">
               {['login', 'signup'].map((item) => (
@@ -950,14 +1139,14 @@
       return (
         <ScreenShell title="Student dashboard" subtitle="Every student action now lives in the bottom navigation." right={<div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">{profile?.name || 'Student'}</div>}>
           <div className="space-y-5">
-            <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
+            <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold sm:text-xl">Join class or institute</h2>
-                  <p className="text-xs text-slate-400 sm:text-sm">Use the code shared by your owner or teacher.</p>
+                  <h2 className="text-xl font-semibold">Join class or institute</h2>
+                  <p className="text-sm text-slate-400">Use the code shared by your owner or teacher.</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <input value={joinCode} onChange={(event) => setJoinCode(event.target.value)} placeholder="Enter join code" className="min-w-0 flex-1 rounded-full border border-white/10 bg-slate-950/80 px-3 py-2 text-sm" />
+                <div className="flex gap-2">
+                  <input value={joinCode} onChange={(event) => setJoinCode(event.target.value)} placeholder="Enter join code" className="rounded-full border border-white/10 bg-slate-950/80 px-3 py-2 text-sm" />
                   <button onClick={() => joinByCode('class')} className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Join class</button>
                   <button onClick={() => joinByCode('institute')} className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Join institute</button>
                 </div>
@@ -965,36 +1154,36 @@
             </div>
             {activeTab === 'home' && (
               <div className="grid gap-4 xl:grid-cols-2">
-                <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-                  <h3 className="text-base font-semibold sm:text-lg">My institutes</h3>
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">My institutes</h3>
                   <div className="mt-3 space-y-2">{visibleInstitutes.length ? visibleInstitutes.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Code: {item.code}</div></div>) : <div className="text-sm text-slate-400">No institute joined yet.</div>}</div>
                 </div>
-                <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-                  <h3 className="text-base font-semibold sm:text-lg">My batches</h3>
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">My batches</h3>
                   <div className="mt-3 space-y-2">{visibleClasses.length ? visibleClasses.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Fee: {item.fee} • Code: {item.code}</div></div>) : <div className="text-sm text-slate-400">No batch joined yet.</div>}</div>
                 </div>
-                <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-                  <h3 className="text-base font-semibold sm:text-lg">Announcements & schedule</h3>
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Announcements & schedule</h3>
                   <div className="mt-3 space-y-2">{visibleAnnouncements.length ? visibleAnnouncements.slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div><div className="mt-1 text-xs text-slate-400">{item.instituteId ? getInstituteName(item.instituteId) : item.classId ? getClassName(item.classId) : 'General announcement'}{item.classId ? ` • ${getClassName(item.classId)}` : ''}</div></div>) : <div className="text-sm text-slate-400">No updates yet.</div>}</div>
                 </div>
-                <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-                  <h3 className="text-base font-semibold sm:text-lg">Homework</h3>
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Homework</h3>
                   <div className="mt-3 space-y-2">{homeworks.length ? homeworks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Due: {item.dueDate}</div><button onClick={() => submitSelectedHomework(item.id)} className="mt-2 rounded-full bg-emerald-600 px-3 py-2 text-xs">Mark submitted</button></div>) : <div className="text-sm text-slate-400">No homework yet.</div>}</div>
                 </div>
               </div>
             )}
-            {activeTab === 'requests' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Your join request activity</h3><div className="mt-3 space-y-4">{pendingRequests.length ? <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4"><div className="font-medium">Pending requests</div><div className="mt-2 space-y-3">{pendingRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4"><div className="font-medium">Requested to join {item.targetName}</div><div className="text-sm text-slate-400">Type: {item.targetType} • Status: {item.status}</div><div className="mt-2 text-xs text-slate-400">{contactHintFor(item)}</div></div>)}</div></div> : null}
+            {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Your join request activity</h3><div className="mt-3 space-y-4">{pendingRequests.length ? <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4"><div className="font-medium">Pending requests</div><div className="mt-2 space-y-3">{pendingRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4"><div className="font-medium">Requested to join {item.targetName}</div><div className="text-sm text-slate-400">Type: {item.targetType} • Status: {item.status}</div><div className="mt-2 text-xs text-slate-400">{contactHintFor(item)}</div></div>)}</div></div> : null}
               {requestHistory.length ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"><div className="font-medium">Request history</div><div className="mt-2 space-y-3">{requestHistory.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4"><div className="font-medium">{item.targetName} — {item.targetType}</div><div className="mt-1 text-sm text-slate-400">Status: {item.status} • Requested at {item.createdAt?.slice(0, 10) || 'unknown'}</div></div>)}</div></div> : null}
               {!pendingRequests.length && !requestHistory.length ? <div className="text-sm text-slate-400">No request activity yet. Use a join code to request batch or institute access.</div> : null}</div></div>}
-            {activeTab === 'lectures' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Live lectures & recordings</h3><div className="mt-3 space-y-2">{visibleAnnouncements.length ? visibleAnnouncements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div><div className="mt-1 text-xs text-slate-400">{item.instituteId ? getInstituteName(item.instituteId) : item.classId ? getClassName(item.classId) : 'General announcement'}{item.classId ? ` • ${getClassName(item.classId)}` : ''}</div></div>) : <div className="text-sm text-slate-400">No lecture updates yet.</div>}</div></div>}
-            {activeTab === 'notes' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Shared notes</h3><div className="mt-3 space-y-2">{notes.length ? notes.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.content}</div></div>) : <div className="text-sm text-slate-400">No notes shared yet.</div>}</div></div>}
-            {activeTab === 'doubts' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Ask your doubt</h3><form onSubmit={saveDoubt} className="mt-3 space-y-3"><textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Write your doubt here" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send to teacher</button></form><div className="mt-4 space-y-2">{doubts.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.question}</div><div className="text-sm text-slate-400">Status: {item.status}</div></div>)}</div></div>}
-            {activeTab === 'fees' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Fee status</h3><div className="mt-3 space-y-2">{studentFees.length ? studentFees.map((item) => {
+            {activeTab === 'lectures' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Live lectures & recordings</h3><div className="mt-3 space-y-2">{visibleAnnouncements.length ? visibleAnnouncements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div><div className="mt-1 text-xs text-slate-400">{item.instituteId ? getInstituteName(item.instituteId) : item.classId ? getClassName(item.classId) : 'General announcement'}{item.classId ? ` • ${getClassName(item.classId)}` : ''}</div></div>) : <div className="text-sm text-slate-400">No lecture updates yet.</div>}</div></div>}
+            {activeTab === 'notes' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Shared notes</h3><div className="mt-3 space-y-2">{notes.length ? notes.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.content}</div></div>) : <div className="text-sm text-slate-400">No notes shared yet.</div>}</div></div>}
+            {activeTab === 'doubts' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Ask your doubt</h3><form onSubmit={saveDoubt} className="mt-3 space-y-3"><textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Write your doubt here" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send to teacher</button></form><div className="mt-4 space-y-2">{doubts.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.question}</div><div className="text-sm text-slate-400">Status: {item.status}</div></div>)}</div></div>}
+            {activeTab === 'fees' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Fee status</h3><div className="mt-3 space-y-2">{studentFees.length ? studentFees.map((item) => {
                 const cls = classes.find((c) => c.id === item.classId);
                 const inst = cls ? institutes.find((instItem) => instItem.id === cls.instituteId) : null;
                 return <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{inst?.name || 'Institute'} • {cls?.name || 'Class'}</div><div className="mt-1 text-sm text-slate-400">₹{item.amount} • Due: {item.dueDate} • Status: {item.status}</div>{item.status === 'pending' ? <button onClick={() => markFeePaid(item.id)} className="mt-3 rounded-full bg-emerald-600 px-3 py-2 text-xs">Mark as paid</button> : null}</div>;
               }) : <div className="text-sm text-slate-400">Fee records will appear here.</div>}</div></div>}
-            {activeTab === 'profile' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Profile</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4"><div className="font-semibold">{profile?.name}</div><div className="text-sm text-slate-400">ID: {profile?.id}</div><div className="mt-2 text-sm text-slate-400">Joined classes: {visibleClasses.length}</div></div><div className="mt-4 grid gap-2 md:grid-cols-2">{marks.filter((item) => item.studentId === profile?.id).slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Score: {item.score}/{item.maxScore}</div></div>)}</div></div>}
+            {activeTab === 'profile' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Profile</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4"><div className="font-semibold">{profile?.name}</div><div className="text-sm text-slate-400">ID: {profile?.id}</div><div className="mt-2 text-sm text-slate-400">Joined classes: {visibleClasses.length}</div></div><div className="mt-4 grid gap-2 md:grid-cols-2">{marks.filter((item) => item.studentId === profile?.id).slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Score: {item.score}/{item.maxScore}</div></div>)}</div></div>}
             <BottomNavBar items={tabs} active={activeTab} onChange={setActiveTab} />
           </div>
         </ScreenShell>
@@ -1003,7 +1192,7 @@
 
     function TeacherDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, joinRequests, homeworks, notes, doubts, feedbacks, attendances, createClass, createHomework, createNote, createJoinRequest, addFeedback, addDoubt, approveRequest, rejectRequest, saveAttendance } = useAppData();
+      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, createClass, createHomework, createNote, createJoinRequest, addFeedback, addDoubt, approveRequest, rejectRequest, saveAttendance } = useAppData();
       const [activeTab, setActiveTab] = useState('home');
       const [joinCode, setJoinCode] = useState('');
       const [joinTargetType, setJoinTargetType] = useState('institute');
@@ -1023,11 +1212,22 @@
       const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
       const [attendancePresent, setAttendancePresent] = useState(true);
       const [doubtText, setDoubtText] = useState('');
+      const [expandedClassId, setExpandedClassId] = useState('');
       const { addToast } = useToast();
       const approvedMemberships = joinRequests.filter((item) => item.requesterId === profile?.id && item.status === 'approved');
       const visibleInstitutes = institutes.filter((item) => item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.id) || item.id === profile?.instituteIds?.[0]);
-      const visibleClasses = classes.filter((item) => item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'class' && req.targetId === item.id) || item.id === profile?.classIds?.[0]);
-      const visibleStudents = visibleClasses.flatMap((item) => item.studentIds?.map((id) => ({ id, classId: item.id, className: item.name })) || []);
+      const visibleClasses = classes.filter((item) => {
+        const isAssignedTeacher = item.teacherId === profile?.id || item.teacherIds?.includes(profile?.id) || item.ownerId === profile?.id;
+        const institute = institutes.find((inst) => inst.id === item.instituteId);
+        const instituteTeacherMatch = !!institute && (institute.teacherIds?.includes(profile?.id) || institute.ownerId === profile?.id);
+        const hasApprovedClassAccess = approvedMemberships.some((req) => req.targetType === 'class' && req.targetId === item.id);
+        const hasApprovedInstituteAccess = approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.instituteId);
+        const hasProfileClassAccess = Array.isArray(profile?.classIds) && profile.classIds.includes(item.id);
+        const hasProfileInstituteAccess = Array.isArray(profile?.instituteIds) && profile.instituteIds.includes(item.instituteId);
+        return isAssignedTeacher || instituteTeacherMatch || hasApprovedClassAccess || hasApprovedInstituteAccess || hasProfileClassAccess || hasProfileInstituteAccess;
+      });
+      const knownStudentNameRecords = [...(fees || []), ...(marks || []), ...(feedbacks || []), ...(attendances || []), ...((homeworks || []).flatMap((hw) => hw.submissions || []))];
+      const visibleStudents = visibleClasses.flatMap((item) => getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords));
       const teacherRequests = joinRequests.filter((request) => {
         if (request.status !== 'pending') return false;
         if (request.targetType === 'class') {
@@ -1042,10 +1242,12 @@
       });
       const pendingRequestCount = teacherRequests.length;
       const targetClass = visibleClasses.find((item) => item.id === selectedClassId) || visibleClasses[0] || null;
-      const attendanceOptions = visibleStudents.filter((item) => item.classId === targetClass?.id);
+      const attendanceOptions = targetClass ? getStudentRosterForClass(targetClass, users, joinRequests, knownStudentNameRecords) : [];
       const attendanceRecords = targetClass ? attendances.filter((item) => item.classId === targetClass.id) : [];
       useEffect(() => {
-        if (!selectedClassId && visibleClasses[0]) setSelectedClassId(visibleClasses[0].id);
+        if (visibleClasses.length && (!selectedClassId || !visibleClasses.some((item) => item.id === selectedClassId))) {
+          setSelectedClassId(visibleClasses[0].id);
+        }
       }, [selectedClassId, visibleClasses]);
       const joinByCode = async () => {
         if (!joinCode.trim()) return addToast('Please enter a join code', 'error');
@@ -1097,7 +1299,8 @@
         if (!feedbackText.trim()) return;
         const studentId = selectedFeedbackStudent || visibleStudents[0]?.id;
         if (!studentId) return addToast('No student is linked to this teacher yet.', 'error');
-        await addFeedback({ text: feedbackText, studentId, teacherId: profile.id, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null });
+        const student = visibleStudents.find((item) => item.id === studentId) || null;
+        await addFeedback({ text: feedbackText, studentId, studentName: getStudentDisplayName(student), teacherId: profile.id, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null });
         setFeedbackText('');
         setSelectedFeedbackStudent('');
         addToast('Feedback saved', 'success');
@@ -1107,7 +1310,8 @@
         if (!targetClass) return addToast('Select a class before recording attendance', 'error');
         const studentId = selectedAttendanceStudent || attendanceOptions[0]?.id;
         if (!studentId) return addToast('Select a student to record attendance', 'error');
-        await saveAttendance({ studentId, classId: targetClass.id, date: attendanceDate, present: attendancePresent });
+        const student = attendanceOptions.find((item) => item.id === studentId) || null;
+        await saveAttendance({ studentId, studentName: getStudentDisplayName(student), classId: targetClass.id, date: attendanceDate, present: attendancePresent });
         addToast('Attendance recorded', 'success');
       };
       const sendDoubt = async (event) => {
@@ -1130,50 +1334,81 @@
       return (
         <ScreenShell title="Teacher dashboard" subtitle="All teacher tools are available from the bottom bar." right={<div className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-200">{profile?.name || 'Teacher'}</div>}>
           <div className="space-y-5">
-            <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
+            <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold sm:text-xl">My teaching groups</h2>
-                  <p className="text-xs text-slate-400 sm:text-sm">Manage your classes, homework and student requests in one workflow.</p>
+                  <h2 className="text-xl font-semibold">My teaching groups</h2>
+                  <p className="text-sm text-slate-400">Manage your classes, homework and student requests in one workflow.</p>
                 </div>
                 {pendingRequestCount ? <div className="rounded-2xl bg-indigo-600/10 px-3 py-2 text-sm text-indigo-100">{pendingRequestCount} pending approval{pendingRequestCount > 1 ? 's' : ''}</div> : null}
               </div>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">{visibleClasses.length ? visibleClasses.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Code: {item.code} • Students: {item.studentIds?.length || 0}</div></div>) : <div className="text-sm text-slate-400">Create a class to start teaching.</div>}</div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">{visibleClasses.length ? visibleClasses.map((item) => {
+                const roster = getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords);
+                const teacherRoster = getTeacherRosterForClass(item, users, joinRequests);
+                const isOpen = expandedClassId === item.id;
+                return (
+                  <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
+                    <button type="button" onClick={() => setExpandedClassId(isOpen ? '' : item.id)} className="w-full text-left">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-medium">{item.name}</div>
+                        <span className="text-xs text-indigo-300">{isOpen ? 'Hide roster ▲' : 'View roster ▼'}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-2 text-sm text-slate-400">
+                        <span>Code: {item.code}</span>
+                        <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">👨‍🎓 {roster.length} student{roster.length === 1 ? '' : 's'}</span>
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">👩‍🏫 {teacherRoster.length} teacher{teacherRoster.length === 1 ? '' : 's'}</span>
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Students ({roster.length})</div>
+                          <div className="mt-1 space-y-1">{roster.length ? roster.map((student) => <div key={student.id} className="text-sm text-slate-200">• {getStudentDisplayName(student)}</div>) : <div className="text-sm text-slate-400">No students linked yet.</div>}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Teachers ({teacherRoster.length})</div>
+                          <div className="mt-1 space-y-1">{teacherRoster.length ? teacherRoster.map((teacher) => <div key={teacher.id} className="text-sm text-slate-200">• {teacher.name}{teacher.id === profile?.id ? ' (you)' : ''}</div>) : <div className="text-sm text-slate-400">No teachers linked yet.</div>}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }) : <div className="text-sm text-slate-400">Create a class to start teaching.</div>}</div>
             </div>
             {activeTab === 'home' && (
               <div className="grid gap-4 xl:grid-cols-2">
-                <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-                  <h3 className="text-base font-semibold sm:text-lg">Join institute / class</h3>
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Join institute / class</h3>
                   <div className="mt-3 space-y-3">
                     <div className="flex flex-wrap gap-2">
                       <button onClick={() => setJoinTargetType('institute')} className={`rounded-full px-3 py-2 text-sm ${joinTargetType === 'institute' ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-300'}`}>Institute</button>
                       <button onClick={() => setJoinTargetType('class')} className={`rounded-full px-3 py-2 text-sm ${joinTargetType === 'class' ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-300'}`}>Class</button>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      <input value={joinCode} onChange={(event) => setJoinCode(event.target.value)} placeholder="Enter join code" className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                      <input value={joinCode} onChange={(event) => setJoinCode(event.target.value)} placeholder="Enter join code" className="flex-1 rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
                       <button onClick={joinByCode} className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold">Request join</button>
                     </div>
                     <p className="text-sm text-slate-400">Teachers request access to the institute or class before they can start teaching, sharing notes, taking attendance, assigning homework, and providing feedback.</p>
                   </div>
                 </div>
-                <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-                  <h3 className="text-base font-semibold sm:text-lg">Students in your groups</h3>
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Students in your groups</h3>
                   <div className="mt-3 space-y-2">
                     {visibleStudents.length ? visibleStudents.map((item) => (
                       <div key={`${item.id}-${item.classId}`} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                        <div className="font-medium">{item.id}</div>
-                        <div className="text-sm text-slate-400">{item.className}</div>
+                        <div className="font-medium">{getStudentDisplayName(item)}</div>
+                        <div className="mt-1 text-sm text-slate-400">{item.className}</div>
                       </div>
                     )) : <div className="text-sm text-slate-400">Students will appear once they join your class.</div>}
                   </div>
                 </div>
               </div>
             )}
-            {activeTab === 'requests' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Student join approvals</h3><div className="mt-3 space-y-3">{teacherRequests.length ? teacherRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 card-hover"><div className="flex items-start justify-between gap-4"><div><div className="font-medium">{item.requesterName} wants to join {item.targetName}</div><div className="text-sm text-slate-400">Type: {item.targetType} • Role: {item.role}</div></div><div className="space-x-2"><button onClick={() => approveAsTeacher(item.id)} className="rounded-full bg-emerald-600 px-3 py-2 text-xs">Approve</button><button onClick={() => rejectAsTeacher(item.id)} className="rounded-full bg-rose-500 px-3 py-2 text-xs">Reject</button></div></div></div>) : <div className="text-sm text-slate-400">No pending student join approvals right now.</div>}</div></div>}
-            {activeTab === 'classes' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Class management</h3><div className="mt-3 space-y-2">{visibleClasses.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Fee: {item.fee} • Schedule: {item.schedule}</div></div>)}</div></div>}
+            {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Student join approvals</h3><div className="mt-3 space-y-3">{teacherRequests.length ? teacherRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 card-hover"><div className="flex items-start justify-between gap-4"><div><div className="font-medium">{item.requesterName} wants to join {item.targetName}</div><div className="text-sm text-slate-400">Type: {item.targetType} • Role: {item.role}</div></div><div className="space-x-2"><button onClick={() => approveAsTeacher(item.id)} className="rounded-full bg-emerald-600 px-3 py-2 text-xs">Approve</button><button onClick={() => rejectAsTeacher(item.id)} className="rounded-full bg-rose-500 px-3 py-2 text-xs">Reject</button></div></div></div>) : <div className="text-sm text-slate-400">No pending student join approvals right now.</div>}</div></div>}
+            {activeTab === 'classes' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Class management</h3><div className="mt-3 space-y-2">{visibleClasses.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Fee: {item.fee} • Schedule: {item.schedule}</div></div>)}</div></div>}
             {activeTab === 'attendance' && (
-              <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-                <h3 className="text-base font-semibold sm:text-lg">Attendance</h3>
+              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                <h3 className="text-lg font-semibold">Attendance</h3>
                 <form onSubmit={saveAttendanceRecord} className="mt-3 space-y-3">
                   <div className="grid gap-3 md:grid-cols-2">
                     <select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
@@ -1182,7 +1417,7 @@
                     </select>
                     <select value={selectedAttendanceStudent} onChange={(event) => setSelectedAttendanceStudent(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
                       <option value="">Select student</option>
-                      {attendanceOptions.map((item) => <option key={`${item.id}-${item.classId}`} value={item.id}>{item.id} — {item.className}</option>)}
+                      {attendanceOptions.map((item) => <option key={`${item.id}-${item.classId}`} value={item.id}>{getStudentDisplayName(item)}</option>)}
                     </select>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -1194,20 +1429,35 @@
                   </div>
                   <button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Save attendance</button>
                 </form>
-                <div className="mt-4 space-y-3">
-                  {attendanceRecords.length ? attendanceRecords.slice(0, 6).map((item) => (
-                    <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                      <div className="font-medium">{item.date} • {item.present ? 'Present' : 'Absent'}</div>
-                      <div className="text-sm text-slate-400">Student: {item.studentId}</div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+                    <div className="font-medium">Students in this batch ({attendanceOptions.length})</div>
+                    <div className="mt-2 space-y-2">
+                      {attendanceOptions.length ? attendanceOptions.map((item) => (
+                        <div key={`${item.id}-${item.classId}`} className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-slate-300">
+                          <div className="font-medium text-slate-100">{getStudentDisplayName(item)}</div>
+                        </div>
+                      )) : <div className="text-sm text-slate-400">No students linked to this batch yet.</div>}
                     </div>
-                  )) : <div className="text-sm text-slate-400">No attendance records yet for this class.</div>}
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+                    <div className="font-medium">Recent attendance</div>
+                    <div className="mt-2 space-y-2">
+                      {attendanceRecords.length ? attendanceRecords.slice(0, 6).map((item) => (
+                        <div key={item.id} className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-slate-300">
+                          <div className="font-medium">{item.date} • {item.present ? 'Present' : 'Absent'}</div>
+                          <div className="text-slate-400">{item.studentName || getStudentDisplayName(visibleStudents.find((student) => student.id === item.studentId))}</div>
+                        </div>
+                      )) : <div className="text-sm text-slate-400">No attendance records yet for this class.</div>}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
-            {activeTab === 'homework' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Assign homework</h3><form onSubmit={createNewHomework} className="mt-3 space-y-3"><input value={homeworkTitle} onChange={(event) => setHomeworkTitle(event.target.value)} placeholder="Homework title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={homeworkDesc} onChange={(event) => setHomeworkDesc(event.target.value)} placeholder="Description" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={homeworkDue} onChange={(event) => setHomeworkDue(event.target.value)} placeholder="Due date" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Assign to class</button></form><div className="mt-4 space-y-2">{homeworks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Due: {item.dueDate}</div></div>)}</div></div>}
-            {activeTab === 'notes' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Share notes</h3><form onSubmit={shareNote} className="mt-3 space-y-3"><input value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} placeholder="Note title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={noteContent} onChange={(event) => setNoteContent(event.target.value)} placeholder="Note content" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Share note</button></form><div className="mt-4 space-y-2">{notes.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.content}</div></div>)}</div></div>}
-            {activeTab === 'doubts' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Doubts & support</h3><form onSubmit={sendDoubt} className="mt-3 space-y-3"><textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Share a student concern" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Post to support</button></form><div className="mt-4 space-y-2">{doubts.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.question}</div><div className="text-sm text-slate-400">Status: {item.status}</div></div>)}</div></div>}
-            {activeTab === 'feedback' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Feedback</h3><form onSubmit={giveFeedback} className="mt-3 space-y-2"><textarea value={feedbackText} onChange={(event) => setFeedbackText(event.target.value)} placeholder="Add feedback for a student" className="min-h-20 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Save feedback</button></form><div className="mt-4 space-y-2">{feedbacks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.text}</div></div>)}</div></div>}
+            {activeTab === 'homework' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Assign homework</h3><form onSubmit={createNewHomework} className="mt-3 space-y-3"><input value={homeworkTitle} onChange={(event) => setHomeworkTitle(event.target.value)} placeholder="Homework title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={homeworkDesc} onChange={(event) => setHomeworkDesc(event.target.value)} placeholder="Description" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={homeworkDue} onChange={(event) => setHomeworkDue(event.target.value)} placeholder="Due date" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Assign to class</button></form><div className="mt-4 grid gap-3 md:grid-cols-2"><div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3"><div className="font-medium">Batch students</div><div className="mt-2 space-y-2">{attendanceOptions.length ? attendanceOptions.map((item) => <div key={`${item.id}-${item.classId}`} className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-slate-300"><div className="font-medium text-slate-100">{getStudentDisplayName(item)}</div></div>) : <div className="text-sm text-slate-400">No students linked to this batch yet.</div>}</div></div><div className="space-y-2">{homeworks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Due: {item.dueDate}</div></div>)}</div></div></div>}
+            {activeTab === 'notes' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Share notes</h3><form onSubmit={shareNote} className="mt-3 space-y-3"><input value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} placeholder="Note title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={noteContent} onChange={(event) => setNoteContent(event.target.value)} placeholder="Note content" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Share note</button></form><div className="mt-4 space-y-2">{notes.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.content}</div></div>)}</div></div>}
+            {activeTab === 'doubts' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Doubts & support</h3><form onSubmit={sendDoubt} className="mt-3 space-y-3"><textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Share a student concern" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Post to support</button></form><div className="mt-4 space-y-2">{doubts.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.question}</div><div className="text-sm text-slate-400">Status: {item.status}</div></div>)}</div></div>}
+            {activeTab === 'feedback' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Feedback</h3><form onSubmit={giveFeedback} className="mt-3 space-y-2"><textarea value={feedbackText} onChange={(event) => setFeedbackText(event.target.value)} placeholder="Add feedback for a student" className="min-h-20 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Save feedback</button></form><div className="mt-4 space-y-2">{feedbacks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.text}</div></div>)}</div></div>}
             <BottomNavBar items={tabs} active={activeTab} onChange={setActiveTab} />
           </div>
         </ScreenShell>
@@ -1216,7 +1466,7 @@
 
     function OwnerDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, users, joinRequests, announcements, fees, schedules, createInstitute, createClass, createAnnouncement, createFee, approveRequest, rejectRequest } = useAppData();
+      const { institutes, classes, users, joinRequests, announcements, fees, schedules, feedbacks, marks, attendances, homeworks, createInstitute, createClass, createAnnouncement, createFee, approveRequest, rejectRequest } = useAppData();
       const [activeTab, setActiveTab] = useState('overview');
       const [instituteName, setInstituteName] = useState('');
       const [city, setCity] = useState('Pune');
@@ -1230,11 +1480,15 @@
       const [feeDueDate, setFeeDueDate] = useState(new Date().toISOString().slice(0, 10));
       const [announcementTitle, setAnnouncementTitle] = useState('');
       const [announcementBody, setAnnouncementBody] = useState('');
+      const [expandedBatchId, setExpandedBatchId] = useState('');
       const { addToast } = useToast();
       const myInstitutes = institutes.filter((item) => item.ownerId === profile?.id);
       const ownerClasses = classes.filter((item) => item.ownerId === profile?.id);
       const selectedClassObj = ownerClasses.find((item) => item.id === selectedClass) || null;
-      const classStudents = users.filter((item) => item.role === 'student' && selectedClassObj?.studentIds?.includes(item.id));
+      const knownStudentNameRecords = [...(fees || []), ...(marks || []), ...(feedbacks || []), ...(attendances || []), ...((homeworks || []).flatMap((hw) => hw.submissions || []))];
+      const classStudents = selectedClassObj ? getStudentRosterForClass(selectedClassObj, users, joinRequests, knownStudentNameRecords) : [];
+      const totalUniqueStudents = new Set(ownerClasses.flatMap((item) => getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords).map((student) => student.id))).size;
+      const totalUniqueTeachers = new Set(ownerClasses.flatMap((item) => getTeacherRosterForClass(item, users, joinRequests).map((teacher) => teacher.id))).size;
       const classInstitute = institutes.find((item) => item.id === selectedClassObj?.instituteId) || null;
       const ownerFees = fees.filter((item) => ownerClasses.some((cls) => cls.id === item.classId));
       const relevantRequests = [...joinRequests].filter((item) => myInstitutes.some((institute) => institute.id === item.targetId) || classes.some((cls) => cls.ownerId === profile?.id && cls.id === item.targetId)).sort((a, b) => Number(b.status === 'pending') - Number(a.status === 'pending'));
@@ -1268,9 +1522,9 @@
         if (!selectedStudent) return addToast('Select a student before sending a fee reminder', 'error');
         if (!fee.trim()) return addToast('Enter a fee amount', 'error');
         if (!feeDueDate) return addToast('Select a due date', 'error');
-        const student = users.find((item) => item.id === selectedStudent);
+        const student = classStudents.find((item) => item.id === selectedStudent) || users.find((item) => item.id === selectedStudent) || null;
         if (!student) return addToast('Selected student not found', 'error');
-        await createFee({ studentId: student.id, studentName: student.name, classId: selectedClass, amount: fee, dueDate: feeDueDate });
+        await createFee({ studentId: student.id, studentName: getStudentDisplayName(student), classId: selectedClass, amount: fee, dueDate: feeDueDate });
         addToast('Fee reminder created', 'success');
         setFee('');
       };
@@ -1293,20 +1547,65 @@
       return (
         <ScreenShell title="Owner dashboard" subtitle="Owner tools are now grouped in the bottom navigation." right={<div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">{profile?.name || 'Owner'}</div>}>
           <div className="space-y-5">
-            <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-              <h2 className="text-lg font-semibold sm:text-xl">Institute overview</h2>
-              <div className="mt-3 grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">{myInstitutes.length ? myInstitutes.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Code: {item.code}</div></div>) : <div className="text-sm text-slate-400">Create an institute first.</div>}<div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">Pending</div><div className="text-sm text-slate-400">{relevantRequests.filter((item) => item.status === 'pending').length} approvals</div></div></div>
+            <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+              <h2 className="text-xl font-semibold">Institute overview</h2>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-indigo-400/20 bg-indigo-500/10 p-3 card-hover">
+                  <div className="text-2xl font-bold text-indigo-200">{totalUniqueStudents}</div>
+                  <div className="text-sm text-indigo-200/80">👨‍🎓 Total students</div>
+                </div>
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-3 card-hover">
+                  <div className="text-2xl font-bold text-emerald-200">{totalUniqueTeachers}</div>
+                  <div className="text-sm text-emerald-200/80">👩‍🏫 Total teachers</div>
+                </div>
+                <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-3 card-hover">
+                  <div className="text-2xl font-bold text-amber-200">{ownerClasses.length}</div>
+                  <div className="text-sm text-amber-200/80">📚 Total batches</div>
+                </div>
+              </div>
+              <div className="mt-3 grid gap-3 md:grid-cols-3">{myInstitutes.length ? myInstitutes.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Code: {item.code}</div></div>) : <div className="text-sm text-slate-400">Create an institute first.</div>}<div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">Pending</div><div className="text-sm text-slate-400">{relevantRequests.filter((item) => item.status === 'pending').length} approvals</div></div></div>
             </div>
-            {activeTab === 'overview' && <div className="grid gap-4 xl:grid-cols-2"><div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Create institute</h3><form onSubmit={addInstitute} className="mt-3 space-y-3"><input value={instituteName} onChange={(event) => setInstituteName(event.target.value)} placeholder="Institute name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Create institute</button></form></div><div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Announcements</h3><div className="mt-3 space-y-2">{announcements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div></div>)}</div></div></div>}
-            {activeTab === 'requests' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Pending approvals</h3><div className="mt-3 space-y-2">{relevantRequests.length ? relevantRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.requesterName} wants to join</div><div className="text-sm text-slate-400">{item.targetName}</div>{item.status === 'pending' ? <div className="mt-2 flex gap-2"><button onClick={() => approveRequest(item.id)} className="rounded-full bg-emerald-600 px-3 py-2 text-xs">Approve</button><button onClick={() => rejectRequest(item.id)} className="rounded-full bg-rose-500 px-3 py-2 text-xs">Reject</button></div> : <div className="mt-2 text-xs font-medium text-emerald-400">{item.status === 'approved' ? 'Approved' : 'Rejected'}</div>}</div>) : <div className="text-sm text-slate-400">No requests yet.</div>}</div></div>}
-            {activeTab === 'batches' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Create batch</h3><form onSubmit={addClass} className="mt-3 space-y-3"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select institute</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Batch name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={scheduleText} onChange={(event) => setScheduleText(event.target.value)} placeholder="Schedule" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Create batch</button></form><div className="mt-4 space-y-2">{classes.filter((item) => item.ownerId === profile?.id).slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Fee: {item.fee} • Code: {item.code}</div></div>)}</div></div>}
-            {activeTab === 'announcements' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Send notification</h3><form onSubmit={sendAnnouncement} className="mt-3 space-y-3"><input value={announcementTitle} onChange={(event) => setAnnouncementTitle(event.target.value)} placeholder="Title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={announcementBody} onChange={(event) => setAnnouncementBody(event.target.value)} placeholder="Message" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><div className="grid gap-3 md:grid-cols-2"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">All institutes</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select value={selectedClass} onChange={(event) => setSelectedClass(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">All batches</option>{ownerClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send notification</button></form></div>}
-            {activeTab === 'fees' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Fee reminders</h3><form onSubmit={addNewFee} className="mt-3 space-y-3"><div className="grid gap-3 md:grid-cols-2"><select value={selectedClass} onChange={(event) => { setSelectedClass(event.target.value); setSelectedStudent(''); }} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select class</option>{ownerClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select value={selectedStudent} onChange={(event) => setSelectedStudent(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select student</option>{classStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select></div><div className="grid gap-3 md:grid-cols-2"><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee amount" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input type="date" value={feeDueDate} onChange={(event) => setFeeDueDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /></div><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Create reminder</button></form><div className="mt-4 space-y-2">{ownerFees.length ? ownerFees.map((item) => {
+            {activeTab === 'overview' && <div className="grid gap-4 xl:grid-cols-2"><div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Create institute</h3><form onSubmit={addInstitute} className="mt-3 space-y-3"><input value={instituteName} onChange={(event) => setInstituteName(event.target.value)} placeholder="Institute name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Create institute</button></form></div><div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Announcements</h3><div className="mt-3 space-y-2">{announcements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div></div>)}</div></div></div>}
+            {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Pending approvals</h3><div className="mt-3 space-y-2">{relevantRequests.length ? relevantRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.requesterName} wants to join</div><div className="text-sm text-slate-400">{item.targetName}</div>{item.status === 'pending' ? <div className="mt-2 flex gap-2"><button onClick={() => approveRequest(item.id)} className="rounded-full bg-emerald-600 px-3 py-2 text-xs">Approve</button><button onClick={() => rejectRequest(item.id)} className="rounded-full bg-rose-500 px-3 py-2 text-xs">Reject</button></div> : <div className="mt-2 text-xs font-medium text-emerald-400">{item.status === 'approved' ? 'Approved' : 'Rejected'}</div>}</div>) : <div className="text-sm text-slate-400">No requests yet.</div>}</div></div>}
+            {activeTab === 'batches' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Create batch</h3><form onSubmit={addClass} className="mt-3 space-y-3"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select institute</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Batch name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={scheduleText} onChange={(event) => setScheduleText(event.target.value)} placeholder="Schedule" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Create batch</button></form><div className="mt-4 space-y-2">{ownerClasses.length ? ownerClasses.map((item) => {
+              const roster = getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords);
+              const teacherRoster = getTeacherRosterForClass(item, users, joinRequests);
+              const isOpen = expandedBatchId === item.id;
+              return (
+                <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
+                  <button type="button" onClick={() => setExpandedBatchId(isOpen ? '' : item.id)} className="w-full text-left">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-medium">{item.name}</div>
+                      <span className="text-xs text-indigo-300">{isOpen ? 'Hide roster ▲' : 'View roster ▼'}</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-2 text-sm text-slate-400">
+                      <span>Fee: {item.fee} • Code: {item.code}</span>
+                      <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">👨‍🎓 {roster.length} student{roster.length === 1 ? '' : 's'}</span>
+                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">👩‍🏫 {teacherRoster.length} teacher{teacherRoster.length === 1 ? '' : 's'}</span>
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Students ({roster.length})</div>
+                        <div className="mt-1 space-y-1">{roster.length ? roster.map((student) => <div key={student.id} className="text-sm text-slate-200">• {getStudentDisplayName(student)}</div>) : <div className="text-sm text-slate-400">No students linked yet.</div>}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Teachers ({teacherRoster.length})</div>
+                        <div className="mt-1 space-y-1">{teacherRoster.length ? teacherRoster.map((teacher) => <div key={teacher.id} className="text-sm text-slate-200">• {teacher.name}</div>) : <div className="text-sm text-slate-400">No teachers linked yet.</div>}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }) : <div className="text-sm text-slate-400">Create a batch to get started.</div>}</div></div>}
+            {activeTab === 'announcements' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Send notification</h3><form onSubmit={sendAnnouncement} className="mt-3 space-y-3"><input value={announcementTitle} onChange={(event) => setAnnouncementTitle(event.target.value)} placeholder="Title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={announcementBody} onChange={(event) => setAnnouncementBody(event.target.value)} placeholder="Message" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><div className="grid gap-3 md:grid-cols-2"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">All institutes</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select value={selectedClass} onChange={(event) => setSelectedClass(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">All batches</option>{ownerClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send notification</button></form></div>}
+            {activeTab === 'fees' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Fee reminders</h3><form onSubmit={addNewFee} className="mt-3 space-y-3"><div className="grid gap-3 md:grid-cols-2"><select value={selectedClass} onChange={(event) => { setSelectedClass(event.target.value); setSelectedStudent(''); }} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select class</option>{ownerClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select value={selectedStudent} onChange={(event) => setSelectedStudent(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select student</option>{classStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select></div><div className="grid gap-3 md:grid-cols-2"><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee amount" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input type="date" value={feeDueDate} onChange={(event) => setFeeDueDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /></div><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Create reminder</button></form><div className="mt-4 space-y-2">{ownerFees.length ? ownerFees.map((item) => {
                 const cls = classes.find((clsItem) => clsItem.id === item.classId);
                 const inst = cls ? institutes.find((instItem) => instItem.id === cls.instituteId) : null;
-                return <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.studentName} • {cls?.name || 'Class'}{inst ? ` • ${inst.name}` : ''}</div><div className="mt-1 text-sm text-slate-400">₹{item.amount} • Due: {item.dueDate} • Status: {item.status}</div>{item.status === 'pending' ? <button onClick={() => sendFeeReminder(item)} className="mt-3 rounded-full bg-indigo-600 px-3 py-2 text-xs">Send reminder</button> : null}</div>;
+                return <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.studentName || 'Student'} • {cls?.name || 'Class'}{inst ? ` • ${inst.name}` : ''}</div><div className="mt-1 text-sm text-slate-400">₹{item.amount} • Due: {item.dueDate} • Status: {item.status}</div>{item.status === 'pending' ? <button onClick={() => sendFeeReminder(item)} className="mt-3 rounded-full bg-indigo-600 px-3 py-2 text-xs">Send reminder</button> : null}</div>;
               }) : <div className="text-sm text-slate-400">No fee reminders yet.</div>}</div></div>}
-            {activeTab === 'settings' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Settings</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-300">Owner controls are now directly available from the bottom bar for institute, batch, alert and fee management.</div></div>}
+            {activeTab === 'settings' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Settings</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-300">Owner controls are now directly available from the bottom bar for institute, batch, alert and fee management.</div></div>}
             <BottomNavBar items={tabs} active={activeTab} onChange={setActiveTab} />
           </div>
         </ScreenShell>
@@ -1328,18 +1627,18 @@
       return (
         <ScreenShell title="Parent dashboard" subtitle="Track your child's learning journey from one place." right={<div className="rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">{profile?.name || 'Parent'}</div>}>
           <div className="space-y-5">
-            <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5">
-              <h2 className="text-lg font-semibold sm:text-xl">Child overview</h2>
+            <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+              <h2 className="text-xl font-semibold">Child overview</h2>
               <div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-3">
                 <div className="font-medium">{child?.name || 'No linked child yet'}</div>
                 <div className="text-sm text-slate-400">{child?.role || 'Pending'}</div>
               </div>
             </div>
-            {activeTab === 'overview' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Recent notices</h3><div className="mt-3 space-y-2">{announcements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div></div>)}</div></div>}
-            {activeTab === 'progress' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Performance</h3><div className="mt-3 space-y-2">{marks.filter((item) => item.studentId === child?.id).slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Score: {item.score}/{item.maxScore}</div></div>)}</div></div>}
-            {activeTab === 'attendance' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Attendance summary</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-300">Attendance updates and class presence are tracked automatically for the linked child.</div></div>}
-            {activeTab === 'fees' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Fees & notices</h3><div className="mt-3 space-y-2">{fees.filter((item) => item.studentId === child?.id).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">₹{item.amount}</div><div className="text-sm text-slate-400">{item.dueDate}</div></div>)}</div></div>}
-            {activeTab === 'contact' && <div className="glass rounded-2xl border border-white/10 p-4 card-hover sm:rounded-3xl sm:p-5"><h3 className="text-base font-semibold sm:text-lg">Contact support</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-300">Use the institute owner and teacher contact routes from inside the main app to reach the team quickly.</div></div>}
+            {activeTab === 'overview' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Recent notices</h3><div className="mt-3 space-y-2">{announcements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div></div>)}</div></div>}
+            {activeTab === 'progress' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Performance</h3><div className="mt-3 space-y-2">{marks.filter((item) => item.studentId === child?.id).slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Score: {item.score}/{item.maxScore}</div></div>)}</div></div>}
+            {activeTab === 'attendance' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Attendance summary</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-300">Attendance updates and class presence are tracked automatically for the linked child.</div></div>}
+            {activeTab === 'fees' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Fees & notices</h3><div className="mt-3 space-y-2">{fees.filter((item) => item.studentId === child?.id).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">₹{item.amount}</div><div className="text-sm text-slate-400">{item.dueDate}</div></div>)}</div></div>}
+            {activeTab === 'contact' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Contact support</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-300">Use the institute owner and teacher contact routes from inside the main app to reach the team quickly.</div></div>}
             <BottomNavBar items={tabs} active={activeTab} onChange={setActiveTab} />
           </div>
         </ScreenShell>
