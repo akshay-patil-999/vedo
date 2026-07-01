@@ -52,6 +52,9 @@
     .status-partial { color: #f59e0b; }
     .status-overdue { color: #ef4444; }
     .btn-google { display:flex; align-items:center; justify-content:center; gap:.5rem; }
+    .status-pill { display:inline-flex; align-items:center; gap:.4rem; border-radius:999px; border:1px solid rgba(255,255,255,0.16); padding:0.4rem 0.7rem; font-size:0.8rem; font-weight:600; }
+    .metric-card { border: 1px solid rgba(255,255,255,0.1); background: rgba(15,23,42,0.55); backdrop-filter: blur(12px); }
+    .empty-state { color: #94a3b8; font-size: 0.95rem; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -63,7 +66,7 @@
     const { createContext, useContext, useEffect, useMemo, useState } = React;
     const { createRoot } = ReactDOM;
 
-    const StorageKeys = { USER: 'vedo_user', DATA: 'vedo_app_data' };
+    const StorageKeys = { USER: 'vedo_user', DATA: 'vedo_app_data', OFFLINE: 'vedo_offline_queue' };
 
     const db = {
       get: (key, fallback) => {
@@ -116,6 +119,66 @@
 
     const roleLabels = { student: 'Student', teacher: 'Teacher', owner: 'Owner', parent: 'Parent' };
 
+    function getStudentRosterForClass(classItem, users = [], joinRequests = [], extraRecords = []) {
+      if (!classItem) return [];
+      const classId = classItem.id;
+      const studentIds = new Set();
+      const addStudent = (studentId) => {
+        if (studentId) studentIds.add(studentId);
+      };
+
+      (classItem.studentIds || []).forEach(addStudent);
+      (users || []).forEach((user) => {
+        if (!user || user.role !== 'student') return;
+        const classIds = Array.isArray(user.classIds) ? user.classIds : [];
+        if (classIds.includes(classId)) addStudent(user.id);
+        if (classItem.instituteId && Array.isArray(user.instituteIds) && user.instituteIds.includes(classItem.instituteId)) addStudent(user.id);
+      });
+      (joinRequests || []).forEach((request) => {
+        if (request?.status === 'approved' && request.targetType === 'class' && request.targetId === classId && request.role === 'student') {
+          addStudent(request.requesterId);
+        }
+      });
+
+      const resolveName = (id) => {
+        const user = (users || []).find((item) => item.id === id) || null;
+        if (user?.name) return user.name;
+        if (user?.email) return user.email;
+        const approvedRequest = (joinRequests || []).find((request) => request.requesterId === id
+          && request.status === 'approved'
+          && request.role === 'student'
+          && ((request.targetType === 'class' && request.targetId === classId)
+            || (request.targetType === 'institute' && classItem.instituteId && request.targetId === classItem.instituteId)));
+        if (approvedRequest?.requesterName) return approvedRequest.requesterName;
+        const knownRecord = (extraRecords || []).find((record) => record?.studentId === id && record?.studentName);
+        if (knownRecord?.studentName) return knownRecord.studentName;
+        return null;
+      };
+
+      return Array.from(studentIds).map((id) => {
+        const user = (users || []).find((item) => item.id === id) || null;
+        const resolvedName = resolveName(id) || 'Unnamed student';
+        return {
+          id,
+          name: resolvedName,
+          email: user?.email || '',
+          role: user?.role || 'student',
+          classId,
+          className: classItem.name,
+          displayName: resolvedName
+        };
+      });
+    }
+
+    function getStudentDisplayName(student) {
+      if (!student) return 'Student';
+      return student.studentName || student.name || student.displayName || student.email || 'Unnamed student';
+    }
+
+    function getStudentIdLabel() {
+      return '';
+    }
+
     const AuthContext = createContext(null);
     const NavContext = createContext(null);
     const ToastContext = createContext(null);
@@ -148,6 +211,62 @@
 
     function stamp() {
       return new Date().toISOString();
+    }
+
+    const API_BASE = (window.__VEDO_BACKEND_BASE__ || '/api').replace(/\/$/, '');
+    const OFFLINE_QUEUE_KEY = StorageKeys.OFFLINE;
+
+    function queueOfflineAction(path, body) {
+      try {
+        const queue = db.get(OFFLINE_QUEUE_KEY, []);
+        queue.push({ path, body, createdAt: stamp() });
+        db.set(OFFLINE_QUEUE_KEY, queue);
+      } catch (err) {
+        console.warn('Failed to queue offline action', err);
+      }
+    }
+
+    async function apiPost(path, body) {
+      const payload = { ...body, source: 'vedo-web', timestamp: Date.now() };
+      try {
+        const res = await fetch(`${API_BASE}/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const contentType = res.headers.get('content-type') || '';
+        return contentType.includes('application/json') ? await res.json() : { ok: true };
+      } catch (err) {
+        queueOfflineAction(path, payload);
+        console.warn('API POST failed; queued locally', path, err);
+        return { queued: true, path };
+      }
+    }
+
+    async function apiGet(path) {
+      try {
+        const res = await fetch(`${API_BASE}/${path}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const contentType = res.headers.get('content-type') || '';
+        return contentType.includes('application/json') ? await res.json() : { ok: true };
+      } catch (err) {
+        console.warn('API GET failed', path, err);
+        return null;
+      }
+    }
+
+    function flushOfflineQueue() {
+      try {
+        if (!navigator.onLine) return;
+        const queue = db.get(OFFLINE_QUEUE_KEY, []);
+        if (!queue.length) return;
+        db.set(OFFLINE_QUEUE_KEY, []);
+        queue.forEach((item) => apiPost(item.path, item.body).catch(() => {}));
+      } catch (err) {
+        console.warn('Failed to flush offline queue', err);
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', flushOfflineQueue);
+      window.addEventListener('load', flushOfflineQueue);
     }
 
     function NavProvider({ children }) {
@@ -202,6 +321,22 @@
       const [feedbacks, setFeedbacks] = useState(() => db.get(StorageKeys.DATA, initialState)?.feedbacks || initialState.feedbacks);
       const [marks, setMarks] = useState(() => db.get(StorageKeys.DATA, initialState)?.marks || initialState.marks);
       const [attendances, setAttendances] = useState(() => db.get(StorageKeys.DATA, initialState)?.attendances || initialState.attendances);
+      const [backendStatus, setBackendStatus] = useState(() => backendReady ? 'live' : (navigator.onLine ? 'local' : 'offline'));
+
+      useEffect(() => {
+        const syncStatus = () => setBackendStatus(backendReady && firestoreRef ? 'live' : (navigator.onLine ? 'local' : 'offline'));
+        syncStatus();
+        window.addEventListener('online', syncStatus);
+        window.addEventListener('offline', syncStatus);
+        return () => {
+          window.removeEventListener('online', syncStatus);
+          window.removeEventListener('offline', syncStatus);
+        };
+      }, []);
+
+      useEffect(() => {
+        if (navigator.onLine) flushOfflineQueue();
+      }, []);
 
       useEffect(() => {
         if (!backendReady || !firestoreRef) return;
@@ -404,7 +539,7 @@
         return payload;
       };
 
-      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, createNote, createHomework, submitHomework, saveAttendance, addDoubt, addFeedback, addMark, updateUser };
+      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, createNote, createHomework, submitHomework, saveAttendance, addDoubt, addFeedback, addMark, updateUser };
       return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
     }
 
@@ -586,6 +721,7 @@
       const { profile, logout } = useAuth();
       const { navigateTo } = useNav();
       const { theme, toggleTheme } = useTheme();
+      const { backendStatus } = useAppData();
       return (
         <div className="min-h-screen bg-slate-950 text-slate-100 pb-24">
           <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -597,6 +733,9 @@
                   <p className="text-sm text-slate-400">{subtitle}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <div className={`status-pill ${backendStatus === 'live' ? 'bg-emerald-500/10 text-emerald-200 border-emerald-400/20' : backendStatus === 'offline' ? 'bg-amber-500/10 text-amber-200 border-amber-400/20' : 'bg-slate-500/10 text-slate-200 border-slate-400/20'}`}>
+                    {backendStatus === 'live' ? '● Live sync' : backendStatus === 'offline' ? '● Offline' : '● Local mode'}
+                  </div>
                   <button onClick={toggleTheme} className="rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-700">{theme === 'light' ? '🌙 Dark' : '☀️ Light'}</button>
                   <button onClick={() => navigateTo('/discover')} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm">Home</button>
                   {profile ? <button onClick={logout} className="rounded-full bg-rose-500 px-3 py-2 text-sm font-medium text-white">Logout</button> : <button onClick={() => navigateTo('/discover')} className="rounded-full bg-indigo-600 px-3 py-2 text-sm font-medium text-white">Login</button>}
@@ -658,6 +797,21 @@
                 <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
                   <AuthScreen compact />
                 </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="metric-card rounded-3xl p-4">
+                <div className="text-sm text-slate-400">Institutes</div>
+                <div className="mt-2 text-2xl font-semibold">{institutes.length}</div>
+              </div>
+              <div className="metric-card rounded-3xl p-4">
+                <div className="text-sm text-slate-400">Batches</div>
+                <div className="mt-2 text-2xl font-semibold">{classes.length}</div>
+              </div>
+              <div className="metric-card rounded-3xl p-4">
+                <div className="text-sm text-slate-400">Teachers</div>
+                <div className="mt-2 text-2xl font-semibold">{users.filter((item) => item.role === 'teacher').length}</div>
               </div>
             </div>
 
@@ -998,7 +1152,7 @@
 
     function TeacherDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, joinRequests, homeworks, notes, doubts, feedbacks, attendances, createClass, createHomework, createNote, createJoinRequest, addFeedback, addDoubt, approveRequest, rejectRequest, saveAttendance } = useAppData();
+      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, createClass, createHomework, createNote, createJoinRequest, addFeedback, addDoubt, approveRequest, rejectRequest, saveAttendance } = useAppData();
       const [activeTab, setActiveTab] = useState('home');
       const [joinCode, setJoinCode] = useState('');
       const [joinTargetType, setJoinTargetType] = useState('institute');
@@ -1021,8 +1175,18 @@
       const { addToast } = useToast();
       const approvedMemberships = joinRequests.filter((item) => item.requesterId === profile?.id && item.status === 'approved');
       const visibleInstitutes = institutes.filter((item) => item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.id) || item.id === profile?.instituteIds?.[0]);
-      const visibleClasses = classes.filter((item) => item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'class' && req.targetId === item.id) || item.id === profile?.classIds?.[0]);
-      const visibleStudents = visibleClasses.flatMap((item) => item.studentIds?.map((id) => ({ id, classId: item.id, className: item.name })) || []);
+      const visibleClasses = classes.filter((item) => {
+        const isAssignedTeacher = item.teacherId === profile?.id || item.teacherIds?.includes(profile?.id) || item.ownerId === profile?.id;
+        const institute = institutes.find((inst) => inst.id === item.instituteId);
+        const instituteTeacherMatch = !!institute && (institute.teacherIds?.includes(profile?.id) || institute.ownerId === profile?.id);
+        const hasApprovedClassAccess = approvedMemberships.some((req) => req.targetType === 'class' && req.targetId === item.id);
+        const hasApprovedInstituteAccess = approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.instituteId);
+        const hasProfileClassAccess = Array.isArray(profile?.classIds) && profile.classIds.includes(item.id);
+        const hasProfileInstituteAccess = Array.isArray(profile?.instituteIds) && profile.instituteIds.includes(item.instituteId);
+        return isAssignedTeacher || instituteTeacherMatch || hasApprovedClassAccess || hasApprovedInstituteAccess || hasProfileClassAccess || hasProfileInstituteAccess;
+      });
+      const knownStudentNameRecords = [...(fees || []), ...(marks || []), ...(feedbacks || []), ...(attendances || []), ...((homeworks || []).flatMap((hw) => hw.submissions || []))];
+      const visibleStudents = visibleClasses.flatMap((item) => getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords));
       const teacherRequests = joinRequests.filter((request) => {
         if (request.status !== 'pending') return false;
         if (request.targetType === 'class') {
@@ -1037,10 +1201,12 @@
       });
       const pendingRequestCount = teacherRequests.length;
       const targetClass = visibleClasses.find((item) => item.id === selectedClassId) || visibleClasses[0] || null;
-      const attendanceOptions = visibleStudents.filter((item) => item.classId === targetClass?.id);
+      const attendanceOptions = targetClass ? getStudentRosterForClass(targetClass, users, joinRequests, knownStudentNameRecords) : [];
       const attendanceRecords = targetClass ? attendances.filter((item) => item.classId === targetClass.id) : [];
       useEffect(() => {
-        if (!selectedClassId && visibleClasses[0]) setSelectedClassId(visibleClasses[0].id);
+        if (visibleClasses.length && (!selectedClassId || !visibleClasses.some((item) => item.id === selectedClassId))) {
+          setSelectedClassId(visibleClasses[0].id);
+        }
       }, [selectedClassId, visibleClasses]);
       const joinByCode = async () => {
         if (!joinCode.trim()) return addToast('Please enter a join code', 'error');
@@ -1092,7 +1258,8 @@
         if (!feedbackText.trim()) return;
         const studentId = selectedFeedbackStudent || visibleStudents[0]?.id;
         if (!studentId) return addToast('No student is linked to this teacher yet.', 'error');
-        await addFeedback({ text: feedbackText, studentId, teacherId: profile.id, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null });
+        const student = visibleStudents.find((item) => item.id === studentId) || null;
+        await addFeedback({ text: feedbackText, studentId, studentName: getStudentDisplayName(student), teacherId: profile.id, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null });
         setFeedbackText('');
         setSelectedFeedbackStudent('');
         addToast('Feedback saved', 'success');
@@ -1102,7 +1269,8 @@
         if (!targetClass) return addToast('Select a class before recording attendance', 'error');
         const studentId = selectedAttendanceStudent || attendanceOptions[0]?.id;
         if (!studentId) return addToast('Select a student to record attendance', 'error');
-        await saveAttendance({ studentId, classId: targetClass.id, date: attendanceDate, present: attendancePresent });
+        const student = attendanceOptions.find((item) => item.id === studentId) || null;
+        await saveAttendance({ studentId, studentName: getStudentDisplayName(student), classId: targetClass.id, date: attendanceDate, present: attendancePresent });
         addToast('Attendance recorded', 'success');
       };
       const sendDoubt = async (event) => {
@@ -1133,7 +1301,7 @@
                 </div>
                 {pendingRequestCount ? <div className="rounded-2xl bg-indigo-600/10 px-3 py-2 text-sm text-indigo-100">{pendingRequestCount} pending approval{pendingRequestCount > 1 ? 's' : ''}</div> : null}
               </div>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">{visibleClasses.length ? visibleClasses.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Code: {item.code} • Students: {item.studentIds?.length || 0}</div></div>) : <div className="text-sm text-slate-400">Create a class to start teaching.</div>}</div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">{visibleClasses.length ? visibleClasses.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Code: {item.code} • Students: {getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords).length}</div></div>) : <div className="text-sm text-slate-400">Create a class to start teaching.</div>}</div>
             </div>
             {activeTab === 'home' && (
               <div className="grid gap-4 xl:grid-cols-2">
@@ -1156,8 +1324,8 @@
                   <div className="mt-3 space-y-2">
                     {visibleStudents.length ? visibleStudents.map((item) => (
                       <div key={`${item.id}-${item.classId}`} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                        <div className="font-medium">{item.id}</div>
-                        <div className="text-sm text-slate-400">{item.className}</div>
+                        <div className="font-medium">{getStudentDisplayName(item)}</div>
+                        <div className="mt-1 text-sm text-slate-400">{item.className}</div>
                       </div>
                     )) : <div className="text-sm text-slate-400">Students will appear once they join your class.</div>}
                   </div>
@@ -1177,7 +1345,7 @@
                     </select>
                     <select value={selectedAttendanceStudent} onChange={(event) => setSelectedAttendanceStudent(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
                       <option value="">Select student</option>
-                      {attendanceOptions.map((item) => <option key={`${item.id}-${item.classId}`} value={item.id}>{item.id} — {item.className}</option>)}
+                      {attendanceOptions.map((item) => <option key={`${item.id}-${item.classId}`} value={item.id}>{getStudentDisplayName(item)}</option>)}
                     </select>
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -1189,17 +1357,32 @@
                   </div>
                   <button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Save attendance</button>
                 </form>
-                <div className="mt-4 space-y-3">
-                  {attendanceRecords.length ? attendanceRecords.slice(0, 6).map((item) => (
-                    <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                      <div className="font-medium">{item.date} • {item.present ? 'Present' : 'Absent'}</div>
-                      <div className="text-sm text-slate-400">Student: {item.studentId}</div>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+                    <div className="font-medium">Students in this batch</div>
+                    <div className="mt-2 space-y-2">
+                      {attendanceOptions.length ? attendanceOptions.map((item) => (
+                        <div key={`${item.id}-${item.classId}`} className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-slate-300">
+                          <div className="font-medium text-slate-100">{getStudentDisplayName(item)}</div>
+                        </div>
+                      )) : <div className="text-sm text-slate-400">No students linked to this batch yet.</div>}
                     </div>
-                  )) : <div className="text-sm text-slate-400">No attendance records yet for this class.</div>}
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+                    <div className="font-medium">Recent attendance</div>
+                    <div className="mt-2 space-y-2">
+                      {attendanceRecords.length ? attendanceRecords.slice(0, 6).map((item) => (
+                        <div key={item.id} className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-slate-300">
+                          <div className="font-medium">{item.date} • {item.present ? 'Present' : 'Absent'}</div>
+                          <div className="text-slate-400">{item.studentName || getStudentDisplayName(visibleStudents.find((student) => student.id === item.studentId))}</div>
+                        </div>
+                      )) : <div className="text-sm text-slate-400">No attendance records yet for this class.</div>}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
-            {activeTab === 'homework' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Assign homework</h3><form onSubmit={createNewHomework} className="mt-3 space-y-3"><input value={homeworkTitle} onChange={(event) => setHomeworkTitle(event.target.value)} placeholder="Homework title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={homeworkDesc} onChange={(event) => setHomeworkDesc(event.target.value)} placeholder="Description" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={homeworkDue} onChange={(event) => setHomeworkDue(event.target.value)} placeholder="Due date" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Assign to class</button></form><div className="mt-4 space-y-2">{homeworks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Due: {item.dueDate}</div></div>)}</div></div>}
+            {activeTab === 'homework' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Assign homework</h3><form onSubmit={createNewHomework} className="mt-3 space-y-3"><input value={homeworkTitle} onChange={(event) => setHomeworkTitle(event.target.value)} placeholder="Homework title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={homeworkDesc} onChange={(event) => setHomeworkDesc(event.target.value)} placeholder="Description" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={homeworkDue} onChange={(event) => setHomeworkDue(event.target.value)} placeholder="Due date" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Assign to class</button></form><div className="mt-4 grid gap-3 md:grid-cols-2"><div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3"><div className="font-medium">Batch students</div><div className="mt-2 space-y-2">{attendanceOptions.length ? attendanceOptions.map((item) => <div key={`${item.id}-${item.classId}`} className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-slate-300"><div className="font-medium text-slate-100">{getStudentDisplayName(item)}</div></div>) : <div className="text-sm text-slate-400">No students linked to this batch yet.</div>}</div></div><div className="space-y-2">{homeworks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Due: {item.dueDate}</div></div>)}</div></div></div>}
             {activeTab === 'notes' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Share notes</h3><form onSubmit={shareNote} className="mt-3 space-y-3"><input value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} placeholder="Note title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={noteContent} onChange={(event) => setNoteContent(event.target.value)} placeholder="Note content" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Share note</button></form><div className="mt-4 space-y-2">{notes.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.content}</div></div>)}</div></div>}
             {activeTab === 'doubts' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Doubts & support</h3><form onSubmit={sendDoubt} className="mt-3 space-y-3"><textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Share a student concern" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Post to support</button></form><div className="mt-4 space-y-2">{doubts.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.question}</div><div className="text-sm text-slate-400">Status: {item.status}</div></div>)}</div></div>}
             {activeTab === 'feedback' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Feedback</h3><form onSubmit={giveFeedback} className="mt-3 space-y-2"><textarea value={feedbackText} onChange={(event) => setFeedbackText(event.target.value)} placeholder="Add feedback for a student" className="min-h-20 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Save feedback</button></form><div className="mt-4 space-y-2">{feedbacks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.text}</div></div>)}</div></div>}
@@ -1211,7 +1394,7 @@
 
     function OwnerDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, users, joinRequests, announcements, fees, schedules, createInstitute, createClass, createAnnouncement, createFee, approveRequest, rejectRequest } = useAppData();
+      const { institutes, classes, users, joinRequests, announcements, fees, schedules, feedbacks, marks, attendances, homeworks, createInstitute, createClass, createAnnouncement, createFee, approveRequest, rejectRequest } = useAppData();
       const [activeTab, setActiveTab] = useState('overview');
       const [instituteName, setInstituteName] = useState('');
       const [city, setCity] = useState('Pune');
@@ -1229,7 +1412,8 @@
       const myInstitutes = institutes.filter((item) => item.ownerId === profile?.id);
       const ownerClasses = classes.filter((item) => item.ownerId === profile?.id);
       const selectedClassObj = ownerClasses.find((item) => item.id === selectedClass) || null;
-      const classStudents = users.filter((item) => item.role === 'student' && selectedClassObj?.studentIds?.includes(item.id));
+      const knownStudentNameRecords = [...(fees || []), ...(marks || []), ...(feedbacks || []), ...(attendances || []), ...((homeworks || []).flatMap((hw) => hw.submissions || []))];
+      const classStudents = selectedClassObj ? getStudentRosterForClass(selectedClassObj, users, joinRequests, knownStudentNameRecords) : [];
       const classInstitute = institutes.find((item) => item.id === selectedClassObj?.instituteId) || null;
       const ownerFees = fees.filter((item) => ownerClasses.some((cls) => cls.id === item.classId));
       const relevantRequests = [...joinRequests].filter((item) => myInstitutes.some((institute) => institute.id === item.targetId) || classes.some((cls) => cls.ownerId === profile?.id && cls.id === item.targetId)).sort((a, b) => Number(b.status === 'pending') - Number(a.status === 'pending'));
@@ -1263,9 +1447,9 @@
         if (!selectedStudent) return addToast('Select a student before sending a fee reminder', 'error');
         if (!fee.trim()) return addToast('Enter a fee amount', 'error');
         if (!feeDueDate) return addToast('Select a due date', 'error');
-        const student = users.find((item) => item.id === selectedStudent);
+        const student = classStudents.find((item) => item.id === selectedStudent) || users.find((item) => item.id === selectedStudent) || null;
         if (!student) return addToast('Selected student not found', 'error');
-        await createFee({ studentId: student.id, studentName: student.name, classId: selectedClass, amount: fee, dueDate: feeDueDate });
+        await createFee({ studentId: student.id, studentName: getStudentDisplayName(student), classId: selectedClass, amount: fee, dueDate: feeDueDate });
         addToast('Fee reminder created', 'success');
         setFee('');
       };
@@ -1299,7 +1483,7 @@
             {activeTab === 'fees' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Fee reminders</h3><form onSubmit={addNewFee} className="mt-3 space-y-3"><div className="grid gap-3 md:grid-cols-2"><select value={selectedClass} onChange={(event) => { setSelectedClass(event.target.value); setSelectedStudent(''); }} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select class</option>{ownerClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><select value={selectedStudent} onChange={(event) => setSelectedStudent(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select student</option>{classStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select></div><div className="grid gap-3 md:grid-cols-2"><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee amount" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input type="date" value={feeDueDate} onChange={(event) => setFeeDueDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /></div><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Create reminder</button></form><div className="mt-4 space-y-2">{ownerFees.length ? ownerFees.map((item) => {
                 const cls = classes.find((clsItem) => clsItem.id === item.classId);
                 const inst = cls ? institutes.find((instItem) => instItem.id === cls.instituteId) : null;
-                return <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.studentName} • {cls?.name || 'Class'}{inst ? ` • ${inst.name}` : ''}</div><div className="mt-1 text-sm text-slate-400">₹{item.amount} • Due: {item.dueDate} • Status: {item.status}</div>{item.status === 'pending' ? <button onClick={() => sendFeeReminder(item)} className="mt-3 rounded-full bg-indigo-600 px-3 py-2 text-xs">Send reminder</button> : null}</div>;
+                return <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.studentName || 'Student'} • {cls?.name || 'Class'}{inst ? ` • ${inst.name}` : ''}</div><div className="mt-1 text-sm text-slate-400">₹{item.amount} • Due: {item.dueDate} • Status: {item.status}</div>{item.status === 'pending' ? <button onClick={() => sendFeeReminder(item)} className="mt-3 rounded-full bg-indigo-600 px-3 py-2 text-xs">Send reminder</button> : null}</div>;
               }) : <div className="text-sm text-slate-400">No fee reminders yet.</div>}</div></div>}
             {activeTab === 'settings' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Settings</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-300">Owner controls are now directly available from the bottom bar for institute, batch, alert and fee management.</div></div>}
             <BottomNavBar items={tabs} active={activeTab} onChange={setActiveTab} />
