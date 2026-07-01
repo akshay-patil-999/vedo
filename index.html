@@ -464,7 +464,14 @@
         if (!request) return;
         const nextStatus = 'approved';
         setJoinRequests((prev) => prev.map((item) => item.id === requestId ? { ...item, status: nextStatus, updatedAt: stamp() } : item));
-        if (backendReady && firestoreRef) await firestoreRef.collection('joinRequests').doc(requestId).set({ ...request, status: nextStatus, updatedAt: stamp() }, { merge: true });
+        if (backendReady && firestoreRef) {
+          try {
+            await firestoreRef.collection('joinRequests').doc(requestId).set({ ...request, status: nextStatus, updatedAt: stamp() }, { merge: true });
+          } catch (err) {
+            console.warn('Failed to persist approved join request to Firestore', err);
+          }
+        }
+
         const targetUser = users.find((item) => item.id === request.requesterId) || { id: request.requesterId, role: request.role, instituteIds: [], classIds: [] };
         const updatedUser = {
           ...targetUser,
@@ -472,25 +479,63 @@
           instituteIds: request.targetType === 'institute' ? [...new Set([...(targetUser.instituteIds || []), request.targetId])] : targetUser.instituteIds || [],
           classIds: request.targetType === 'class' ? [...new Set([...(targetUser.classIds || []), request.targetId])] : targetUser.classIds || []
         };
-        await updateUser(updatedUser);
+        try {
+          await updateUser(updatedUser);
+        } catch (err) {
+          console.warn('Failed to persist joined member profile to Firestore', err);
+        }
+
+        // Persist the membership onto the institute/class document itself too
+        // (not just on the joinRequest and the member's own profile), so the
+        // roster and counts survive a refresh even if this document is the
+        // only place a viewer looks.
         if (request.targetType === 'institute') {
-          setInstitutes((prev) => prev.map((item) => item.id === request.targetId ? {
-            ...item,
-            studentIds: request.role === 'student' ? [...new Set([...(item.studentIds || []), request.requesterId])] : item.studentIds || [],
-            teacherIds: request.role === 'teacher' ? [...new Set([...(item.teacherIds || []), request.requesterId])] : item.teacherIds || []
-          } : item));
+          const currentInstitute = institutes.find((item) => item.id === request.targetId);
+          if (currentInstitute) {
+            const nextInstitute = {
+              ...currentInstitute,
+              studentIds: request.role === 'student' ? [...new Set([...(currentInstitute.studentIds || []), request.requesterId])] : currentInstitute.studentIds || [],
+              teacherIds: request.role === 'teacher' ? [...new Set([...(currentInstitute.teacherIds || []), request.requesterId])] : currentInstitute.teacherIds || []
+            };
+            setInstitutes((prev) => prev.map((item) => item.id === request.targetId ? nextInstitute : item));
+            if (backendReady && firestoreRef) {
+              try {
+                await firestoreRef.collection('institutes').doc(request.targetId).set(nextInstitute, { merge: true });
+              } catch (err) {
+                console.warn('Failed to persist institute roster to Firestore', err);
+              }
+            }
+          }
         }
         if (request.targetType === 'class') {
-          setClasses((prev) => prev.map((item) => item.id === request.targetId ? {
-            ...item,
-            studentIds: request.role === 'student' ? [...new Set([...(item.studentIds || []), request.requesterId])] : item.studentIds || [],
-            teacherIds: request.role === 'teacher' ? [...new Set([...(item.teacherIds || []), request.requesterId])] : item.teacherIds || []
-          } : item));
+          const currentClass = classes.find((item) => item.id === request.targetId);
+          if (currentClass) {
+            const nextClass = {
+              ...currentClass,
+              studentIds: request.role === 'student' ? [...new Set([...(currentClass.studentIds || []), request.requesterId])] : currentClass.studentIds || [],
+              teacherIds: request.role === 'teacher' ? [...new Set([...(currentClass.teacherIds || []), request.requesterId])] : currentClass.teacherIds || []
+            };
+            setClasses((prev) => prev.map((item) => item.id === request.targetId ? nextClass : item));
+            if (backendReady && firestoreRef) {
+              try {
+                await firestoreRef.collection('classes').doc(request.targetId).set(nextClass, { merge: true });
+              } catch (err) {
+                console.warn('Failed to persist batch roster to Firestore', err);
+              }
+            }
+          }
         }
+
         if (request.role === 'student') {
           const fee = { id: `FEE-${Date.now()}`, studentId: request.requesterId, studentName: request.requesterName, classId: request.targetType === 'class' ? request.targetId : null, status: 'pending', amount: 0, dueDate: stamp().slice(0, 10), createdAt: stamp() };
           setFees((prev) => [fee, ...prev]);
-          if (backendReady && firestoreRef) await firestoreRef.collection('fees').doc(fee.id).set(fee);
+          if (backendReady && firestoreRef) {
+            try {
+              await firestoreRef.collection('fees').doc(fee.id).set(fee);
+            } catch (err) {
+              console.warn('Failed to persist starter fee record to Firestore', err);
+            }
+          }
         }
       };
 
@@ -1092,8 +1137,8 @@
         const contactInfo = contact.email ? `email: ${contact.email}` : contact.phone ? `phone: ${contact.phone}` : null;
         return `Approval contact: ${contact.name} (${roleLabels[contact.role] || contact.role})${contactInfo ? ` • ${contactInfo}` : ''}`;
       };
-      const visibleInstitutes = institutes.filter((item) => item.studentIds?.includes(profile?.id) || item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.id) || item.id === profile?.instituteIds?.[0]);
-      const visibleClasses = classes.filter((item) => item.studentIds?.includes(profile?.id) || item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'class' && req.targetId === item.id) || item.id === profile?.classIds?.[0]);
+      const visibleInstitutes = institutes.filter((item) => item.studentIds?.includes(profile?.id) || item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.id) || (profile?.instituteIds || []).includes(item.id));
+      const visibleClasses = classes.filter((item) => item.studentIds?.includes(profile?.id) || item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'class' && req.targetId === item.id) || (profile?.classIds || []).includes(item.id));
       const visibleAnnouncements = announcements.filter((item) => {
         if (item.classId) return visibleClasses.some((cls) => cls.id === item.classId);
         if (item.instituteId) return visibleInstitutes.some((inst) => inst.id === item.instituteId);
@@ -1215,7 +1260,7 @@
       const [expandedClassId, setExpandedClassId] = useState('');
       const { addToast } = useToast();
       const approvedMemberships = joinRequests.filter((item) => item.requesterId === profile?.id && item.status === 'approved');
-      const visibleInstitutes = institutes.filter((item) => item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.id) || item.id === profile?.instituteIds?.[0]);
+      const visibleInstitutes = institutes.filter((item) => item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.id) || (profile?.instituteIds || []).includes(item.id));
       const visibleClasses = classes.filter((item) => {
         const isAssignedTeacher = item.teacherId === profile?.id || item.teacherIds?.includes(profile?.id) || item.ownerId === profile?.id;
         const institute = institutes.find((inst) => inst.id === item.instituteId);
@@ -1334,6 +1379,26 @@
       return (
         <ScreenShell title="Teacher dashboard" subtitle="All teacher tools are available from the bottom bar." right={<div className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-200">{profile?.name || 'Teacher'}</div>}>
           <div className="space-y-5">
+            {visibleInstitutes.length ? (
+              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                <h2 className="text-xl font-semibold">My institutes</h2>
+                <p className="text-sm text-slate-400">Institutes you've joined, with total students across all their batches.</p>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">{visibleInstitutes.map((institute) => {
+                  const instituteClasses = classes.filter((cls) => cls.instituteId === institute.id);
+                  const instituteStudentCount = new Set(instituteClasses.flatMap((cls) => getStudentRosterForClass(cls, users, joinRequests, knownStudentNameRecords).map((student) => student.id))).size;
+                  return (
+                    <div key={institute.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
+                      <div className="font-medium">{institute.name}</div>
+                      <div className="mt-1 flex flex-wrap gap-2 text-sm text-slate-400">
+                        <span>Code: {institute.code}</span>
+                        <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">📚 {instituteClasses.length} batch{instituteClasses.length === 1 ? '' : 'es'}</span>
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">👨‍🎓 {instituteStudentCount} student{instituteStudentCount === 1 ? '' : 's'}</span>
+                      </div>
+                    </div>
+                  );
+                })}</div>
+              </div>
+            ) : null}
             <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
