@@ -38,10 +38,16 @@
     @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
     @keyframes spin    { to { transform: rotate(360deg); } }
     @keyframes bounce2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @keyframes pulse2  { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
     .animate-slide-in  { animation: slideIn2 0.3s ease-out forwards; }
     .animate-fade-in   { animation: fadeIn 0.25s ease-out forwards; }
     .animate-spin-slow { animation: spin 1s linear infinite; }
     .animate-bounce2   { animation: bounce2 1s ease-in-out infinite; }
+    .animate-pulse2    { animation: pulse2 1.5s ease-in-out infinite; }
+    .tab-active-indicator { position: relative; }
+    .tab-active-indicator::after { content: ''; position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); width: 20px; height: 2px; background: #6366f1; border-radius: 2px; }
+    .shimmer { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.12) 37%, rgba(255,255,255,0.04) 63%); background-size: 200% 100%; animation: shimmer 1.6s ease-in-out infinite; }
     .gradient-text {
       background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
@@ -115,7 +121,7 @@
     const initialState = {
       institutes: [], classes: [], users: [], joinRequests: [], announcements: [],
       fees: [], schedules: [], notes: [], homeworks: [], doubts: [], feedbacks: [], marks: [], attendances: [],
-      tests: [], teacherPayments: []
+      tests: [], teacherPayments: [], trialBookings: []
     };
 
     const roleLabels = { student: 'Student', teacher: 'Teacher', owner: 'Owner', parent: 'Parent' };
@@ -424,6 +430,7 @@
       const [attendances, setAttendances] = useState(() => db.get(StorageKeys.DATA, initialState)?.attendances || initialState.attendances);
       const [tests, setTests] = useState(() => db.get(StorageKeys.DATA, initialState)?.tests || initialState.tests);
       const [teacherPayments, setTeacherPayments] = useState(() => db.get(StorageKeys.DATA, initialState)?.teacherPayments || initialState.teacherPayments);
+      const [trialBookings, setTrialBookings] = useState(() => db.get(StorageKeys.DATA, initialState)?.trialBookings || initialState.trialBookings);
       const [backendStatus, setBackendStatus] = useState(() => backendReady ? 'live' : (navigator.onLine ? 'local' : 'offline'));
 
       useEffect(() => {
@@ -465,12 +472,13 @@
         attach('attendances', setAttendances);
         attach('tests', setTests);
         attach('teacherPayments', setTeacherPayments);
+        attach('trialBookings', setTrialBookings);
         return () => unsubs.forEach((fn) => fn());
       }, []);
 
       useEffect(() => {
-        db.set(StorageKeys.DATA, { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments });
-      }, [institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments]);
+        db.set(StorageKeys.DATA, { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings });
+      }, [institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings]);
 
       const saveDoc = async (collectionName, item) => {
         if (!backendReady || !firestoreRef) return item;
@@ -785,7 +793,32 @@
         }
       };
 
-      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, deleteSchedule, createTest, payTeacher, createNote, createHomework, submitHomework, saveAttendance, addDoubt, resolveDoubt, replyToDoubt, addFeedback, addMark, updateUser, ensureParentCode, linkChildToParent, unlinkChild };
+      // ------------------------------------------------------------------
+      // MARKETPLACE: TRIAL CLASS BOOKING
+      // ------------------------------------------------------------------
+      // Lets a logged-in visitor request a free trial class with a teacher
+      // straight from the public Marketplace. Persists like every other
+      // collection here (Firestore when live, local fallback otherwise) so
+      // owners/teachers can see real leads instead of a fake toast.
+      const createTrialBooking = async ({ teacherId, teacherName, studentId, studentName, studentEmail, subject, message }) => {
+        const payload = { id: `TRB-${Date.now()}`, teacherId: teacherId || null, teacherName: teacherName || '', studentId: studentId || null, studentName: studentName || '', studentEmail: studentEmail || '', subject: subject || '', message: message || '', status: 'pending', createdAt: stamp() };
+        setTrialBookings((prev) => [payload, ...prev]);
+        if (backendReady && firestoreRef) await firestoreRef.collection('trialBookings').doc(payload.id).set(payload);
+        return payload;
+      };
+
+      const updateTrialBookingStatus = async (bookingId, status) => {
+        setTrialBookings((prev) => prev.map((item) => item.id === bookingId ? { ...item, status, updatedAt: stamp() } : item));
+        if (backendReady && firestoreRef) {
+          try {
+            await firestoreRef.collection('trialBookings').doc(bookingId).set({ status, updatedAt: stamp() }, { merge: true });
+          } catch (err) {
+            console.warn('Failed to persist trial booking status to Firestore', err);
+          }
+        }
+      };
+
+      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, deleteSchedule, createTest, payTeacher, createNote, createHomework, submitHomework, saveAttendance, addDoubt, resolveDoubt, replyToDoubt, addFeedback, addMark, updateUser, ensureParentCode, linkChildToParent, unlinkChild, createTrialBooking, updateTrialBookingStatus };
       return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
     }
 
@@ -955,6 +988,68 @@
       parent: 'border-amber-400/20 bg-amber-500/10 text-amber-200'
     };
 
+    function NotificationBell() {
+      // Real backend-connected notification bell (Vedo-style bell UI, wired to
+      // the live `announcements` Firestore collection instead of mock data).
+      const { profile } = useAuth();
+      const { announcements } = useAppData();
+      const [open, setOpen] = useState(false);
+      const [lastSeen, setLastSeen] = useState(() => Number(db.get('vedo_notifs_seen', 0)) || 0);
+
+      const relevant = useMemo(() => {
+        return (announcements || [])
+          .filter((item) => {
+            if (!item) return false;
+            if (item.instituteId && profile?.instituteId && item.instituteId !== profile.instituteId) return false;
+            if (item.classId && profile?.classIds && !profile.classIds.includes(item.classId)) return false;
+            return true;
+          })
+          .slice()
+          .sort((a, b) => safeSortKey(b.createdAt) - safeSortKey(a.createdAt))
+          .slice(0, 8);
+      }, [announcements, profile]);
+
+      const unreadCount = relevant.filter((item) => safeSortKey(item.createdAt) > lastSeen).length;
+
+      const openPanel = () => {
+        const willOpen = !open;
+        setOpen(willOpen);
+        if (willOpen) {
+          const now = Date.now();
+          setLastSeen(now);
+          db.set('vedo_notifs_seen', now);
+        }
+      };
+
+      return (
+        <div className="relative">
+          <button onClick={openPanel} aria-label="Notifications" className="relative rounded-xl border border-white/10 bg-white/5 p-2.5 text-slate-100 card-hover hover:bg-white/10 transition-all">
+            <span className="text-sm">🔔</span>
+            {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse2"></span>}
+          </button>
+          {open && (
+            <div className="absolute right-0 top-12 w-72 max-w-[85vw] rounded-2xl border border-white/10 bg-slate-900/98 shadow-2xl z-50 overflow-hidden animate-slide-in">
+              <div className="px-4 py-2.5 border-b border-white/10 flex justify-between items-center">
+                <span className="text-xs font-bold">Notifications</span>
+                <button onClick={() => setOpen(false)} className="text-[10px] text-indigo-400 hover:underline">Close</button>
+              </div>
+              <div className="max-h-72 overflow-y-auto">
+                {relevant.length ? relevant.map((n) => (
+                  <div key={n.id} className="px-4 py-2.5 hover:bg-white/5 transition-colors border-b border-white/5 flex items-start gap-2">
+                    <span className="text-base">📢</span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-slate-200 leading-snug">{n.title || n.text || n.message}</p>
+                      <span className="text-[9px] text-slate-500 mt-0.5 block">{safeDateText(n.createdAt)}</span>
+                    </div>
+                  </div>
+                )) : <div className="px-4 py-6 text-center text-xs text-slate-500">No notifications yet.</div>}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     function ScreenShell({ title, subtitle, children, navItems, bottomNavItems, activeNavId, onNavChange }) {
       const { profile, logout } = useAuth();
       const { navigateTo } = useNav();
@@ -978,10 +1073,11 @@
               <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="flex-none rounded-xl border border-white/10 bg-white/5 p-2.5 text-slate-100 card-hover hover:bg-white/10 transition-all">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
               </button>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="text-[11px] uppercase tracking-[0.3em] gradient-text font-black">Vedo</div>
                 <h1 className="truncate text-lg font-semibold leading-tight sm:text-xl">{title}</h1>
               </div>
+              {profile ? <NotificationBell /> : null}
             </div>
           </div>
 
@@ -1379,6 +1475,125 @@
               <button disabled={busy} className="w-full rounded-2xl bg-indigo-600 px-3 py-3 text-sm font-semibold text-white hover:bg-indigo-500 transition-all disabled:opacity-60">{busy ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create account'}</button>
             </form>
             {message ? <div className="mt-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{message}</div> : null}
+          </div>
+        </div>
+      );
+    }
+
+    // =====================================================
+    // MARKETPLACE — browse real teachers and book a trial class.
+    // Ported from the Vedo frontend concept, but backed by the actual
+    // `users` (role: teacher) collection and a real `trialBookings`
+    // Firestore-synced write via createTrialBooking, instead of mock data.
+    // =====================================================
+    function MarketplaceScreen() {
+      const { profile } = useAuth();
+      const { navigateTo } = useNav();
+      const { addToast } = useToast();
+      const { users, classes, createTrialBooking } = useAppData();
+      const [bookModal, setBookModal] = useState(null);
+      const [subject, setSubject] = useState('');
+      const [note, setNote] = useState('');
+      const [submitting, setSubmitting] = useState(false);
+
+      const teachers = users.filter((item) => item.role === 'teacher');
+
+      const initialsOf = (name) => (name || 'T').split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+
+      const openBooking = (teacher) => {
+        if (!profile) {
+          navigateTo('/auth');
+          addToast('Please login to book a trial class', 'error');
+          return;
+        }
+        setSubject('');
+        setNote('');
+        setBookModal(teacher);
+      };
+
+      const confirmBooking = async () => {
+        if (!bookModal) return;
+        setSubmitting(true);
+        try {
+          await createTrialBooking({
+            teacherId: bookModal.id,
+            teacherName: bookModal.name,
+            studentId: profile.id,
+            studentName: profile.name,
+            studentEmail: profile.email,
+            subject,
+            message: note,
+          });
+          addToast(`Trial request sent to ${bookModal.name}! 📞`, 'success');
+          setBookModal(null);
+        } catch (err) {
+          addToast('Could not send the request. Try again.', 'error');
+        } finally {
+          setSubmitting(false);
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.25),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.18),_transparent_30%)] bg-slate-950 text-slate-100">
+          <div className="sticky top-0 z-30 border-b border-white/10 bg-slate-900/95 px-4 py-3 shadow-lg backdrop-blur sm:px-6">
+            <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.3em] gradient-text font-black">Vedo Marketplace</div>
+                <h1 className="text-lg font-semibold sm:text-xl">Find a teacher, book a free trial</h1>
+              </div>
+              <button onClick={() => navigateTo('/discover')} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10 transition-all">← Discover</button>
+            </div>
+          </div>
+
+          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            {teachers.length ? (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {teachers.map((t) => {
+                  const teacherClasses = classes.filter((c) => (c.teacherIds || []).includes(t.id) || c.teacherId === t.id);
+                  return (
+                    <div key={t.id} className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                      <div className="flex items-start gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-200 font-black text-xs shrink-0">{initialsOf(t.name)}</div>
+                        <div className="min-w-0">
+                          <h4 className="font-semibold truncate">{t.name}</h4>
+                          <p className="text-sm text-slate-400 truncate">{t.subject || 'Subject not set'} • {t.city || 'Location N/A'}</p>
+                          {teacherClasses.length ? <span className="mt-1 inline-flex rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs text-indigo-300">{teacherClasses.length} batch{teacherClasses.length > 1 ? 'es' : ''}</span> : null}
+                        </div>
+                      </div>
+                      {t.bio ? <p className="mt-3 text-sm text-slate-400 line-clamp-3">{t.bio}</p> : null}
+                      <button onClick={() => openBooking(t)} className="mt-4 w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-all">Book a trial class</button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="glass rounded-3xl border border-white/10 p-8 text-center empty-state">No teachers have joined yet. Check back soon!</div>
+            )}
+          </div>
+
+          {bookModal && (
+            <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm px-4 py-6 animate-fade-in" onClick={() => setBookModal(null)}>
+              <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-slate-900/98 shadow-2xl overflow-hidden animate-slide-in" onClick={(e) => e.stopPropagation()}>
+                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-5 text-white">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-semibold">{bookModal.name}</h3>
+                      <p className="mt-1 text-sm text-indigo-300">{bookModal.subject || 'General'}</p>
+                    </div>
+                    <button onClick={() => setBookModal(null)} className="text-slate-300 hover:text-white">✕</button>
+                  </div>
+                </div>
+                <div className="p-5 space-y-3">
+                  <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject you'd like a trial in" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                  <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything you'd like the teacher to know? (optional)" rows={3} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                  <button disabled={submitting} onClick={confirmBooking} className="w-full rounded-xl bg-emerald-600 px-3 py-3 text-sm font-semibold text-white hover:bg-emerald-500 transition-all disabled:opacity-60">{submitting ? 'Sending...' : '✅ Confirm trial request'}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-white/10 px-4 py-3 text-center">
+            <button onClick={() => navigateTo('/discover')} className="text-indigo-400 text-sm font-medium hover:underline">← Back to Discover</button>
           </div>
         </div>
       );
@@ -2570,16 +2785,75 @@
       );
     }
 
+    // =====================================================
+    // ADMISSION CHATBOT (Floating) — ported from the Vedo frontend concept.
+    // Purely informational/static FAQ, same as its original design, so no
+    // backend wiring is needed here (it never reads or writes user data).
+    // =====================================================
+    function AdmissionChatbot() {
+      const [open, setOpen] = useState(false);
+      const [chats, setChats] = useState([
+        { sender: 'bot', text: 'Hi! I\'m the Vedo assistant. 🎓\n\nAsk me about any of the topics below:' },
+      ]);
+
+      const options = [
+        { key: 'timing', label: '⏰ Class timing', answer: 'Class timings vary by batch — check the batch card on Discover or ask the institute directly for exact slots.' },
+        { key: 'fees', label: '💰 Fees', answer: 'Every batch shows its monthly fee right on its card. Once you join, you can track and pay fees from your Student dashboard.' },
+        { key: 'join', label: '📝 How to join', answer: 'Sign up, then use an institute or batch code to send a join request. The owner/teacher approves it and you\'re in!' },
+        { key: 'features', label: '📱 What Vedo offers', answer: 'Live batches, notes, homework, doubt solving, attendance, fee tracking, and parent linking — all in one place.' },
+        { key: 'trial', label: '🎯 Book a trial', answer: 'Open the Marketplace from Discover, pick a teacher, and tap "Book trial" — your request goes straight to them.' },
+      ];
+
+      const query = (opt) => {
+        setChats((prev) => [...prev, { sender: 'user', text: opt.label }, { sender: 'bot', text: opt.answer }]);
+      };
+
+      return (
+        <div className="fixed bottom-5 right-5 z-[95] text-xs">
+          {open ? (
+            <div className="w-72 max-w-[85vw] glass rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-slide-in" style={{ height: '380px' }}>
+              <div className="bg-slate-900 text-white p-3 flex justify-between items-center shrink-0">
+                <div>
+                  <p className="font-black text-xs gradient-text">Vedo Bot 🤖</p>
+                  <p className="text-[9px] text-slate-400">Always online</p>
+                </div>
+                <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+              </div>
+              <div className="flex-1 p-3 bg-slate-950/60 space-y-2 overflow-y-auto">
+                {chats.map((c, i) => (
+                  <div key={i} className={`flex ${c.sender === 'bot' ? 'justify-start' : 'justify-end'}`}>
+                    <p className={`p-2.5 rounded-xl max-w-[85%] text-[10px] leading-relaxed whitespace-pre-wrap ${c.sender === 'bot' ? 'bg-slate-800 text-slate-100 border border-white/10' : 'bg-indigo-600 text-white'}`}>{c.text}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="p-2 border-t border-white/10 bg-slate-900 shrink-0">
+                <p className="text-[9px] text-slate-500 font-bold mb-1.5">Quick options:</p>
+                <div className="flex flex-wrap gap-1">
+                  {options.map((o) => (
+                    <button key={o.key} onClick={() => query(o)} className="bg-indigo-500/10 text-indigo-300 text-[8px] font-bold px-2 py-1 rounded-lg hover:bg-indigo-500/20 transition-all">{o.label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 text-white w-12 h-12 rounded-full shadow-2xl text-xl flex items-center justify-center transition-all animate-bounce2">💬</button>
+          )}
+        </div>
+      );
+    }
+
     function AppRouter() {
       const { currentPath } = useNav();
       const { profile, loading } = useAuth();
       const isPublicRoute = currentPath === '/discover' || currentPath === '/' || currentPath === '';
       const isAuthRoute = currentPath === '/auth' || currentPath === '/login' || currentPath === '/signup';
+      const showChatbot = isPublicRoute || isAuthRoute || currentPath === '/marketplace';
 
       if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100">Loading your workspace...</div>;
-      if (isAuthRoute) return <AuthScreen />;
-      if (!profile) return <DiscoverScreen />;
-      if (isPublicRoute) return <DiscoverScreen />;
+      if (isAuthRoute) return <><AuthScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
+      if (currentPath === '/marketplace') return <><MarketplaceScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
+      if (!profile) return <><DiscoverScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
+      if (isPublicRoute) return <><DiscoverScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
       if (currentPath === '/owner') return <OwnerDashboard />;
       if (currentPath === '/teacher') return <TeacherDashboard />;
       if (currentPath === '/parent') return <ParentDashboard />;
