@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no" />
   <title>Vedo — Connected Coaching Platform</title>
   <link rel="manifest" href="manifest.json" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -18,8 +22,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     :root { color-scheme: light; }
-    body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; }
+    html, body { height: 100%; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    body { margin: 0; font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; -webkit-tap-highlight-color: transparent; touch-action: manipulation; overflow: hidden; }
     * { box-sizing: border-box; }
+    button, a { -webkit-tap-highlight-color: transparent; user-select: none; }
+    input, textarea { -webkit-user-select: text; user-select: text; }
+    .app-frame { height: 100dvh; }
+    .safe-top { padding-top: max(0.75rem, env(safe-area-inset-top)); }
+    .safe-bottom { padding-bottom: max(0.6rem, env(safe-area-inset-bottom)); }
+    .safe-menu { padding-top: max(0px, env(safe-area-inset-top)); padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+    .scroll-area { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    .nav-chip { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 12px; transition: all .2s ease; }
+    .fn-dot { width: 8px; height: 8px; border-radius: 999px; flex: none; }
     .glass { background: rgba(255,255,255,0.9); backdrop-filter: blur(16px); border: 1px solid rgba(15,23,42,0.08); }
     .animate-in { animation: slideIn .25s ease; }
     @keyframes slideIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
@@ -983,10 +997,27 @@
 
     const roleBadgeStyles = {
       student: 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200',
-      teacher: 'border-indigo-400/20 bg-indigo-500/10 text-indigo-200',
-      owner: 'border-amber-400/20 bg-amber-500/10 text-amber-200',
+      teacher: 'border-sky-400/20 bg-sky-500/10 text-sky-200',
+      owner: 'border-violet-400/20 bg-violet-500/10 text-violet-200',
       parent: 'border-amber-400/20 bg-amber-500/10 text-amber-200'
     };
+
+    // Each role gets its own primary accent so the four dashboards feel
+    // visually distinct at a glance (student=emerald, teacher=sky, owner=violet, parent=amber).
+    const roleAccent = { student: 'emerald', teacher: 'sky', owner: 'violet', parent: 'amber' };
+
+    // Every nav/menu function gets its own colour so the app reads as
+    // colourful and each feature is instantly recognisable by hue.
+    const functionColors = {
+      home: 'indigo', overview: 'indigo', join: 'emerald', link: 'emerald',
+      timetable: 'cyan', schedule: 'cyan',
+      homework: 'purple', doubts: 'pink', test: 'fuchsia', marks: 'orange',
+      requests: 'sky', lectures: 'rose', notes: 'blue', fees: 'amber',
+      parentcode: 'violet', profile: 'slate', myclass: 'blue', myinstitutes: 'purple',
+      wallet: 'lime', feedback: 'teal', mybatches: 'blue', alerts: 'rose',
+      settings: 'slate', children: 'amber', attendance: 'teal'
+    };
+    const fnColor = (id) => functionColors[id] || 'indigo';
 
     function NotificationBell() {
       // Real backend-connected notification bell (Vedo-style bell UI, wired to
@@ -1065,23 +1096,32 @@
         setMenuOpen(false);
       };
       const bottomItems = (bottomNavItems && bottomNavItems.length ? bottomNavItems : (navItems || [])).slice(0, 4);
+      const accent = roleAccent[profile?.role] || 'indigo';
 
       return (
-        <div className="fixed inset-0 flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
-          <div className="z-30 flex-none border-b border-white/10 bg-slate-900/95 px-4 py-3 shadow-lg backdrop-blur sm:px-6">
+        <div className="app-frame fixed inset-0 flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
+          {/* soft colour blobs for a livelier, less flat background — purely decorative */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-40">
+            <div className={`absolute -top-24 -left-16 h-56 w-56 rounded-full bg-${accent}-500/25 blur-3xl`}></div>
+            <div className="absolute top-1/3 -right-16 h-56 w-56 rounded-full bg-fuchsia-500/15 blur-3xl"></div>
+            <div className="absolute -bottom-20 left-1/4 h-56 w-56 rounded-full bg-cyan-500/15 blur-3xl"></div>
+          </div>
+
+          <div className={`safe-top z-30 flex-none border-b border-white/10 bg-slate-900/95 px-4 py-3 shadow-lg backdrop-blur sm:px-6 border-b-2 border-b-${accent}-500/40`}>
             <div className="mx-auto flex max-w-7xl items-center gap-3">
-              <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="flex-none rounded-xl border border-white/10 bg-white/5 p-2.5 text-slate-100 card-hover hover:bg-white/10 transition-all">
+              <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className={`flex-none rounded-xl border border-white/10 bg-${accent}-500/10 p-2.5 text-${accent}-300 card-hover hover:bg-${accent}-500/20 transition-all`}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
               </button>
               <div className="min-w-0 flex-1">
                 <div className="text-[11px] uppercase tracking-[0.3em] gradient-text font-black">Vedo</div>
                 <h1 className="truncate text-lg font-semibold leading-tight sm:text-xl">{title}</h1>
               </div>
+              {profile ? <span className={`hidden sm:inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${roleClasses}`}>{roleLabel}</span> : null}
               {profile ? <NotificationBell /> : null}
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-4 sm:px-6 lg:px-8">
+          <div className="scroll-area relative min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-7xl space-y-5">
               {subtitle ? <p className="-mt-1 text-sm text-slate-400">{subtitle}</p> : null}
               {children}
@@ -1089,14 +1129,18 @@
           </div>
 
           {bottomItems.length ? (
-            <div className="z-30 flex-none border-t border-white/10 bg-slate-900/98 px-2 py-2 backdrop-blur sm:px-6">
+            <div className="safe-bottom z-30 flex-none border-t border-white/10 bg-slate-900/98 px-2 py-2 backdrop-blur sm:px-6">
               <div className="mx-auto grid max-w-7xl gap-1" style={{ gridTemplateColumns: `repeat(${bottomItems.length}, minmax(0,1fr))` }}>
-                {bottomItems.map((item) => (
-                  <button key={item.id} onClick={() => selectNav(item.id)} className={`flex flex-col items-center gap-0.5 rounded-2xl px-2 py-2 text-center transition-all ${activeNavId === item.id ? 'text-indigo-400' : 'text-slate-400 hover:text-slate-200'}`}>
-                    <span className="text-lg leading-none">{item.icon}</span>
-                    <span className="truncate text-[11px] font-medium leading-tight">{item.label}</span>
-                  </button>
-                ))}
+                {bottomItems.map((item) => {
+                  const c = fnColor(item.id);
+                  const active = activeNavId === item.id;
+                  return (
+                    <button key={item.id} onClick={() => selectNav(item.id)} className={`flex flex-col items-center gap-0.5 rounded-2xl px-2 py-1.5 text-center transition-all ${active ? `text-${c}-300` : 'text-slate-400 hover:text-slate-200'}`}>
+                      <span className={`nav-chip text-lg leading-none ${active ? `bg-${c}-500/20 border border-${c}-400/30` : ''}`}>{item.icon}</span>
+                      <span className="truncate text-[11px] font-medium leading-tight">{item.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ) : null}
@@ -1104,13 +1148,13 @@
           {menuOpen && (
             <div className="fixed inset-0 z-[100]">
               <div className="absolute inset-0 bg-slate-950/70" onClick={() => setMenuOpen(false)}></div>
-              <div className="absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col border-r border-white/10 bg-slate-900/98 p-5 shadow-2xl animate-slide-in">
+              <div className="safe-menu absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col border-r border-white/10 bg-slate-900/98 p-5 shadow-2xl animate-slide-in">
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-black gradient-text">Vedo</span>
                   <button onClick={() => setMenuOpen(false)} aria-label="Close menu" className="rounded-xl border border-white/10 px-2.5 py-1.5 text-sm text-slate-300 transition-all">✕</button>
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                <div className={`mt-4 rounded-2xl border border-${accent}-400/20 bg-${accent}-500/5 p-4`}>
                   <div className="font-semibold">{profile?.name || 'Guest'}</div>
                   <div className="mt-0.5 text-xs text-slate-400">ID: {profile?.id || '—'}</div>
                   <div className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${roleClasses}`}>{roleLabel} dashboard</div>
@@ -1121,12 +1165,17 @@
                     <div className="mt-4">
                       <div className="px-1 text-[11px] font-semibold uppercase tracking-widest text-slate-500">Menu</div>
                       <div className="mt-2 space-y-1">
-                        {navItems.map((item) => (
-                          <button key={item.id} onClick={() => selectNav(item.id)} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition-all ${activeNavId === item.id ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-white/5'}`}>
-                            <span className="text-base">{item.icon}</span>
-                            <span className="truncate">{item.label}</span>
-                          </button>
-                        ))}
+                        {navItems.map((item) => {
+                          const c = fnColor(item.id);
+                          const active = activeNavId === item.id;
+                          return (
+                            <button key={item.id} onClick={() => selectNav(item.id)} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition-all ${active ? `bg-${c}-500/15 text-${c}-300 border border-${c}-400/30` : 'text-slate-300 hover:bg-white/5'}`}>
+                              <span className={`fn-dot bg-${c}-400`}></span>
+                              <span className="text-base">{item.icon}</span>
+                              <span className="truncate">{item.label}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   ) : null}
@@ -1142,7 +1191,7 @@
                   {profile ? (
                     <button onClick={() => { setMenuOpen(false); logout(); }} className="w-full rounded-2xl bg-rose-500 px-3 py-3 text-sm font-semibold text-white hover:bg-rose-400 transition-all">Logout</button>
                   ) : (
-                    <button onClick={() => { setMenuOpen(false); navigateTo('/discover'); }} className="w-full rounded-2xl bg-indigo-600 px-3 py-3 text-sm font-semibold text-white hover:bg-indigo-500 transition-all">Login</button>
+                    <button onClick={() => { setMenuOpen(false); navigateTo('/discover'); }} className={`w-full rounded-2xl bg-${accent}-600 px-3 py-3 text-sm font-semibold text-white hover:bg-${accent}-500 transition-all`}>Login</button>
                   )}
                 </div>
               </div>
@@ -1185,7 +1234,7 @@
       };
 
       return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.25),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.18),_transparent_30%)] bg-slate-950 text-slate-100">
+        <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.25),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.18),_transparent_30%)] bg-slate-950 text-slate-100">
           <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
             <div className="glass rounded-[32px] border border-white/10 p-8 shadow-2xl">
               <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
@@ -1443,15 +1492,15 @@
       };
 
       return (
-        <div className={compact ? '' : 'min-h-screen bg-slate-950 px-4 py-10'}>
+        <div className={compact ? '' : 'min-h-[100dvh] bg-slate-950 px-4 py-10'}>
           <div className={compact ? 'space-y-4' : 'mx-auto max-w-md rounded-[32px] border border-white/10 bg-slate-900/70 p-6 shadow-2xl animate-fade-in'}>
             {!compact && <div className="mb-4 text-center"><span className="text-2xl font-black gradient-text">Vedo</span><p className="text-xs text-slate-400 mt-1">Virtual Education Desk Operator</p></div>}
             <div className="flex rounded-full border border-white/10 bg-white/5 p-1">
               {['login', 'signup'].map((item) => (
-                <button key={item} onClick={() => setMode(item)} className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-all ${mode === item ? 'bg-indigo-600 text-white' : 'text-slate-300'}`}>{item === 'login' ? 'Login' : 'Sign up'}</button>
+                <button key={item} onClick={() => setMode(item)} className={`flex-1 rounded-xl px-3 py-2 text-sm font-medium transition-all ${mode === item ? `bg-${roleAccent[role] || 'indigo'}-600 text-white` : 'text-slate-300'}`}>{item === 'login' ? 'Login' : 'Sign up'}</button>
               ))}
             </div>
-            <select value={role} onChange={(event) => setRole(event.target.value)} className="mt-3 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm text-slate-100">
+            <select value={role} onChange={(event) => setRole(event.target.value)} className={`mt-3 w-full rounded-2xl border-2 bg-slate-950/80 px-3 py-3 text-sm text-slate-100 transition-all border-${roleAccent[role] || 'indigo'}-400/40`}>
               <option value="student">Student</option>
               <option value="teacher">Teacher</option>
               <option value="owner">Institute Owner</option>
@@ -1472,7 +1521,7 @@
               </>}
               <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email address" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
               <input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
-              <button disabled={busy} className="w-full rounded-2xl bg-indigo-600 px-3 py-3 text-sm font-semibold text-white hover:bg-indigo-500 transition-all disabled:opacity-60">{busy ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create account'}</button>
+              <button disabled={busy} className={`w-full rounded-2xl bg-${roleAccent[role] || 'indigo'}-600 px-3 py-3 text-sm font-semibold text-white hover:bg-${roleAccent[role] || 'indigo'}-500 transition-all disabled:opacity-60`}>{busy ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create account'}</button>
             </form>
             {message ? <div className="mt-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{message}</div> : null}
           </div>
@@ -1534,8 +1583,8 @@
       };
 
       return (
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.25),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.18),_transparent_30%)] bg-slate-950 text-slate-100">
-          <div className="sticky top-0 z-30 border-b border-white/10 bg-slate-900/95 px-4 py-3 shadow-lg backdrop-blur sm:px-6">
+        <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.25),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.18),_transparent_30%)] bg-slate-950 text-slate-100">
+          <div className="safe-top sticky top-0 z-30 border-b border-white/10 bg-slate-900/95 px-4 py-3 shadow-lg backdrop-blur sm:px-6">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
               <div>
                 <div className="text-[11px] uppercase tracking-[0.3em] gradient-text font-black">Vedo Marketplace</div>
@@ -2797,11 +2846,11 @@
       ]);
 
       const options = [
-        { key: 'timing', label: '⏰ Class timing', answer: 'Class timings vary by batch — check the batch card on Discover or ask the institute directly for exact slots.' },
-        { key: 'fees', label: '💰 Fees', answer: 'Every batch shows its monthly fee right on its card. Once you join, you can track and pay fees from your Student dashboard.' },
-        { key: 'join', label: '📝 How to join', answer: 'Sign up, then use an institute or batch code to send a join request. The owner/teacher approves it and you\'re in!' },
-        { key: 'features', label: '📱 What Vedo offers', answer: 'Live batches, notes, homework, doubt solving, attendance, fee tracking, and parent linking — all in one place.' },
-        { key: 'trial', label: '🎯 Book a trial', answer: 'Open the Marketplace from Discover, pick a teacher, and tap "Book trial" — your request goes straight to them.' },
+        { key: 'timing', label: '⏰ Class timing', answer: 'Class timings vary by batch — check the batch card on Discover or ask the institute directly for exact slots.', color: 'cyan' },
+        { key: 'fees', label: '💰 Fees', answer: 'Every batch shows its monthly fee right on its card. Once you join, you can track and pay fees from your Student dashboard.', color: 'amber' },
+        { key: 'join', label: '📝 How to join', answer: 'Sign up, then use an institute or batch code to send a join request. The owner/teacher approves it and you\'re in!', color: 'emerald' },
+        { key: 'features', label: '📱 What Vedo offers', answer: 'Live batches, notes, homework, doubt solving, attendance, fee tracking, and parent linking — all in one place.', color: 'purple' },
+        { key: 'trial', label: '🎯 Book a trial', answer: 'Open the Marketplace from Discover, pick a teacher, and tap "Book trial" — your request goes straight to them.', color: 'rose' },
       ];
 
       const query = (opt) => {
@@ -2830,13 +2879,13 @@
                 <p className="text-[9px] text-slate-500 font-bold mb-1.5">Quick options:</p>
                 <div className="flex flex-wrap gap-1">
                   {options.map((o) => (
-                    <button key={o.key} onClick={() => query(o)} className="bg-indigo-500/10 text-indigo-300 text-[8px] font-bold px-2 py-1 rounded-lg hover:bg-indigo-500/20 transition-all">{o.label}</button>
+                    <button key={o.key} onClick={() => query(o)} className={`bg-${o.color}-500/10 text-${o.color}-300 border border-${o.color}-400/20 text-[8px] font-bold px-2 py-1 rounded-lg hover:bg-${o.color}-500/20 transition-all`}>{o.label}</button>
                   ))}
                 </div>
               </div>
             </div>
           ) : (
-            <button onClick={() => setOpen(true)} className="bg-indigo-600 hover:bg-indigo-500 text-white w-12 h-12 rounded-full shadow-2xl text-xl flex items-center justify-center transition-all animate-bounce2">💬</button>
+            <button onClick={() => setOpen(true)} className="bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-amber-400 hover:brightness-110 text-white w-12 h-12 rounded-full shadow-2xl text-xl flex items-center justify-center transition-all animate-bounce2">💬</button>
           )}
         </div>
       );
@@ -2849,7 +2898,7 @@
       const isAuthRoute = currentPath === '/auth' || currentPath === '/login' || currentPath === '/signup';
       const showChatbot = isPublicRoute || isAuthRoute || currentPath === '/marketplace';
 
-      if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100">Loading your workspace...</div>;
+      if (loading) return <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 text-slate-100">Loading your workspace...</div>;
       if (isAuthRoute) return <><AuthScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
       if (currentPath === '/marketplace') return <><MarketplaceScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
       if (!profile) return <><DiscoverScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
