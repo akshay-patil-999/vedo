@@ -603,6 +603,17 @@
         return payload;
       };
 
+      const resolveDoubt = async (doubtId) => {
+        setDoubts((prev) => prev.map((item) => item.id === doubtId ? { ...item, status: 'resolved', resolvedAt: stamp() } : item));
+        if (backendReady && firestoreRef) {
+          try {
+            await firestoreRef.collection('doubts').doc(doubtId).set({ status: 'resolved', resolvedAt: stamp() }, { merge: true });
+          } catch (err) {
+            console.warn('Failed to persist resolved doubt to Firestore', err);
+          }
+        }
+      };
+
       const addFeedback = async ({ text, studentId, teacherId, classId, instituteId }) => {
         const payload = { id: `FB-${Date.now()}`, text, studentId, teacherId, classId: classId || null, instituteId: instituteId || null, createdAt: stamp() };
         setFeedbacks((prev) => [payload, ...prev]);
@@ -624,7 +635,7 @@
         return payload;
       };
 
-      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, createNote, createHomework, submitHomework, saveAttendance, addDoubt, addFeedback, addMark, updateUser };
+      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, createNote, createHomework, submitHomework, saveAttendance, addDoubt, resolveDoubt, addFeedback, addMark, updateUser };
       return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
     }
 
@@ -1158,7 +1169,7 @@
 
     function StudentDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, joinRequests, announcements, fees, notes, homeworks, marks, doubts, createJoinRequest, submitHomework, addDoubt, updateFee } = useAppData();
+      const { institutes, classes, joinRequests, announcements, fees, notes, homeworks, marks, doubts, createJoinRequest, submitHomework, addDoubt, updateFee, users } = useAppData();
       const [joinCode, setJoinCode] = useState('');
       const [activeTab, setActiveTab] = useState('home');
       const [doubtText, setDoubtText] = useState('');
@@ -1194,6 +1205,7 @@
       const getInstituteName = (id) => institutes.find((item) => item.id === id)?.name || 'Institute';
       const getClassName = (id) => classes.find((item) => item.id === id)?.name || 'Class';
       const studentFees = fees.filter((item) => item.studentId === profile?.id);
+      const myDoubts = doubts.filter((item) => item.studentId === profile?.id).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
       const markFeePaid = async (feeId) => {
         const feeItem = fees.find((item) => item.id === feeId);
         if (!feeItem) return;
@@ -1269,7 +1281,24 @@
               {!pendingRequests.length && !requestHistory.length ? <div className="text-sm text-slate-400">No request activity yet. Use a join code to request batch or institute access.</div> : null}</div></div>}
             {activeTab === 'lectures' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Live lectures & recordings</h3><div className="mt-3 space-y-2">{visibleAnnouncements.length ? visibleAnnouncements.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div><div className="mt-1 text-xs text-slate-400">{item.instituteId ? getInstituteName(item.instituteId) : item.classId ? getClassName(item.classId) : 'General announcement'}{item.classId ? ` • ${getClassName(item.classId)}` : ''}</div></div>) : <div className="text-sm text-slate-400">No lecture updates yet.</div>}</div></div>}
             {activeTab === 'notes' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Shared notes</h3><div className="mt-3 space-y-2">{notes.length ? notes.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.content}</div></div>) : <div className="text-sm text-slate-400">No notes shared yet.</div>}</div></div>}
-            {activeTab === 'doubts' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Ask your doubt</h3><form onSubmit={saveDoubt} className="mt-3 space-y-3"><textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Write your doubt here" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send to teacher</button></form><div className="mt-4 space-y-2">{doubts.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.question}</div><div className="text-sm text-slate-400">Status: {item.status}</div></div>)}</div></div>}
+            {activeTab === 'doubts' && (
+              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                <h3 className="text-lg font-semibold">Ask your doubt</h3>
+                <form onSubmit={saveDoubt} className="mt-3 space-y-3">
+                  <textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Write your doubt here" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                  <button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send to teacher</button>
+                </form>
+                <div className="mt-4 space-y-2">
+                  {myDoubts.length ? myDoubts.map((item) => (
+                    <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
+                      <div className="font-medium">{item.question}</div>
+                      <div className="mt-1 text-xs text-slate-400">{getClassName(item.classId)}</div>
+                      <div className="mt-1 text-sm text-slate-400">Status: {item.status === 'resolved' ? '✅ Resolved' : '⏳ Open'}</div>
+                    </div>
+                  )) : <div className="text-sm text-slate-400">You haven't asked anything yet.</div>}
+                </div>
+              </div>
+            )}
             {activeTab === 'fees' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Fee status</h3><div className="mt-3 space-y-2">{studentFees.length ? studentFees.map((item) => {
                 const cls = classes.find((c) => c.id === item.classId);
                 const inst = cls ? institutes.find((instItem) => instItem.id === cls.instituteId) : null;
@@ -1283,7 +1312,7 @@
 
     function TeacherDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, createClass, createHomework, createNote, createJoinRequest, addFeedback, addDoubt, approveRequest, rejectRequest, saveAttendance } = useAppData();
+      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt } = useAppData();
       const [activeTab, setActiveTab] = useState('home');
       const [joinCode, setJoinCode] = useState('');
       const [joinTargetType, setJoinTargetType] = useState('institute');
@@ -1302,7 +1331,6 @@
       const [selectedAttendanceStudent, setSelectedAttendanceStudent] = useState('');
       const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
       const [attendancePresent, setAttendancePresent] = useState(true);
-      const [doubtText, setDoubtText] = useState('');
       const [expandedClassId, setExpandedClassId] = useState('');
       const { addToast } = useToast();
       const approvedMemberships = joinRequests.filter((item) => item.requesterId === profile?.id && item.status === 'approved');
@@ -1335,6 +1363,7 @@
       const targetClass = visibleClasses.find((item) => item.id === selectedClassId) || visibleClasses[0] || null;
       const attendanceOptions = targetClass ? getStudentRosterForClass(targetClass, users, joinRequests, knownStudentNameRecords) : [];
       const attendanceRecords = targetClass ? attendances.filter((item) => item.classId === targetClass.id) : [];
+      const classDoubts = doubts.filter((item) => visibleClasses.some((cls) => cls.id === item.classId)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
       useEffect(() => {
         if (visibleClasses.length && (!selectedClassId || !visibleClasses.some((item) => item.id === selectedClassId))) {
           setSelectedClassId(visibleClasses[0].id);
@@ -1405,12 +1434,9 @@
         await saveAttendance({ studentId, studentName: getStudentDisplayName(student), classId: targetClass.id, date: attendanceDate, present: attendancePresent });
         addToast('Attendance recorded', 'success');
       };
-      const sendDoubt = async (event) => {
-        event.preventDefault();
-        if (!doubtText.trim()) return;
-        await addDoubt({ question: doubtText, studentId: profile.id, studentName: profile.name, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null });
-        setDoubtText('');
-        addToast('Doubt shared with the team', 'success');
+      const markDoubtResolved = async (doubtId) => {
+        await resolveDoubt(doubtId);
+        addToast('Doubt marked as resolved', 'success');
       };
       const tabs = [
         { id: 'home', label: 'Home', icon: '🏠' },
@@ -1419,7 +1445,7 @@
         { id: 'attendance', label: 'Attendance', icon: '📅' },
         { id: 'homework', label: 'Homework', icon: '📝' },
         { id: 'notes', label: 'Notes', icon: '📄' },
-        { id: 'doubts', label: 'Doubts', icon: '🤖' },
+        { id: 'doubts', label: `Doubts${classDoubts.filter((item) => item.status !== 'resolved').length ? ` (${classDoubts.filter((item) => item.status !== 'resolved').length})` : ''}`, icon: '🤖' },
         { id: 'feedback', label: 'Feedback', icon: '💬' }
       ];
       return (
@@ -1567,8 +1593,30 @@
             )}
             {activeTab === 'homework' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Assign homework</h3><form onSubmit={createNewHomework} className="mt-3 space-y-3"><input value={homeworkTitle} onChange={(event) => setHomeworkTitle(event.target.value)} placeholder="Homework title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={homeworkDesc} onChange={(event) => setHomeworkDesc(event.target.value)} placeholder="Description" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={homeworkDue} onChange={(event) => setHomeworkDue(event.target.value)} placeholder="Due date" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-emerald-600 px-3 py-2 text-sm">Assign to class</button></form><div className="mt-4 grid gap-3 md:grid-cols-2"><div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3"><div className="font-medium">Batch students</div><div className="mt-2 space-y-2">{attendanceOptions.length ? attendanceOptions.map((item) => <div key={`${item.id}-${item.classId}`} className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-slate-300"><div className="font-medium text-slate-100">{getStudentDisplayName(item)}</div></div>) : <div className="text-sm text-slate-400">No students linked to this batch yet.</div>}</div></div><div className="space-y-2">{homeworks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Due: {item.dueDate}</div></div>)}</div></div></div>}
             {activeTab === 'notes' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Share notes</h3><form onSubmit={shareNote} className="mt-3 space-y-3"><input value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} placeholder="Note title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={noteContent} onChange={(event) => setNoteContent(event.target.value)} placeholder="Note content" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Share note</button></form><div className="mt-4 space-y-2">{notes.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.content}</div></div>)}</div></div>}
-            {activeTab === 'doubts' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Doubts & support</h3><form onSubmit={sendDoubt} className="mt-3 space-y-3"><textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Share a student concern" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Post to support</button></form><div className="mt-4 space-y-2">{doubts.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.question}</div><div className="text-sm text-slate-400">Status: {item.status}</div></div>)}</div></div>}
-            {activeTab === 'feedback' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Feedback</h3><form onSubmit={giveFeedback} className="mt-3 space-y-2"><textarea value={feedbackText} onChange={(event) => setFeedbackText(event.target.value)} placeholder="Add feedback for a student" className="min-h-20 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Save feedback</button></form><div className="mt-4 space-y-2">{feedbacks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.text}</div></div>)}</div></div>}
+            {activeTab === 'doubts' && (
+              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                <h3 className="text-lg font-semibold">Student doubts</h3>
+                <p className="text-sm text-slate-400">Doubts raised by students across your batches, newest first.</p>
+                <div className="mt-4 space-y-2">
+                  {classDoubts.length ? classDoubts.map((item) => {
+                    const cls = classes.find((c) => c.id === item.classId);
+                    return (
+                      <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-medium">{item.question}</div>
+                            <div className="mt-1 text-xs text-slate-400">{item.studentName || 'Student'} • {cls?.name || 'Batch'}</div>
+                          </div>
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${item.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-300'}`}>{item.status === 'resolved' ? 'Resolved' : 'Open'}</span>
+                        </div>
+                        {item.status !== 'resolved' ? <button onClick={() => markDoubtResolved(item.id)} className="mt-3 rounded-full bg-emerald-600 px-3 py-2 text-xs">Mark resolved</button> : null}
+                      </div>
+                    );
+                  }) : <div className="text-sm text-slate-400">No doubts from your students yet.</div>}
+                </div>
+              </div>
+            )}
+            {activeTab === 'feedback' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Feedback</h3><form onSubmit={giveFeedback} className="mt-3 space-y-2"><select value={selectedFeedbackStudent} onChange={(event) => setSelectedFeedbackStudent(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select student</option>{visibleStudents.map((student) => <option key={`${student.id}-${student.classId}`} value={student.id}>{getStudentDisplayName(student)}</option>)}</select><textarea value={feedbackText} onChange={(event) => setFeedbackText(event.target.value)} placeholder="Add feedback for a student" className="min-h-20 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-full bg-amber-500 px-3 py-2 text-sm">Save feedback</button></form><div className="mt-4 space-y-2">{feedbacks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.studentName || 'Student'}</div><div className="text-sm text-slate-400">{item.text}</div></div>)}</div></div>}
           </div>
         </ScreenShell>
       );
