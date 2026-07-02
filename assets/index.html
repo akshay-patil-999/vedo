@@ -78,6 +78,44 @@
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    /* ===== Discover screen — colourful theme ===== */
+    .discover-bg {
+      background:
+        radial-gradient(circle at 8% 8%, rgba(99,102,241,0.35), transparent 32%),
+        radial-gradient(circle at 92% 18%, rgba(236,72,153,0.22), transparent 30%),
+        radial-gradient(circle at 15% 85%, rgba(16,185,129,0.22), transparent 32%),
+        radial-gradient(circle at 88% 90%, rgba(245,158,11,0.18), transparent 30%),
+        #0b1120;
+    }
+    .hero-card {
+      background: linear-gradient(135deg, rgba(49,46,129,0.55), rgba(15,23,42,0.85) 55%, rgba(6,95,70,0.35));
+    }
+    .blob { position: absolute; border-radius: 999px; filter: blur(60px); opacity: 0.5; pointer-events: none; }
+    .blob-a { width: 260px; height: 260px; background: #6366f1; top: -80px; left: -60px; }
+    .blob-b { width: 220px; height: 220px; background: #ec4899; bottom: -70px; right: 10%; }
+    .blob-c { width: 180px; height: 180px; background: #f59e0b; top: 40%; right: -60px; }
+    .rainbow-text {
+      background: linear-gradient(90deg, #818cf8, #f472b6, #fbbf24, #34d399, #38bdf8);
+      background-size: 200% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      animation: rainbowShift 6s ease-in-out infinite;
+    }
+    @keyframes rainbowShift { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
+    .pill-btn {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.45rem 0.9rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; background: rgba(255,255,255,0.06);
+      transition: all .2s ease;
+    }
+    .pill-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+    .pill-btn-active { background: linear-gradient(90deg,#6366f1,#ec4899); border-color: transparent; color: #fff; box-shadow: 0 6px 18px -6px rgba(236,72,153,0.6); }
+    .stat-card { border-radius: 1.5rem; padding: 1rem 1.25rem; border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px); color: #fff; }
+    .stat-indigo { background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(99,102,241,0.08)); }
+    .stat-emerald { background: linear-gradient(135deg, rgba(16,185,129,0.35), rgba(16,185,129,0.08)); }
+    .stat-amber { background: linear-gradient(135deg, rgba(245,158,11,0.35), rgba(245,158,11,0.08)); }
+    .institute-card { position: relative; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   </style>
 </head>
 <body>
@@ -1209,9 +1247,44 @@
       const [selectedInstitute, setSelectedInstitute] = useState(null);
       const [selectedTeacher, setSelectedTeacher] = useState(null);
       const [selectedBatch, setSelectedBatch] = useState(null);
+      const [query, setQuery] = useState('');
+      const [activeTab, setActiveTab] = useState('all');
 
-      const publicInstitutes = institutes.slice(0, 4);
-      const publicTeachers = users.filter((item) => item.role === 'teacher').slice(0, 4);
+      const teacherUsers = useMemo(() => users.filter((item) => item.role === 'teacher'), [users]);
+      const instituteMap = useMemo(() => Object.fromEntries(institutes.map((item) => [item.id, item])), [institutes]);
+
+      const SUBJECT_THEME = {
+        mathematics: { grad: 'from-indigo-500 to-blue-500', chip: 'bg-indigo-500/15 text-indigo-200 border-indigo-400/30', dot: 'bg-indigo-400' },
+        math: { grad: 'from-indigo-500 to-blue-500', chip: 'bg-indigo-500/15 text-indigo-200 border-indigo-400/30', dot: 'bg-indigo-400' },
+        physics: { grad: 'from-sky-500 to-cyan-500', chip: 'bg-sky-500/15 text-sky-200 border-sky-400/30', dot: 'bg-sky-400' },
+        chemistry: { grad: 'from-fuchsia-500 to-purple-500', chip: 'bg-fuchsia-500/15 text-fuchsia-200 border-fuchsia-400/30', dot: 'bg-fuchsia-400' },
+        biology: { grad: 'from-emerald-500 to-teal-500', chip: 'bg-emerald-500/15 text-emerald-200 border-emerald-400/30', dot: 'bg-emerald-400' },
+        english: { grad: 'from-amber-500 to-yellow-500', chip: 'bg-amber-500/15 text-amber-200 border-amber-400/30', dot: 'bg-amber-400' },
+        science: { grad: 'from-teal-500 to-cyan-500', chip: 'bg-teal-500/15 text-teal-200 border-teal-400/30', dot: 'bg-teal-400' },
+        commerce: { grad: 'from-orange-500 to-amber-500', chip: 'bg-orange-500/15 text-orange-200 border-orange-400/30', dot: 'bg-orange-400' },
+        computer: { grad: 'from-violet-500 to-purple-500', chip: 'bg-violet-500/15 text-violet-200 border-violet-400/30', dot: 'bg-violet-400' },
+      };
+      const getSubjectTheme = (subject) => {
+        const key = (subject || '').toLowerCase();
+        const found = Object.keys(SUBJECT_THEME).find((k) => key.includes(k));
+        return SUBJECT_THEME[found] || { grad: 'from-rose-500 to-pink-500', chip: 'bg-rose-500/15 text-rose-200 border-rose-400/30', dot: 'bg-rose-400' };
+      };
+
+      const q = query.trim().toLowerCase();
+      const matches = (text) => !q || String(text || '').toLowerCase().includes(q);
+
+      const filteredInstitutes = institutes.filter((item) => matches(item.name) || matches(item.city) || matches(item.description) || matches(item.code));
+      const filteredClasses = classes.filter((item) => {
+        const inst = instituteMap[item.instituteId];
+        return matches(item.name) || matches(item.subject) || matches(item.teacherName) || matches(item.code) || matches(inst?.name) || matches(inst?.city);
+      });
+      const filteredTeachers = teacherUsers.filter((item) => matches(item.name) || matches(item.email));
+
+      const noResults = q && filteredInstitutes.length === 0 && filteredClasses.length === 0 && filteredTeachers.length === 0;
+
+      const showInstitutes = activeTab === 'all' || activeTab === 'institutes';
+      const showBatches = activeTab === 'all' || activeTab === 'batches';
+      const showTeachers = activeTab === 'all' || activeTab === 'teachers';
 
       const handleInstituteAction = (institute) => {
         if (!profile) {
@@ -1233,18 +1306,59 @@
         setSelectedTeacher(teacher);
       };
 
+      const tabPills = [
+        { id: 'all', label: 'Everything', icon: '✨' },
+        { id: 'institutes', label: 'Institutes', icon: '🏫' },
+        { id: 'batches', label: 'Batches & classes', icon: '📚' },
+        { id: 'teachers', label: 'Teachers', icon: '👩‍🏫' },
+      ];
+
       return (
-        <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.25),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.18),_transparent_30%)] bg-slate-950 text-slate-100">
+        <div className="min-h-[100dvh] discover-bg text-slate-100">
           <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
-            <div className="glass rounded-[32px] border border-white/10 p-8 shadow-2xl">
-              <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+
+            {/* HERO */}
+            <div className="hero-card rounded-[32px] border border-white/10 p-8 shadow-2xl relative overflow-hidden">
+              <div className="blob blob-a"></div>
+              <div className="blob blob-b"></div>
+              <div className="blob blob-c"></div>
+              <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
                 <div className="space-y-5">
-                  <div className="inline-flex rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-sm text-indigo-200">Live coaching, classes, fees and communication in one place</div>
-                  <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">Create institutes, batches, classes and student groups with code-based joining.</h1>
-                  <p className="max-w-2xl text-lg text-slate-400">Owners can onboard institutes; teachers can create classes and manage lecture groups; students join with special codes and track notes, fees, homework and marks; parents link to their child's account to follow along.</p>
-                  <div className="flex flex-wrap gap-3">
-                    <button onClick={() => navigateTo('/discover')} className="rounded-xl bg-indigo-600 px-5 py-3 font-medium text-white hover:bg-indigo-500 transition-all">Start free</button>
-                    <button onClick={() => navigateTo('/student')} className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 font-medium text-white hover:bg-white/10 transition-all">Explore dashboard</button>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-amber-400/10 px-3 py-1 text-sm text-amber-200">
+                    <span>🎉</span> Live coaching, classes, fees and communication in one place
+                  </div>
+                  <h1 className="text-4xl font-black leading-tight sm:text-5xl">
+                    <span className="rainbow-text">Discover institutes, batches &amp; teachers</span><br/>
+                    all in one colourful desk.
+                  </h1>
+                  <p className="max-w-2xl text-lg text-slate-300">Owners onboard institutes; teachers create classes and manage lecture groups; students join with special codes and track notes, fees, homework and marks; parents follow along.</p>
+
+                  {/* SEARCH */}
+                  <div className="relative max-w-xl">
+                    <div className="flex items-center gap-2 rounded-2xl border-2 border-white/15 bg-white/10 px-4 py-3 backdrop-blur focus-within:border-amber-300/70 transition-all">
+                      <span className="text-lg">🔍</span>
+                      <input
+                        type="text"
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Search institute, city, batch, subject or teacher..."
+                        className="w-full bg-transparent text-sm text-white placeholder-slate-400 outline-none"
+                      />
+                      {query && (
+                        <button onClick={() => setQuery('')} className="text-slate-400 hover:text-white text-sm">✕</button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* CATEGORY PILLS */}
+                  <div className="flex flex-wrap gap-2">
+                    {tabPills.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`pill-btn ${activeTab === tab.id ? 'pill-btn-active' : ''}`}
+                      >{tab.icon} {tab.label}</button>
+                    ))}
                   </div>
                 </div>
                 <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
@@ -1253,95 +1367,173 @@
               </div>
             </div>
 
+            {/* STATS */}
             <div className="grid gap-3 md:grid-cols-3">
-              <div className="metric-card rounded-3xl p-4">
-                <div className="text-sm text-slate-400">Institutes</div>
-                <div className="mt-2 text-2xl font-semibold">{institutes.length}</div>
+              <div className="stat-card stat-indigo">
+                <div className="text-sm opacity-80">🏫 Institutes</div>
+                <div className="mt-2 text-3xl font-black">{institutes.length}</div>
               </div>
-              <div className="metric-card rounded-3xl p-4">
-                <div className="text-sm text-slate-400">Batches</div>
-                <div className="mt-2 text-2xl font-semibold">{classes.length}</div>
+              <div className="stat-card stat-emerald">
+                <div className="text-sm opacity-80">📚 Batches &amp; classes</div>
+                <div className="mt-2 text-3xl font-black">{classes.length}</div>
               </div>
-              <div className="metric-card rounded-3xl p-4">
-                <div className="text-sm text-slate-400">Teachers</div>
-                <div className="mt-2 text-2xl font-semibold">{users.filter((item) => item.role === 'teacher').length}</div>
+              <div className="stat-card stat-amber">
+                <div className="text-sm opacity-80">👩‍🏫 Teachers</div>
+                <div className="mt-2 text-3xl font-black">{teacherUsers.length}</div>
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {publicInstitutes.map((item) => {
-                const instBatches = classes.filter((classItem) => classItem.instituteId === item.id);
-                const batchCount = instBatches.length;
-                return (
-                  <div key={item.id} className="glass rounded-3xl border border-white/10 p-5 card-hover">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-semibold">{item.name}</h3>
-                        <p className="mt-1 text-sm text-slate-400">{item.city}</p>
-                      </div>
-                      <span className="rounded-xl bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">{batchCount} batches</span>
-                    </div>
-                    <p className="mt-3 text-sm text-slate-400">{item.description}</p>
-                    {instBatches.length > 0 && (
-                      <div className="mt-3">
-                        <p className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-1.5">Batches & fee</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {instBatches.slice(0, 4).map((batchItem) => (
-                            <button
-                              key={batchItem.id}
-                              onClick={() => setSelectedBatch(batchItem)}
-                              className="rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-200 hover:bg-indigo-600 hover:text-white transition-all"
-                            >{batchItem.name} • ₹{batchItem.fee}</button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div className="mt-4 flex items-center justify-between">
-                      <span className="text-xs uppercase tracking-[0.25em] text-slate-500">Code {item.code}</span>
-                      <button onClick={() => handleInstituteAction(item)} className="rounded-xl bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-all">View details</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {noResults && (
+              <div className="glass rounded-3xl border border-white/10 p-8 text-center text-slate-400">
+                <span className="text-3xl block mb-2">🔎</span>
+                No institutes, batches or teachers match &ldquo;{query}&rdquo;. Try another search term.
+              </div>
+            )}
 
-            <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+            {/* INSTITUTES */}
+            {showInstitutes && (
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Featured teachers</h3>
-                  <span className="text-sm text-slate-400">Login required for full profile</span>
+                  <h3 className="text-lg font-bold flex items-center gap-2">🏫 Institute directory <span className="text-sm font-medium text-slate-400">({filteredInstitutes.length})</span></h3>
                 </div>
-                <div className="mt-4 space-y-3">
-                  {publicTeachers.map((teacher) => (
-                    <div key={teacher.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <div className="font-medium">{teacher.name}</div>
-                          <div className="text-sm text-slate-400">{teacher.email}</div>
+                {filteredInstitutes.length === 0 ? (
+                  <div className="glass rounded-3xl border border-white/10 p-6 text-sm text-slate-400">No institutes to show yet.</div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {filteredInstitutes.map((item) => {
+                      const instBatches = classes.filter((classItem) => classItem.instituteId === item.id);
+                      return (
+                        <div key={item.id} className="glass rounded-3xl border border-white/10 p-5 card-hover institute-card">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h3 className="text-lg font-semibold">{item.name}</h3>
+                              <p className="mt-1 text-sm text-slate-400">📍 {item.city}</p>
+                            </div>
+                            <span className="rounded-xl bg-indigo-500/15 border border-indigo-400/30 px-2.5 py-1 text-xs font-bold text-indigo-200">{instBatches.length} batches</span>
+                          </div>
+                          <p className="mt-3 text-sm text-slate-400 line-clamp-2">{item.description}</p>
+                          {instBatches.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-1.5">Batches &amp; fee</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {instBatches.slice(0, 5).map((batchItem) => {
+                                  const theme = getSubjectTheme(batchItem.subject);
+                                  return (
+                                    <button
+                                      key={batchItem.id}
+                                      onClick={() => setSelectedBatch(batchItem)}
+                                      className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition-all hover:brightness-125 ${theme.chip}`}
+                                    >{batchItem.name} • ₹{batchItem.fee}</button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          <div className="mt-4 flex items-center justify-between">
+                            <span className="text-xs uppercase tracking-[0.25em] text-slate-500">Code {item.code}</span>
+                            <button onClick={() => handleInstituteAction(item)} className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-2 text-sm font-semibold text-white hover:brightness-110 transition-all">View details</button>
+                          </div>
                         </div>
-                        <button onClick={() => handleTeacherAction(teacher)} className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 transition-all">View profile</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+            )}
+
+            {/* BATCHES */}
+            {showBatches && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold flex items-center gap-2">📚 Batches &amp; classes <span className="text-sm font-medium text-slate-400">({filteredClasses.length})</span></h3>
+                </div>
+                {filteredClasses.length === 0 ? (
+                  <div className="glass rounded-3xl border border-white/10 p-6 text-sm text-slate-400">No batches to show yet.</div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {filteredClasses.map((item) => {
+                      const theme = getSubjectTheme(item.subject);
+                      const inst = instituteMap[item.instituteId];
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => setSelectedBatch(item)}
+                          className="text-left glass rounded-3xl border border-white/10 p-5 card-hover overflow-hidden relative"
+                        >
+                          <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${theme.grad}`}></div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h4 className="text-base font-bold">{item.name}</h4>
+                              <p className="mt-1 text-xs text-slate-400">{inst ? `🏫 ${inst.name} • ${inst.city}` : 'Independent batch'}</p>
+                            </div>
+                            <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${theme.chip}`}>{item.subject || 'General'}</span>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between text-sm">
+                            <span className="text-slate-400">{item.schedule || 'Weekly'}</span>
+                            <span className="font-black text-emerald-300">₹{item.fee}</span>
+                          </div>
+                          {item.teacherName && <p className="mt-1.5 text-xs text-slate-500">👤 {item.teacherName}</p>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TEACHERS */}
+            {showTeachers && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold flex items-center gap-2">👩‍🏫 Teachers <span className="text-sm font-medium text-slate-400">({filteredTeachers.length})</span></h3>
+                </div>
+                {filteredTeachers.length === 0 ? (
+                  <div className="glass rounded-3xl border border-white/10 p-6 text-sm text-slate-400">No teachers to show yet.</div>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {filteredTeachers.map((teacher, index) => {
+                      const palette = ['from-emerald-500 to-teal-500', 'from-indigo-500 to-blue-500', 'from-fuchsia-500 to-purple-500', 'from-amber-500 to-orange-500', 'from-sky-500 to-cyan-500'];
+                      const grad = palette[index % palette.length];
+                      return (
+                        <div key={teacher.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 card-hover flex items-center gap-3">
+                          <div className={`w-11 h-11 shrink-0 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center font-black text-white text-sm`}>
+                            {(teacher.name || teacher.email || '?').slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold truncate">{teacher.name}</div>
+                            <div className="text-sm text-slate-400 truncate">{teacher.email}</div>
+                          </div>
+                          <button onClick={() => handleTeacherAction(teacher)} className="shrink-0 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2 text-xs font-semibold text-white hover:brightness-110 transition-all">View profile</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* HOW IT WORKS */}
+            {activeTab === 'all' && (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">How it works</h3>
-                <div className="mt-4 space-y-3">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {[
-                    ['Owner controls', 'Create institutes, approve student and teacher requests, send notifications and manage batches.'],
-                    ['Teacher workflow', 'Create and teach individual classes, post notes, assign homework, solve doubts and give feedback.'],
-                    ['Student journey', 'Join a class or institute by code, track fees, view schedule, submit homework and see marks.'],
-                    ['Parent journey', "Link to your child's account using their email and unique parent code, then follow marks, attendance, fees and feedback."]
-                  ].map(([title, text]) => (
-                    <div key={title} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                      <h4 className="font-medium">{title}</h4>
-                      <p className="mt-1 text-sm text-slate-400">{text}</p>
+                    ['🏢', 'Owner controls', 'Create institutes, approve student and teacher requests, send notifications and manage batches.', 'from-violet-500/15 to-indigo-500/10 border-violet-400/20'],
+                    ['👩‍🏫', 'Teacher workflow', 'Create and teach individual classes, post notes, assign homework, solve doubts and give feedback.', 'from-emerald-500/15 to-teal-500/10 border-emerald-400/20'],
+                    ['🎓', 'Student journey', 'Join a class or institute by code, track fees, view schedule, submit homework and see marks.', 'from-sky-500/15 to-cyan-500/10 border-sky-400/20'],
+                    ['👨‍👩‍👧', 'Parent journey', "Link to your child's account using their email and unique parent code, then follow marks, attendance, fees and feedback.", 'from-amber-500/15 to-orange-500/10 border-amber-400/20'],
+                  ].map(([icon, title, text, tint]) => (
+                    <div key={title} className={`rounded-2xl border p-4 bg-gradient-to-br ${tint} card-hover`}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{icon}</span>
+                        <h4 className="font-bold">{title}</h4>
+                      </div>
+                      <p className="mt-1.5 text-sm text-slate-300">{text}</p>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {selectedInstitute && (
@@ -1350,65 +1542,68 @@
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="text-xl font-semibold">{selectedInstitute.name}</h3>
-                    <p className="mt-1 text-sm text-slate-400">{selectedInstitute.city}</p>
+                    <p className="mt-1 text-sm text-slate-400">📍 {selectedInstitute.city}</p>
                   </div>
                   <button onClick={() => setSelectedInstitute(null)} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300 transition-all">✕</button>
                 </div>
                 <div className="mt-4 space-y-3 text-sm text-slate-400">
                   <p>{selectedInstitute.description}</p>
-                  <p>Institute code: {selectedInstitute.code}</p>
+                  <p>Institute code: <span className="text-indigo-300 font-semibold">{selectedInstitute.code}</span></p>
                   <p>Owner: {selectedInstitute.ownerName}</p>
                 </div>
                 {profile ? (
                   <div className="mt-5 flex gap-2">
-                    <button onClick={() => navigateTo('/student')} className="flex-1 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-all">Open dashboard</button>
+                    <button onClick={() => navigateTo('/student')} className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all">Open dashboard</button>
                     <button onClick={() => setSelectedInstitute(null)} className="flex-1 rounded-xl border border-white/10 px-3 py-2 text-sm font-medium text-slate-300 transition-all">Close</button>
                   </div>
                 ) : (
                   <div className="mt-5 space-y-3">
                     <p className="text-sm text-slate-400">Login or create an account to open full institute details and join classes.</p>
-                    <button onClick={() => navigateTo('/auth')} className="w-full rounded-xl bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-all">Login / sign up</button>
+                    <button onClick={() => navigateTo('/auth')} className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all">Login / sign up</button>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {selectedBatch && (
-            <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 px-4 py-6">
-              <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-slate-900/95 shadow-2xl overflow-hidden">
-                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-5 text-white">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-xl font-semibold">{selectedBatch.name}</h3>
-                      <p className="mt-1 text-sm text-indigo-300">{selectedBatch.subject || 'General'} • {selectedBatch.schedule || 'Weekly'}</p>
+          {selectedBatch && (() => {
+            const theme = getSubjectTheme(selectedBatch.subject);
+            return (
+              <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 px-4 py-6">
+                <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-slate-900/95 shadow-2xl overflow-hidden">
+                  <div className={`bg-gradient-to-br ${theme.grad} p-5 text-white`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-xl font-semibold">{selectedBatch.name}</h3>
+                        <p className="mt-1 text-sm text-white/80">{selectedBatch.subject || 'General'} • {selectedBatch.schedule || 'Weekly'}</p>
+                      </div>
+                      <button onClick={() => setSelectedBatch(null)} className="rounded-xl border border-white/30 px-3 py-2 text-sm text-white transition-all">✕</button>
                     </div>
-                    <button onClick={() => setSelectedBatch(null)} className="rounded-xl border border-white/10 px-3 py-2 text-sm text-slate-300 transition-all">✕</button>
+                    <div className="mt-4 rounded-xl bg-white/15 px-4 py-3 text-center">
+                      <p className="text-xs text-white/80">Monthly fee</p>
+                      <p className="text-2xl font-semibold">₹{selectedBatch.fee}</p>
+                    </div>
                   </div>
-                  <div className="mt-4 rounded-xl bg-white/10 px-4 py-3 text-center">
-                    <p className="text-xs text-indigo-300">Monthly fee</p>
-                    <p className="text-2xl font-semibold">₹{selectedBatch.fee}</p>
+                  <div className="p-5 space-y-3 text-sm text-slate-400">
+                    {selectedBatch.description ? <p>{selectedBatch.description}</p> : null}
+                    {selectedBatch.teacherName ? <p>Taught by: <span className="text-slate-200 font-semibold">{selectedBatch.teacherName}</span></p> : null}
+                    <p>Batch code: <span className="text-slate-200 font-semibold">{selectedBatch.code}</span></p>
+                    {profile ? (
+                      <div className="mt-2 flex gap-2">
+                        <button onClick={() => navigateTo('/student')} className={`flex-1 rounded-xl bg-gradient-to-r ${theme.grad} px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all`}>Open dashboard</button>
+                        <button onClick={() => setSelectedBatch(null)} className="flex-1 rounded-xl border border-white/10 px-3 py-2 text-sm font-medium text-slate-300 transition-all">Close</button>
+                      </div>
+                    ) : (
+                      <div className="mt-2 space-y-3">
+                        <p>Login or create an account to join this batch with its code.</p>
+                        <button onClick={() => navigateTo('/auth')} className={`w-full rounded-xl bg-gradient-to-r ${theme.grad} px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all`}>Login / sign up</button>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="p-5 space-y-3 text-sm text-slate-400">
-                  {selectedBatch.description ? <p>{selectedBatch.description}</p> : null}
-                  {selectedBatch.teacherName ? <p>Taught by: {selectedBatch.teacherName}</p> : null}
-                  <p>Batch code: {selectedBatch.code}</p>
-                  {profile ? (
-                    <div className="mt-2 flex gap-2">
-                      <button onClick={() => navigateTo('/student')} className="flex-1 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-all">Open dashboard</button>
-                      <button onClick={() => setSelectedBatch(null)} className="flex-1 rounded-xl border border-white/10 px-3 py-2 text-sm font-medium text-slate-300 transition-all">Close</button>
-                    </div>
-                  ) : (
-                    <div className="mt-2 space-y-3">
-                      <p>Login or create an account to join this batch with its code.</p>
-                      <button onClick={() => navigateTo('/auth')} className="w-full rounded-xl bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-all">Login / sign up</button>
-                    </div>
-                  )}
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {selectedTeacher && (
             <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 px-4 py-6">
@@ -1425,13 +1620,13 @@
                 </div>
                 {profile ? (
                   <div className="mt-5 flex gap-2">
-                    <button onClick={() => navigateTo('/student')} className="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 transition-all">Continue</button>
+                    <button onClick={() => navigateTo('/student')} className="flex-1 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all">Continue</button>
                     <button onClick={() => setSelectedTeacher(null)} className="flex-1 rounded-xl border border-white/10 px-3 py-2 text-sm font-medium text-slate-300 transition-all">Close</button>
                   </div>
                 ) : (
                   <div className="mt-5 space-y-3">
                     <p className="text-sm text-slate-400">Sign in to unlock teacher details and booking options.</p>
-                    <button onClick={() => navigateTo('/auth')} className="w-full rounded-xl bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500 transition-all">Login / sign up</button>
+                    <button onClick={() => navigateTo('/auth')} className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all">Login / sign up</button>
                   </div>
                 )}
               </div>
@@ -1440,6 +1635,7 @@
         </div>
       );
     }
+
 
     function AuthScreen({ compact = false }) {
       const [mode, setMode] = useState('login');
