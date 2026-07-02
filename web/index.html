@@ -596,8 +596,8 @@
         }
       };
 
-      const addDoubt = async ({ question, classId, instituteId, studentId, studentName }) => {
-        const payload = { id: `DOU-${Date.now()}`, question, classId: classId || null, instituteId: instituteId || null, studentId, studentName, status: 'open', createdAt: stamp() };
+      const addDoubt = async ({ question, classId, instituteId, studentId, studentName, teacherId, teacherName }) => {
+        const payload = { id: `DOU-${Date.now()}`, question, classId: classId || null, instituteId: instituteId || null, studentId, studentName, teacherId: teacherId || null, teacherName: teacherName || '', status: 'open', reply: null, repliedAt: null, createdAt: stamp() };
         setDoubts((prev) => [payload, ...prev]);
         if (backendReady && firestoreRef) await firestoreRef.collection('doubts').doc(payload.id).set(payload);
         return payload;
@@ -610,6 +610,17 @@
             await firestoreRef.collection('doubts').doc(doubtId).set({ status: 'resolved', resolvedAt: stamp() }, { merge: true });
           } catch (err) {
             console.warn('Failed to persist resolved doubt to Firestore', err);
+          }
+        }
+      };
+
+      const replyToDoubt = async (doubtId, reply) => {
+        setDoubts((prev) => prev.map((item) => item.id === doubtId ? { ...item, reply, status: 'resolved', repliedAt: stamp() } : item));
+        if (backendReady && firestoreRef) {
+          try {
+            await firestoreRef.collection('doubts').doc(doubtId).set({ reply, status: 'resolved', repliedAt: stamp() }, { merge: true });
+          } catch (err) {
+            console.warn('Failed to persist doubt reply to Firestore', err);
           }
         }
       };
@@ -635,7 +646,7 @@
         return payload;
       };
 
-      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, createNote, createHomework, submitHomework, saveAttendance, addDoubt, resolveDoubt, addFeedback, addMark, updateUser };
+      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, createNote, createHomework, submitHomework, saveAttendance, addDoubt, resolveDoubt, replyToDoubt, addFeedback, addMark, updateUser };
       return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
     }
 
@@ -1173,6 +1184,7 @@
       const [joinCode, setJoinCode] = useState('');
       const [activeTab, setActiveTab] = useState('home');
       const [doubtText, setDoubtText] = useState('');
+      const [selectedDoubtClassId, setSelectedDoubtClassId] = useState('');
       const { addToast } = useToast();
       const approvedMemberships = joinRequests.filter((item) => item.requesterId === profile?.id && item.status === 'approved');
       const pendingRequests = joinRequests.filter((item) => item.requesterId === profile?.id && item.status === 'pending');
@@ -1206,6 +1218,16 @@
       const getClassName = (id) => classes.find((item) => item.id === id)?.name || 'Class';
       const studentFees = fees.filter((item) => item.studentId === profile?.id);
       const myDoubts = doubts.filter((item) => item.studentId === profile?.id).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      const doubtTargets = visibleClasses.flatMap((cls) => getTeacherRosterForClass(cls, users, joinRequests).map((teacher) => ({ key: `${cls.id}::${teacher.id}`, classId: cls.id, className: cls.name, teacherId: teacher.id, teacherName: teacher.name, instituteId: cls.instituteId })));
+      useEffect(() => {
+        if (doubtTargets.length && !doubtTargets.some((item) => item.key === selectedDoubtClassId)) {
+          setSelectedDoubtClassId(doubtTargets[0].key);
+        }
+        if (!doubtTargets.length && selectedDoubtClassId) {
+          setSelectedDoubtClassId('');
+        }
+      }, [doubtTargets.map((item) => item.key).join('|')]);
+      const selectedDoubtTarget = doubtTargets.find((item) => item.key === selectedDoubtClassId) || null;
       const markFeePaid = async (feeId) => {
         const feeItem = fees.find((item) => item.id === feeId);
         if (!feeItem) return;
@@ -1226,10 +1248,12 @@
       };
       const saveDoubt = async (event) => {
         event.preventDefault();
+        if (!doubtTargets.length) return addToast('Join a batch before you can ask a doubt', 'error');
+        if (!selectedDoubtTarget) return addToast('Select a batch and teacher to send this doubt to', 'error');
         if (!doubtText.trim()) return;
-        await addDoubt({ question: doubtText, studentId: profile.id, studentName: profile.name, classId: visibleClasses[0]?.id || null, instituteId: visibleInstitutes[0]?.id || null });
+        await addDoubt({ question: doubtText, studentId: profile.id, studentName: profile.name, classId: selectedDoubtTarget.classId, instituteId: selectedDoubtTarget.instituteId || null, teacherId: selectedDoubtTarget.teacherId, teacherName: selectedDoubtTarget.teacherName });
         setDoubtText('');
-        addToast('Doubt posted to the teacher', 'success');
+        addToast(`Doubt sent to ${selectedDoubtTarget.teacherName}`, 'success');
       };
       const tabs = [
         { id: 'home', label: 'Home', icon: '🏠' },
@@ -1284,16 +1308,24 @@
             {activeTab === 'doubts' && (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">Ask your doubt</h3>
-                <form onSubmit={saveDoubt} className="mt-3 space-y-3">
-                  <textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Write your doubt here" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
-                  <button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send to teacher</button>
-                </form>
+                {doubtTargets.length ? (
+                  <form onSubmit={saveDoubt} className="mt-3 space-y-3">
+                    <select value={selectedDoubtClassId} onChange={(event) => setSelectedDoubtClassId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
+                      {doubtTargets.map((item) => <option key={item.key} value={item.key}>{item.className} • {item.teacherName}</option>)}
+                    </select>
+                    <textarea value={doubtText} onChange={(event) => setDoubtText(event.target.value)} placeholder="Write your doubt here" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                    <button className="rounded-full bg-indigo-600 px-3 py-2 text-sm">Send to teacher</button>
+                  </form>
+                ) : (
+                  <div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-400">Join a batch or institute first — doubts can only be sent once you're enrolled with a teacher.</div>
+                )}
                 <div className="mt-4 space-y-2">
                   {myDoubts.length ? myDoubts.map((item) => (
                     <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
                       <div className="font-medium">{item.question}</div>
-                      <div className="mt-1 text-xs text-slate-400">{getClassName(item.classId)}</div>
+                      <div className="mt-1 text-xs text-slate-400">{getClassName(item.classId)} • To: {item.teacherName || 'Teacher'}</div>
                       <div className="mt-1 text-sm text-slate-400">Status: {item.status === 'resolved' ? '✅ Resolved' : '⏳ Open'}</div>
+                      {item.reply ? <div className="mt-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-200"><div className="text-xs font-semibold uppercase tracking-wide text-emerald-300">Teacher's reply</div><div className="mt-1">{item.reply}</div></div> : null}
                     </div>
                   )) : <div className="text-sm text-slate-400">You haven't asked anything yet.</div>}
                 </div>
@@ -1312,7 +1344,7 @@
 
     function TeacherDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt } = useAppData();
+      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt } = useAppData();
       const [activeTab, setActiveTab] = useState('home');
       const [joinCode, setJoinCode] = useState('');
       const [joinTargetType, setJoinTargetType] = useState('institute');
@@ -1363,7 +1395,8 @@
       const targetClass = visibleClasses.find((item) => item.id === selectedClassId) || visibleClasses[0] || null;
       const attendanceOptions = targetClass ? getStudentRosterForClass(targetClass, users, joinRequests, knownStudentNameRecords) : [];
       const attendanceRecords = targetClass ? attendances.filter((item) => item.classId === targetClass.id) : [];
-      const classDoubts = doubts.filter((item) => visibleClasses.some((cls) => cls.id === item.classId)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      const classDoubts = doubts.filter((item) => item.teacherId ? item.teacherId === profile?.id : visibleClasses.some((cls) => cls.id === item.classId)).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      const [doubtReplyDrafts, setDoubtReplyDrafts] = useState({});
       useEffect(() => {
         if (visibleClasses.length && (!selectedClassId || !visibleClasses.some((item) => item.id === selectedClassId))) {
           setSelectedClassId(visibleClasses[0].id);
@@ -1437,6 +1470,13 @@
       const markDoubtResolved = async (doubtId) => {
         await resolveDoubt(doubtId);
         addToast('Doubt marked as resolved', 'success');
+      };
+      const sendDoubtReply = async (doubtId) => {
+        const reply = (doubtReplyDrafts[doubtId] || '').trim();
+        if (!reply) return addToast('Write a reply before sending', 'error');
+        await replyToDoubt(doubtId, reply);
+        setDoubtReplyDrafts((prev) => ({ ...prev, [doubtId]: '' }));
+        addToast('Reply sent to student', 'success');
       };
       const tabs = [
         { id: 'home', label: 'Home', icon: '🏠' },
@@ -1596,7 +1636,7 @@
             {activeTab === 'doubts' && (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">Student doubts</h3>
-                <p className="text-sm text-slate-400">Doubts raised by students across your batches, newest first.</p>
+                <p className="text-sm text-slate-400">Doubts sent directly to you by your students, newest first. Only you and the student who asked can see each reply.</p>
                 <div className="mt-4 space-y-2">
                   {classDoubts.length ? classDoubts.map((item) => {
                     const cls = classes.find((c) => c.id === item.classId);
@@ -1609,7 +1649,20 @@
                           </div>
                           <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${item.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-300'}`}>{item.status === 'resolved' ? 'Resolved' : 'Open'}</span>
                         </div>
-                        {item.status !== 'resolved' ? <button onClick={() => markDoubtResolved(item.id)} className="mt-3 rounded-full bg-emerald-600 px-3 py-2 text-xs">Mark resolved</button> : null}
+                        {item.reply ? (
+                          <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-200">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-emerald-300">Your reply</div>
+                            <div className="mt-1">{item.reply}</div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 space-y-2">
+                            <textarea value={doubtReplyDrafts[item.id] || ''} onChange={(event) => setDoubtReplyDrafts((prev) => ({ ...prev, [item.id]: event.target.value }))} placeholder="Write a reply only this student will see" className="min-h-16 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm" />
+                            <div className="flex gap-2">
+                              <button onClick={() => sendDoubtReply(item.id)} className="rounded-full bg-indigo-600 px-3 py-2 text-xs">Send reply</button>
+                              <button onClick={() => markDoubtResolved(item.id)} className="rounded-full bg-emerald-600 px-3 py-2 text-xs">Mark resolved</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   }) : <div className="text-sm text-slate-400">No doubts from your students yet.</div>}
