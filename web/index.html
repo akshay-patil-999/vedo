@@ -120,6 +120,11 @@
 </head>
 <body>
   <div id="root"></div>
+  <!-- Tailwind Play CDN safelist: these classes are built dynamically at runtime via
+       template strings (e.g. `bg-${accent}-500/20`). Listing every literal combination
+       here — even hidden — guarantees the CDN compiler generates them all up front so
+       role/menu colours never flash unstyled or fail to render. Do not remove. -->
+  <div style="display:none" aria-hidden="true" id="tw-safelist" class="bg-amber-300 bg-amber-300/10 bg-amber-300/15 bg-amber-300/20 bg-amber-300/25 bg-amber-300/30 bg-amber-300/40 bg-amber-300/5 bg-amber-400 bg-amber-400/10 bg-amber-400/15 bg-amber-400/20 bg-amber-400/25 bg-amber-400/30 bg-amber-400/40 bg-amber-400/5 bg-amber-500 bg-amber-500/10 bg-amber-500/15 bg-amber-500/20 bg-amber-500/25 bg-amber-500/30 bg-amber-500/40 bg-amber-500/5 bg-amber-600 bg-amber-600/10 bg-amber-600/15 bg-amber-600/20 bg-amber-600/25 bg-amber-600/30 bg-amber-600/40 bg-amber-600/5 bg-blue-300 bg-blue-300/10 bg-blue-300/15 bg-blue-300/20 bg-blue-300/25 bg-blue-300/30 bg-blue-300/40 bg-blue-300/5 bg-blue-400 bg-blue-400/10 bg-blue-400/15 bg-blue-400/20 bg-blue-400/25 bg-blue-400/30 bg-blue-400/40 bg-blue-400/5 bg-blue-500 bg-blue-500/10 bg-blue-500/15 bg-blue-500/20 bg-blue-500/25 bg-blue-500/30 bg-blue-500/40 bg-blue-500/5 bg-blue-600 bg-blue-600/10 bg-blue-600/15 bg-blue-600/20 bg-blue-600/25 bg-blue-600/30 bg-blue-600/40 bg-blue-600/5 bg-cyan-300 bg-cyan-300/10 bg-cyan-300/15 bg-cyan-300/20 bg-cyan-300/25 bg-cyan-300/30 bg-cyan-300/40 bg-cyan-300/5 bg-cyan-400 bg-cyan-400/10 bg-cyan-400/15 bg-cyan-400/20 bg-cyan-400/25 bg-cyan-400/30 bg-cyan-400/40 bg-cyan-400/5 bg-cyan-500 bg-cyan-500/10 bg-cyan-500/15 bg-cyan-500/20 bg-cyan-500/25 bg-cyan-500/30 bg-cyan-500/40 bg-cyan-500/5 bg-cyan-600 bg-cyan-600/10 bg-cyan-600/15 bg-cyan-600/20 bg-cyan-600/25 bg-cyan-600/30 bg-cyan-600/40 bg-cyan-600/5 bg-emerald-300 bg-emerald-300/10 bg-emerald-300/15 bg-emerald-300/20 bg-emerald-300/25 bg-emerald-300/30 bg-emerald-300/40 bg-emerald-300/5 bg-emerald-400 bg-emerald-400/10 bg-emerald-400/15 bg-emerald-400/20 bg-emerald-400/25 bg-emerald-400/30 bg-emerald-400/40 bg-emerald-400/5 bg-emerald-500 bg-emerald-500/10 bg-emerald-500/15 bg-emerald-500/20 bg-emerald-500/25 bg-emerald-500/30 bg-emerald-500/40 bg-emerald-500/5 bg-emerald-600 bg-emerald-600/10 bg-emerald-600/15 bg-emerald-600/20 bg-emerald-600/25 bg-emerald-600/30 bg-emerald-600/40 bg-emerald-600/5 bg-fuchsia-300 bg-fuchsia-300/10 bg-fuchsia-300/15 bg-fuchsia-300/20 bg-fuchsia-300/25 bg-fuchsia-300/30 bg-fuchsia-300/40 bg-fuchsia-300/5 bg-fuchsia-400 bg-fuchsia-400/10 bg-fuchsia-400/15 bg-fuchsia-400/20 bg-fuchsia-400/25 bg-fuchsia-400/30 bg-fuchsia-400/40 bg-fuchsia-400/5 bg-fuchsia-500 bg-fuchsia-500/10 bg-fuchsia-500/15 bg-fuchsia-500/20 bg-fuchsia-500/25 bg-fuchsia-500/30 bg-fuchsia-500/40 bg-fuchsia-500/5 bg-fuchsia-600 bg-fuchsia-600/10 bg-fuchsia-600/15 bg-fuchsia-600/20 bg-fuchsia-600/25 bg-fuchsia-600/30 bg-fuchsia-600/40 bg-fuchsia-600/5 bg-indigo-300 bg-indigo-300/10 bg-indigo-300/15 bg-indigo-300/20 bg-indigo-300/25 bg-indigo-300/30 bg-indigo-300/40 bg-indigo-300/5 bg-indigo-400 bg-indigo-400/10 bg-indigo-400/15 bg-indigo-400/20 bg-indigo-400/25 bg-indigo-400/30 bg-indigo-400/40 bg-indigo-400/5 bg-indigo-500 bg-indigo-500/10 bg-indigo-500/15 bg-indigo-500/20 bg-indigo-500/25 bg-indigo-500/30 bg-indigo-500/40 bg-indigo-500/5 bg-indigo-600 bg-indigo-600/10 bg-indigo-600/15 bg-indigo-600/20 bg-indigo-600/25 bg-indigo-600/30 bg-indigo-600/40 bg-indigo-600/5 bg-lime-300 bg-lime-300/10 bg-lime-300/15 bg-lime-300/20 bg-lime-300/25 bg-lime-300/30 bg-lime-300/40 bg-lime-300/5 bg-lime-400 bg-lime-400/10 bg-lime-400/15 bg-lime-400/20 bg-lime-400/25 bg-lime-400/30 bg-lime-400/40 bg-lime-400/5 bg-lime-500 bg-lime-500/10 bg-lime-500/15 bg-lime-500/20 bg-lime-500/25 bg-lime-500/30 bg-lime-500/40 bg-lime-500/5 bg-lime-600 bg-lime-600/10 bg-lime-600/15 bg-lime-600/20 bg-lime-600/25 bg-lime-600/30 bg-lime-600/40 bg-lime-600/5 bg-orange-300 bg-orange-300/10 bg-orange-300/15 bg-orange-300/20 bg-orange-300/25 bg-orange-300/30 bg-orange-300/40 bg-orange-300/5 bg-orange-400 bg-orange-400/10 bg-orange-400/15 bg-orange-400/20 bg-orange-400/25 bg-orange-400/30 bg-orange-400/40 bg-orange-400/5 bg-orange-500 bg-orange-500/10 bg-orange-500/15 bg-orange-500/20 bg-orange-500/25 bg-orange-500/30 bg-orange-500/40 bg-orange-500/5 bg-orange-600 bg-orange-600/10 bg-orange-600/15 bg-orange-600/20 bg-orange-600/25 bg-orange-600/30 bg-orange-600/40 bg-orange-600/5 bg-pink-300 bg-pink-300/10 bg-pink-300/15 bg-pink-300/20 bg-pink-300/25 bg-pink-300/30 bg-pink-300/40 bg-pink-300/5 bg-pink-400 bg-pink-400/10 bg-pink-400/15 bg-pink-400/20 bg-pink-400/25 bg-pink-400/30 bg-pink-400/40 bg-pink-400/5 bg-pink-500 bg-pink-500/10 bg-pink-500/15 bg-pink-500/20 bg-pink-500/25 bg-pink-500/30 bg-pink-500/40 bg-pink-500/5 bg-pink-600 bg-pink-600/10 bg-pink-600/15 bg-pink-600/20 bg-pink-600/25 bg-pink-600/30 bg-pink-600/40 bg-pink-600/5 bg-purple-300 bg-purple-300/10 bg-purple-300/15 bg-purple-300/20 bg-purple-300/25 bg-purple-300/30 bg-purple-300/40 bg-purple-300/5 bg-purple-400 bg-purple-400/10 bg-purple-400/15 bg-purple-400/20 bg-purple-400/25 bg-purple-400/30 bg-purple-400/40 bg-purple-400/5 bg-purple-500 bg-purple-500/10 bg-purple-500/15 bg-purple-500/20 bg-purple-500/25 bg-purple-500/30 bg-purple-500/40 bg-purple-500/5 bg-purple-600 bg-purple-600/10 bg-purple-600/15 bg-purple-600/20 bg-purple-600/25 bg-purple-600/30 bg-purple-600/40 bg-purple-600/5 bg-rose-300 bg-rose-300/10 bg-rose-300/15 bg-rose-300/20 bg-rose-300/25 bg-rose-300/30 bg-rose-300/40 bg-rose-300/5 bg-rose-400 bg-rose-400/10 bg-rose-400/15 bg-rose-400/20 bg-rose-400/25 bg-rose-400/30 bg-rose-400/40 bg-rose-400/5 bg-rose-500 bg-rose-500/10 bg-rose-500/15 bg-rose-500/20 bg-rose-500/25 bg-rose-500/30 bg-rose-500/40 bg-rose-500/5 bg-rose-600 bg-rose-600/10 bg-rose-600/15 bg-rose-600/20 bg-rose-600/25 bg-rose-600/30 bg-rose-600/40 bg-rose-600/5 bg-sky-300 bg-sky-300/10 bg-sky-300/15 bg-sky-300/20 bg-sky-300/25 bg-sky-300/30 bg-sky-300/40 bg-sky-300/5 bg-sky-400 bg-sky-400/10 bg-sky-400/15 bg-sky-400/20 bg-sky-400/25 bg-sky-400/30 bg-sky-400/40 bg-sky-400/5 bg-sky-500 bg-sky-500/10 bg-sky-500/15 bg-sky-500/20 bg-sky-500/25 bg-sky-500/30 bg-sky-500/40 bg-sky-500/5 bg-sky-600 bg-sky-600/10 bg-sky-600/15 bg-sky-600/20 bg-sky-600/25 bg-sky-600/30 bg-sky-600/40 bg-sky-600/5 bg-slate-300 bg-slate-300/10 bg-slate-300/15 bg-slate-300/20 bg-slate-300/25 bg-slate-300/30 bg-slate-300/40 bg-slate-300/5 bg-slate-400 bg-slate-400/10 bg-slate-400/15 bg-slate-400/20 bg-slate-400/25 bg-slate-400/30 bg-slate-400/40 bg-slate-400/5 bg-slate-500 bg-slate-500/10 bg-slate-500/15 bg-slate-500/20 bg-slate-500/25 bg-slate-500/30 bg-slate-500/40 bg-slate-500/5 bg-slate-600 bg-slate-600/10 bg-slate-600/15 bg-slate-600/20 bg-slate-600/25 bg-slate-600/30 bg-slate-600/40 bg-slate-600/5 bg-teal-300 bg-teal-300/10 bg-teal-300/15 bg-teal-300/20 bg-teal-300/25 bg-teal-300/30 bg-teal-300/40 bg-teal-300/5 bg-teal-400 bg-teal-400/10 bg-teal-400/15 bg-teal-400/20 bg-teal-400/25 bg-teal-400/30 bg-teal-400/40 bg-teal-400/5 bg-teal-500 bg-teal-500/10 bg-teal-500/15 bg-teal-500/20 bg-teal-500/25 bg-teal-500/30 bg-teal-500/40 bg-teal-500/5 bg-teal-600 bg-teal-600/10 bg-teal-600/15 bg-teal-600/20 bg-teal-600/25 bg-teal-600/30 bg-teal-600/40 bg-teal-600/5 bg-violet-300 bg-violet-300/10 bg-violet-300/15 bg-violet-300/20 bg-violet-300/25 bg-violet-300/30 bg-violet-300/40 bg-violet-300/5 bg-violet-400 bg-violet-400/10 bg-violet-400/15 bg-violet-400/20 bg-violet-400/25 bg-violet-400/30 bg-violet-400/40 bg-violet-400/5 bg-violet-500 bg-violet-500/10 bg-violet-500/15 bg-violet-500/20 bg-violet-500/25 bg-violet-500/30 bg-violet-500/40 bg-violet-500/5 bg-violet-600 bg-violet-600/10 bg-violet-600/15 bg-violet-600/20 bg-violet-600/25 bg-violet-600/30 bg-violet-600/40 bg-violet-600/5 border-amber-300 border-amber-300/10 border-amber-300/15 border-amber-300/20 border-amber-300/25 border-amber-300/30 border-amber-300/40 border-amber-300/5 border-amber-400 border-amber-400/10 border-amber-400/15 border-amber-400/20 border-amber-400/25 border-amber-400/30 border-amber-400/40 border-amber-400/5 border-amber-500 border-amber-500/10 border-amber-500/15 border-amber-500/20 border-amber-500/25 border-amber-500/30 border-amber-500/40 border-amber-500/5 border-amber-600 border-amber-600/10 border-amber-600/15 border-amber-600/20 border-amber-600/25 border-amber-600/30 border-amber-600/40 border-amber-600/5 border-b-amber-300/10 border-b-amber-300/15 border-b-amber-300/20 border-b-amber-300/25 border-b-amber-300/30 border-b-amber-300/40 border-b-amber-300/5 border-b-amber-400/10 border-b-amber-400/15 border-b-amber-400/20 border-b-amber-400/25 border-b-amber-400/30 border-b-amber-400/40 border-b-amber-400/5 border-b-amber-500/10 border-b-amber-500/15 border-b-amber-500/20 border-b-amber-500/25 border-b-amber-500/30 border-b-amber-500/40 border-b-amber-500/5 border-b-amber-600/10 border-b-amber-600/15 border-b-amber-600/20 border-b-amber-600/25 border-b-amber-600/30 border-b-amber-600/40 border-b-amber-600/5 border-b-blue-300/10 border-b-blue-300/15 border-b-blue-300/20 border-b-blue-300/25 border-b-blue-300/30 border-b-blue-300/40 border-b-blue-300/5 border-b-blue-400/10 border-b-blue-400/15 border-b-blue-400/20 border-b-blue-400/25 border-b-blue-400/30 border-b-blue-400/40 border-b-blue-400/5 border-b-blue-500/10 border-b-blue-500/15 border-b-blue-500/20 border-b-blue-500/25 border-b-blue-500/30 border-b-blue-500/40 border-b-blue-500/5 border-b-blue-600/10 border-b-blue-600/15 border-b-blue-600/20 border-b-blue-600/25 border-b-blue-600/30 border-b-blue-600/40 border-b-blue-600/5 border-b-cyan-300/10 border-b-cyan-300/15 border-b-cyan-300/20 border-b-cyan-300/25 border-b-cyan-300/30 border-b-cyan-300/40 border-b-cyan-300/5 border-b-cyan-400/10 border-b-cyan-400/15 border-b-cyan-400/20 border-b-cyan-400/25 border-b-cyan-400/30 border-b-cyan-400/40 border-b-cyan-400/5 border-b-cyan-500/10 border-b-cyan-500/15 border-b-cyan-500/20 border-b-cyan-500/25 border-b-cyan-500/30 border-b-cyan-500/40 border-b-cyan-500/5 border-b-cyan-600/10 border-b-cyan-600/15 border-b-cyan-600/20 border-b-cyan-600/25 border-b-cyan-600/30 border-b-cyan-600/40 border-b-cyan-600/5 border-b-emerald-300/10 border-b-emerald-300/15 border-b-emerald-300/20 border-b-emerald-300/25 border-b-emerald-300/30 border-b-emerald-300/40 border-b-emerald-300/5 border-b-emerald-400/10 border-b-emerald-400/15 border-b-emerald-400/20 border-b-emerald-400/25 border-b-emerald-400/30 border-b-emerald-400/40 border-b-emerald-400/5 border-b-emerald-500/10 border-b-emerald-500/15 border-b-emerald-500/20 border-b-emerald-500/25 border-b-emerald-500/30 border-b-emerald-500/40 border-b-emerald-500/5 border-b-emerald-600/10 border-b-emerald-600/15 border-b-emerald-600/20 border-b-emerald-600/25 border-b-emerald-600/30 border-b-emerald-600/40 border-b-emerald-600/5 border-b-fuchsia-300/10 border-b-fuchsia-300/15 border-b-fuchsia-300/20 border-b-fuchsia-300/25 border-b-fuchsia-300/30 border-b-fuchsia-300/40 border-b-fuchsia-300/5 border-b-fuchsia-400/10 border-b-fuchsia-400/15 border-b-fuchsia-400/20 border-b-fuchsia-400/25 border-b-fuchsia-400/30 border-b-fuchsia-400/40 border-b-fuchsia-400/5 border-b-fuchsia-500/10 border-b-fuchsia-500/15 border-b-fuchsia-500/20 border-b-fuchsia-500/25 border-b-fuchsia-500/30 border-b-fuchsia-500/40 border-b-fuchsia-500/5 border-b-fuchsia-600/10 border-b-fuchsia-600/15 border-b-fuchsia-600/20 border-b-fuchsia-600/25 border-b-fuchsia-600/30 border-b-fuchsia-600/40 border-b-fuchsia-600/5 border-b-indigo-300/10 border-b-indigo-300/15 border-b-indigo-300/20 border-b-indigo-300/25 border-b-indigo-300/30 border-b-indigo-300/40 border-b-indigo-300/5 border-b-indigo-400/10 border-b-indigo-400/15 border-b-indigo-400/20 border-b-indigo-400/25 border-b-indigo-400/30 border-b-indigo-400/40 border-b-indigo-400/5 border-b-indigo-500/10 border-b-indigo-500/15 border-b-indigo-500/20 border-b-indigo-500/25 border-b-indigo-500/30 border-b-indigo-500/40 border-b-indigo-500/5 border-b-indigo-600/10 border-b-indigo-600/15 border-b-indigo-600/20 border-b-indigo-600/25 border-b-indigo-600/30 border-b-indigo-600/40 border-b-indigo-600/5 border-b-lime-300/10 border-b-lime-300/15 border-b-lime-300/20 border-b-lime-300/25 border-b-lime-300/30 border-b-lime-300/40 border-b-lime-300/5 border-b-lime-400/10 border-b-lime-400/15 border-b-lime-400/20 border-b-lime-400/25 border-b-lime-400/30 border-b-lime-400/40 border-b-lime-400/5 border-b-lime-500/10 border-b-lime-500/15 border-b-lime-500/20 border-b-lime-500/25 border-b-lime-500/30 border-b-lime-500/40 border-b-lime-500/5 border-b-lime-600/10 border-b-lime-600/15 border-b-lime-600/20 border-b-lime-600/25 border-b-lime-600/30 border-b-lime-600/40 border-b-lime-600/5 border-b-orange-300/10 border-b-orange-300/15 border-b-orange-300/20 border-b-orange-300/25 border-b-orange-300/30 border-b-orange-300/40 border-b-orange-300/5 border-b-orange-400/10 border-b-orange-400/15 border-b-orange-400/20 border-b-orange-400/25 border-b-orange-400/30 border-b-orange-400/40 border-b-orange-400/5 border-b-orange-500/10 border-b-orange-500/15 border-b-orange-500/20 border-b-orange-500/25 border-b-orange-500/30 border-b-orange-500/40 border-b-orange-500/5 border-b-orange-600/10 border-b-orange-600/15 border-b-orange-600/20 border-b-orange-600/25 border-b-orange-600/30 border-b-orange-600/40 border-b-orange-600/5 border-b-pink-300/10 border-b-pink-300/15 border-b-pink-300/20 border-b-pink-300/25 border-b-pink-300/30 border-b-pink-300/40 border-b-pink-300/5 border-b-pink-400/10 border-b-pink-400/15 border-b-pink-400/20 border-b-pink-400/25 border-b-pink-400/30 border-b-pink-400/40 border-b-pink-400/5 border-b-pink-500/10 border-b-pink-500/15 border-b-pink-500/20 border-b-pink-500/25 border-b-pink-500/30 border-b-pink-500/40 border-b-pink-500/5 border-b-pink-600/10 border-b-pink-600/15 border-b-pink-600/20 border-b-pink-600/25 border-b-pink-600/30 border-b-pink-600/40 border-b-pink-600/5 border-b-purple-300/10 border-b-purple-300/15 border-b-purple-300/20 border-b-purple-300/25 border-b-purple-300/30 border-b-purple-300/40 border-b-purple-300/5 border-b-purple-400/10 border-b-purple-400/15 border-b-purple-400/20 border-b-purple-400/25 border-b-purple-400/30 border-b-purple-400/40 border-b-purple-400/5 border-b-purple-500/10 border-b-purple-500/15 border-b-purple-500/20 border-b-purple-500/25 border-b-purple-500/30 border-b-purple-500/40 border-b-purple-500/5 border-b-purple-600/10 border-b-purple-600/15 border-b-purple-600/20 border-b-purple-600/25 border-b-purple-600/30 border-b-purple-600/40 border-b-purple-600/5 border-b-rose-300/10 border-b-rose-300/15 border-b-rose-300/20 border-b-rose-300/25 border-b-rose-300/30 border-b-rose-300/40 border-b-rose-300/5 border-b-rose-400/10 border-b-rose-400/15 border-b-rose-400/20 border-b-rose-400/25 border-b-rose-400/30 border-b-rose-400/40 border-b-rose-400/5 border-b-rose-500/10 border-b-rose-500/15 border-b-rose-500/20 border-b-rose-500/25 border-b-rose-500/30 border-b-rose-500/40 border-b-rose-500/5 border-b-rose-600/10 border-b-rose-600/15 border-b-rose-600/20 border-b-rose-600/25 border-b-rose-600/30 border-b-rose-600/40 border-b-rose-600/5 border-b-sky-300/10 border-b-sky-300/15 border-b-sky-300/20 border-b-sky-300/25 border-b-sky-300/30 border-b-sky-300/40 border-b-sky-300/5 border-b-sky-400/10 border-b-sky-400/15 border-b-sky-400/20 border-b-sky-400/25 border-b-sky-400/30 border-b-sky-400/40 border-b-sky-400/5 border-b-sky-500/10 border-b-sky-500/15 border-b-sky-500/20 border-b-sky-500/25 border-b-sky-500/30 border-b-sky-500/40 border-b-sky-500/5 border-b-sky-600/10 border-b-sky-600/15 border-b-sky-600/20 border-b-sky-600/25 border-b-sky-600/30 border-b-sky-600/40 border-b-sky-600/5 border-b-slate-300/10 border-b-slate-300/15 border-b-slate-300/20 border-b-slate-300/25 border-b-slate-300/30 border-b-slate-300/40 border-b-slate-300/5 border-b-slate-400/10 border-b-slate-400/15 border-b-slate-400/20 border-b-slate-400/25 border-b-slate-400/30 border-b-slate-400/40 border-b-slate-400/5 border-b-slate-500/10 border-b-slate-500/15 border-b-slate-500/20 border-b-slate-500/25 border-b-slate-500/30 border-b-slate-500/40 border-b-slate-500/5 border-b-slate-600/10 border-b-slate-600/15 border-b-slate-600/20 border-b-slate-600/25 border-b-slate-600/30 border-b-slate-600/40 border-b-slate-600/5 border-b-teal-300/10 border-b-teal-300/15 border-b-teal-300/20 border-b-teal-300/25 border-b-teal-300/30 border-b-teal-300/40 border-b-teal-300/5 border-b-teal-400/10 border-b-teal-400/15 border-b-teal-400/20 border-b-teal-400/25 border-b-teal-400/30 border-b-teal-400/40 border-b-teal-400/5 border-b-teal-500/10 border-b-teal-500/15 border-b-teal-500/20 border-b-teal-500/25 border-b-teal-500/30 border-b-teal-500/40 border-b-teal-500/5 border-b-teal-600/10 border-b-teal-600/15 border-b-teal-600/20 border-b-teal-600/25 border-b-teal-600/30 border-b-teal-600/40 border-b-teal-600/5 border-b-violet-300/10 border-b-violet-300/15 border-b-violet-300/20 border-b-violet-300/25 border-b-violet-300/30 border-b-violet-300/40 border-b-violet-300/5 border-b-violet-400/10 border-b-violet-400/15 border-b-violet-400/20 border-b-violet-400/25 border-b-violet-400/30 border-b-violet-400/40 border-b-violet-400/5 border-b-violet-500/10 border-b-violet-500/15 border-b-violet-500/20 border-b-violet-500/25 border-b-violet-500/30 border-b-violet-500/40 border-b-violet-500/5 border-b-violet-600/10 border-b-violet-600/15 border-b-violet-600/20 border-b-violet-600/25 border-b-violet-600/30 border-b-violet-600/40 border-b-violet-600/5 border-blue-300 border-blue-300/10 border-blue-300/15 border-blue-300/20 border-blue-300/25 border-blue-300/30 border-blue-300/40 border-blue-300/5 border-blue-400 border-blue-400/10 border-blue-400/15 border-blue-400/20 border-blue-400/25 border-blue-400/30 border-blue-400/40 border-blue-400/5 border-blue-500 border-blue-500/10 border-blue-500/15 border-blue-500/20 border-blue-500/25 border-blue-500/30 border-blue-500/40 border-blue-500/5 border-blue-600 border-blue-600/10 border-blue-600/15 border-blue-600/20 border-blue-600/25 border-blue-600/30 border-blue-600/40 border-blue-600/5 border-cyan-300 border-cyan-300/10 border-cyan-300/15 border-cyan-300/20 border-cyan-300/25 border-cyan-300/30 border-cyan-300/40 border-cyan-300/5 border-cyan-400 border-cyan-400/10 border-cyan-400/15 border-cyan-400/20 border-cyan-400/25 border-cyan-400/30 border-cyan-400/40 border-cyan-400/5 border-cyan-500 border-cyan-500/10 border-cyan-500/15 border-cyan-500/20 border-cyan-500/25 border-cyan-500/30 border-cyan-500/40 border-cyan-500/5 border-cyan-600 border-cyan-600/10 border-cyan-600/15 border-cyan-600/20 border-cyan-600/25 border-cyan-600/30 border-cyan-600/40 border-cyan-600/5 border-emerald-300 border-emerald-300/10 border-emerald-300/15 border-emerald-300/20 border-emerald-300/25 border-emerald-300/30 border-emerald-300/40 border-emerald-300/5 border-emerald-400 border-emerald-400/10 border-emerald-400/15 border-emerald-400/20 border-emerald-400/25 border-emerald-400/30 border-emerald-400/40 border-emerald-400/5 border-emerald-500 border-emerald-500/10 border-emerald-500/15 border-emerald-500/20 border-emerald-500/25 border-emerald-500/30 border-emerald-500/40 border-emerald-500/5 border-emerald-600 border-emerald-600/10 border-emerald-600/15 border-emerald-600/20 border-emerald-600/25 border-emerald-600/30 border-emerald-600/40 border-emerald-600/5 border-fuchsia-300 border-fuchsia-300/10 border-fuchsia-300/15 border-fuchsia-300/20 border-fuchsia-300/25 border-fuchsia-300/30 border-fuchsia-300/40 border-fuchsia-300/5 border-fuchsia-400 border-fuchsia-400/10 border-fuchsia-400/15 border-fuchsia-400/20 border-fuchsia-400/25 border-fuchsia-400/30 border-fuchsia-400/40 border-fuchsia-400/5 border-fuchsia-500 border-fuchsia-500/10 border-fuchsia-500/15 border-fuchsia-500/20 border-fuchsia-500/25 border-fuchsia-500/30 border-fuchsia-500/40 border-fuchsia-500/5 border-fuchsia-600 border-fuchsia-600/10 border-fuchsia-600/15 border-fuchsia-600/20 border-fuchsia-600/25 border-fuchsia-600/30 border-fuchsia-600/40 border-fuchsia-600/5 border-indigo-300 border-indigo-300/10 border-indigo-300/15 border-indigo-300/20 border-indigo-300/25 border-indigo-300/30 border-indigo-300/40 border-indigo-300/5 border-indigo-400 border-indigo-400/10 border-indigo-400/15 border-indigo-400/20 border-indigo-400/25 border-indigo-400/30 border-indigo-400/40 border-indigo-400/5 border-indigo-500 border-indigo-500/10 border-indigo-500/15 border-indigo-500/20 border-indigo-500/25 border-indigo-500/30 border-indigo-500/40 border-indigo-500/5 border-indigo-600 border-indigo-600/10 border-indigo-600/15 border-indigo-600/20 border-indigo-600/25 border-indigo-600/30 border-indigo-600/40 border-indigo-600/5 border-lime-300 border-lime-300/10 border-lime-300/15 border-lime-300/20 border-lime-300/25 border-lime-300/30 border-lime-300/40 border-lime-300/5 border-lime-400 border-lime-400/10 border-lime-400/15 border-lime-400/20 border-lime-400/25 border-lime-400/30 border-lime-400/40 border-lime-400/5 border-lime-500 border-lime-500/10 border-lime-500/15 border-lime-500/20 border-lime-500/25 border-lime-500/30 border-lime-500/40 border-lime-500/5 border-lime-600 border-lime-600/10 border-lime-600/15 border-lime-600/20 border-lime-600/25 border-lime-600/30 border-lime-600/40 border-lime-600/5 border-orange-300 border-orange-300/10 border-orange-300/15 border-orange-300/20 border-orange-300/25 border-orange-300/30 border-orange-300/40 border-orange-300/5 border-orange-400 border-orange-400/10 border-orange-400/15 border-orange-400/20 border-orange-400/25 border-orange-400/30 border-orange-400/40 border-orange-400/5 border-orange-500 border-orange-500/10 border-orange-500/15 border-orange-500/20 border-orange-500/25 border-orange-500/30 border-orange-500/40 border-orange-500/5 border-orange-600 border-orange-600/10 border-orange-600/15 border-orange-600/20 border-orange-600/25 border-orange-600/30 border-orange-600/40 border-orange-600/5 border-pink-300 border-pink-300/10 border-pink-300/15 border-pink-300/20 border-pink-300/25 border-pink-300/30 border-pink-300/40 border-pink-300/5 border-pink-400 border-pink-400/10 border-pink-400/15 border-pink-400/20 border-pink-400/25 border-pink-400/30 border-pink-400/40 border-pink-400/5 border-pink-500 border-pink-500/10 border-pink-500/15 border-pink-500/20 border-pink-500/25 border-pink-500/30 border-pink-500/40 border-pink-500/5 border-pink-600 border-pink-600/10 border-pink-600/15 border-pink-600/20 border-pink-600/25 border-pink-600/30 border-pink-600/40 border-pink-600/5 border-purple-300 border-purple-300/10 border-purple-300/15 border-purple-300/20 border-purple-300/25 border-purple-300/30 border-purple-300/40 border-purple-300/5 border-purple-400 border-purple-400/10 border-purple-400/15 border-purple-400/20 border-purple-400/25 border-purple-400/30 border-purple-400/40 border-purple-400/5 border-purple-500 border-purple-500/10 border-purple-500/15 border-purple-500/20 border-purple-500/25 border-purple-500/30 border-purple-500/40 border-purple-500/5 border-purple-600 border-purple-600/10 border-purple-600/15 border-purple-600/20 border-purple-600/25 border-purple-600/30 border-purple-600/40 border-purple-600/5 border-rose-300 border-rose-300/10 border-rose-300/15 border-rose-300/20 border-rose-300/25 border-rose-300/30 border-rose-300/40 border-rose-300/5 border-rose-400 border-rose-400/10 border-rose-400/15 border-rose-400/20 border-rose-400/25 border-rose-400/30 border-rose-400/40 border-rose-400/5 border-rose-500 border-rose-500/10 border-rose-500/15 border-rose-500/20 border-rose-500/25 border-rose-500/30 border-rose-500/40 border-rose-500/5 border-rose-600 border-rose-600/10 border-rose-600/15 border-rose-600/20 border-rose-600/25 border-rose-600/30 border-rose-600/40 border-rose-600/5 border-sky-300 border-sky-300/10 border-sky-300/15 border-sky-300/20 border-sky-300/25 border-sky-300/30 border-sky-300/40 border-sky-300/5 border-sky-400 border-sky-400/10 border-sky-400/15 border-sky-400/20 border-sky-400/25 border-sky-400/30 border-sky-400/40 border-sky-400/5 border-sky-500 border-sky-500/10 border-sky-500/15 border-sky-500/20 border-sky-500/25 border-sky-500/30 border-sky-500/40 border-sky-500/5 border-sky-600 border-sky-600/10 border-sky-600/15 border-sky-600/20 border-sky-600/25 border-sky-600/30 border-sky-600/40 border-sky-600/5 border-slate-300 border-slate-300/10 border-slate-300/15 border-slate-300/20 border-slate-300/25 border-slate-300/30 border-slate-300/40 border-slate-300/5 border-slate-400 border-slate-400/10 border-slate-400/15 border-slate-400/20 border-slate-400/25 border-slate-400/30 border-slate-400/40 border-slate-400/5 border-slate-500 border-slate-500/10 border-slate-500/15 border-slate-500/20 border-slate-500/25 border-slate-500/30 border-slate-500/40 border-slate-500/5 border-slate-600 border-slate-600/10 border-slate-600/15 border-slate-600/20 border-slate-600/25 border-slate-600/30 border-slate-600/40 border-slate-600/5 border-teal-300 border-teal-300/10 border-teal-300/15 border-teal-300/20 border-teal-300/25 border-teal-300/30 border-teal-300/40 border-teal-300/5 border-teal-400 border-teal-400/10 border-teal-400/15 border-teal-400/20 border-teal-400/25 border-teal-400/30 border-teal-400/40 border-teal-400/5 border-teal-500 border-teal-500/10 border-teal-500/15 border-teal-500/20 border-teal-500/25 border-teal-500/30 border-teal-500/40 border-teal-500/5 border-teal-600 border-teal-600/10 border-teal-600/15 border-teal-600/20 border-teal-600/25 border-teal-600/30 border-teal-600/40 border-teal-600/5 border-violet-300 border-violet-300/10 border-violet-300/15 border-violet-300/20 border-violet-300/25 border-violet-300/30 border-violet-300/40 border-violet-300/5 border-violet-400 border-violet-400/10 border-violet-400/15 border-violet-400/20 border-violet-400/25 border-violet-400/30 border-violet-400/40 border-violet-400/5 border-violet-500 border-violet-500/10 border-violet-500/15 border-violet-500/20 border-violet-500/25 border-violet-500/30 border-violet-500/40 border-violet-500/5 border-violet-600 border-violet-600/10 border-violet-600/15 border-violet-600/20 border-violet-600/25 border-violet-600/30 border-violet-600/40 border-violet-600/5 hover:bg-amber-300 hover:bg-amber-300/10 hover:bg-amber-300/15 hover:bg-amber-300/20 hover:bg-amber-300/25 hover:bg-amber-300/30 hover:bg-amber-300/40 hover:bg-amber-300/5 hover:bg-amber-400 hover:bg-amber-400/10 hover:bg-amber-400/15 hover:bg-amber-400/20 hover:bg-amber-400/25 hover:bg-amber-400/30 hover:bg-amber-400/40 hover:bg-amber-400/5 hover:bg-amber-500 hover:bg-amber-500/10 hover:bg-amber-500/15 hover:bg-amber-500/20 hover:bg-amber-500/25 hover:bg-amber-500/30 hover:bg-amber-500/40 hover:bg-amber-500/5 hover:bg-amber-600 hover:bg-amber-600/10 hover:bg-amber-600/15 hover:bg-amber-600/20 hover:bg-amber-600/25 hover:bg-amber-600/30 hover:bg-amber-600/40 hover:bg-amber-600/5 hover:bg-blue-300 hover:bg-blue-300/10 hover:bg-blue-300/15 hover:bg-blue-300/20 hover:bg-blue-300/25 hover:bg-blue-300/30 hover:bg-blue-300/40 hover:bg-blue-300/5 hover:bg-blue-400 hover:bg-blue-400/10 hover:bg-blue-400/15 hover:bg-blue-400/20 hover:bg-blue-400/25 hover:bg-blue-400/30 hover:bg-blue-400/40 hover:bg-blue-400/5 hover:bg-blue-500 hover:bg-blue-500/10 hover:bg-blue-500/15 hover:bg-blue-500/20 hover:bg-blue-500/25 hover:bg-blue-500/30 hover:bg-blue-500/40 hover:bg-blue-500/5 hover:bg-blue-600 hover:bg-blue-600/10 hover:bg-blue-600/15 hover:bg-blue-600/20 hover:bg-blue-600/25 hover:bg-blue-600/30 hover:bg-blue-600/40 hover:bg-blue-600/5 hover:bg-cyan-300 hover:bg-cyan-300/10 hover:bg-cyan-300/15 hover:bg-cyan-300/20 hover:bg-cyan-300/25 hover:bg-cyan-300/30 hover:bg-cyan-300/40 hover:bg-cyan-300/5 hover:bg-cyan-400 hover:bg-cyan-400/10 hover:bg-cyan-400/15 hover:bg-cyan-400/20 hover:bg-cyan-400/25 hover:bg-cyan-400/30 hover:bg-cyan-400/40 hover:bg-cyan-400/5 hover:bg-cyan-500 hover:bg-cyan-500/10 hover:bg-cyan-500/15 hover:bg-cyan-500/20 hover:bg-cyan-500/25 hover:bg-cyan-500/30 hover:bg-cyan-500/40 hover:bg-cyan-500/5 hover:bg-cyan-600 hover:bg-cyan-600/10 hover:bg-cyan-600/15 hover:bg-cyan-600/20 hover:bg-cyan-600/25 hover:bg-cyan-600/30 hover:bg-cyan-600/40 hover:bg-cyan-600/5 hover:bg-emerald-300 hover:bg-emerald-300/10 hover:bg-emerald-300/15 hover:bg-emerald-300/20 hover:bg-emerald-300/25 hover:bg-emerald-300/30 hover:bg-emerald-300/40 hover:bg-emerald-300/5 hover:bg-emerald-400 hover:bg-emerald-400/10 hover:bg-emerald-400/15 hover:bg-emerald-400/20 hover:bg-emerald-400/25 hover:bg-emerald-400/30 hover:bg-emerald-400/40 hover:bg-emerald-400/5 hover:bg-emerald-500 hover:bg-emerald-500/10 hover:bg-emerald-500/15 hover:bg-emerald-500/20 hover:bg-emerald-500/25 hover:bg-emerald-500/30 hover:bg-emerald-500/40 hover:bg-emerald-500/5 hover:bg-emerald-600 hover:bg-emerald-600/10 hover:bg-emerald-600/15 hover:bg-emerald-600/20 hover:bg-emerald-600/25 hover:bg-emerald-600/30 hover:bg-emerald-600/40 hover:bg-emerald-600/5 hover:bg-fuchsia-300 hover:bg-fuchsia-300/10 hover:bg-fuchsia-300/15 hover:bg-fuchsia-300/20 hover:bg-fuchsia-300/25 hover:bg-fuchsia-300/30 hover:bg-fuchsia-300/40 hover:bg-fuchsia-300/5 hover:bg-fuchsia-400 hover:bg-fuchsia-400/10 hover:bg-fuchsia-400/15 hover:bg-fuchsia-400/20 hover:bg-fuchsia-400/25 hover:bg-fuchsia-400/30 hover:bg-fuchsia-400/40 hover:bg-fuchsia-400/5 hover:bg-fuchsia-500 hover:bg-fuchsia-500/10 hover:bg-fuchsia-500/15 hover:bg-fuchsia-500/20 hover:bg-fuchsia-500/25 hover:bg-fuchsia-500/30 hover:bg-fuchsia-500/40 hover:bg-fuchsia-500/5 hover:bg-fuchsia-600 hover:bg-fuchsia-600/10 hover:bg-fuchsia-600/15 hover:bg-fuchsia-600/20 hover:bg-fuchsia-600/25 hover:bg-fuchsia-600/30 hover:bg-fuchsia-600/40 hover:bg-fuchsia-600/5 hover:bg-indigo-300 hover:bg-indigo-300/10 hover:bg-indigo-300/15 hover:bg-indigo-300/20 hover:bg-indigo-300/25 hover:bg-indigo-300/30 hover:bg-indigo-300/40 hover:bg-indigo-300/5 hover:bg-indigo-400 hover:bg-indigo-400/10 hover:bg-indigo-400/15 hover:bg-indigo-400/20 hover:bg-indigo-400/25 hover:bg-indigo-400/30 hover:bg-indigo-400/40 hover:bg-indigo-400/5 hover:bg-indigo-500 hover:bg-indigo-500/10 hover:bg-indigo-500/15 hover:bg-indigo-500/20 hover:bg-indigo-500/25 hover:bg-indigo-500/30 hover:bg-indigo-500/40 hover:bg-indigo-500/5 hover:bg-indigo-600 hover:bg-indigo-600/10 hover:bg-indigo-600/15 hover:bg-indigo-600/20 hover:bg-indigo-600/25 hover:bg-indigo-600/30 hover:bg-indigo-600/40 hover:bg-indigo-600/5 hover:bg-lime-300 hover:bg-lime-300/10 hover:bg-lime-300/15 hover:bg-lime-300/20 hover:bg-lime-300/25 hover:bg-lime-300/30 hover:bg-lime-300/40 hover:bg-lime-300/5 hover:bg-lime-400 hover:bg-lime-400/10 hover:bg-lime-400/15 hover:bg-lime-400/20 hover:bg-lime-400/25 hover:bg-lime-400/30 hover:bg-lime-400/40 hover:bg-lime-400/5 hover:bg-lime-500 hover:bg-lime-500/10 hover:bg-lime-500/15 hover:bg-lime-500/20 hover:bg-lime-500/25 hover:bg-lime-500/30 hover:bg-lime-500/40 hover:bg-lime-500/5 hover:bg-lime-600 hover:bg-lime-600/10 hover:bg-lime-600/15 hover:bg-lime-600/20 hover:bg-lime-600/25 hover:bg-lime-600/30 hover:bg-lime-600/40 hover:bg-lime-600/5 hover:bg-orange-300 hover:bg-orange-300/10 hover:bg-orange-300/15 hover:bg-orange-300/20 hover:bg-orange-300/25 hover:bg-orange-300/30 hover:bg-orange-300/40 hover:bg-orange-300/5 hover:bg-orange-400 hover:bg-orange-400/10 hover:bg-orange-400/15 hover:bg-orange-400/20 hover:bg-orange-400/25 hover:bg-orange-400/30 hover:bg-orange-400/40 hover:bg-orange-400/5 hover:bg-orange-500 hover:bg-orange-500/10 hover:bg-orange-500/15 hover:bg-orange-500/20 hover:bg-orange-500/25 hover:bg-orange-500/30 hover:bg-orange-500/40 hover:bg-orange-500/5 hover:bg-orange-600 hover:bg-orange-600/10 hover:bg-orange-600/15 hover:bg-orange-600/20 hover:bg-orange-600/25 hover:bg-orange-600/30 hover:bg-orange-600/40 hover:bg-orange-600/5 hover:bg-pink-300 hover:bg-pink-300/10 hover:bg-pink-300/15 hover:bg-pink-300/20 hover:bg-pink-300/25 hover:bg-pink-300/30 hover:bg-pink-300/40 hover:bg-pink-300/5 hover:bg-pink-400 hover:bg-pink-400/10 hover:bg-pink-400/15 hover:bg-pink-400/20 hover:bg-pink-400/25 hover:bg-pink-400/30 hover:bg-pink-400/40 hover:bg-pink-400/5 hover:bg-pink-500 hover:bg-pink-500/10 hover:bg-pink-500/15 hover:bg-pink-500/20 hover:bg-pink-500/25 hover:bg-pink-500/30 hover:bg-pink-500/40 hover:bg-pink-500/5 hover:bg-pink-600 hover:bg-pink-600/10 hover:bg-pink-600/15 hover:bg-pink-600/20 hover:bg-pink-600/25 hover:bg-pink-600/30 hover:bg-pink-600/40 hover:bg-pink-600/5 hover:bg-purple-300 hover:bg-purple-300/10 hover:bg-purple-300/15 hover:bg-purple-300/20 hover:bg-purple-300/25 hover:bg-purple-300/30 hover:bg-purple-300/40 hover:bg-purple-300/5 hover:bg-purple-400 hover:bg-purple-400/10 hover:bg-purple-400/15 hover:bg-purple-400/20 hover:bg-purple-400/25 hover:bg-purple-400/30 hover:bg-purple-400/40 hover:bg-purple-400/5 hover:bg-purple-500 hover:bg-purple-500/10 hover:bg-purple-500/15 hover:bg-purple-500/20 hover:bg-purple-500/25 hover:bg-purple-500/30 hover:bg-purple-500/40 hover:bg-purple-500/5 hover:bg-purple-600 hover:bg-purple-600/10 hover:bg-purple-600/15 hover:bg-purple-600/20 hover:bg-purple-600/25 hover:bg-purple-600/30 hover:bg-purple-600/40 hover:bg-purple-600/5 hover:bg-rose-300 hover:bg-rose-300/10 hover:bg-rose-300/15 hover:bg-rose-300/20 hover:bg-rose-300/25 hover:bg-rose-300/30 hover:bg-rose-300/40 hover:bg-rose-300/5 hover:bg-rose-400 hover:bg-rose-400/10 hover:bg-rose-400/15 hover:bg-rose-400/20 hover:bg-rose-400/25 hover:bg-rose-400/30 hover:bg-rose-400/40 hover:bg-rose-400/5 hover:bg-rose-500 hover:bg-rose-500/10 hover:bg-rose-500/15 hover:bg-rose-500/20 hover:bg-rose-500/25 hover:bg-rose-500/30 hover:bg-rose-500/40 hover:bg-rose-500/5 hover:bg-rose-600 hover:bg-rose-600/10 hover:bg-rose-600/15 hover:bg-rose-600/20 hover:bg-rose-600/25 hover:bg-rose-600/30 hover:bg-rose-600/40 hover:bg-rose-600/5 hover:bg-sky-300 hover:bg-sky-300/10 hover:bg-sky-300/15 hover:bg-sky-300/20 hover:bg-sky-300/25 hover:bg-sky-300/30 hover:bg-sky-300/40 hover:bg-sky-300/5 hover:bg-sky-400 hover:bg-sky-400/10 hover:bg-sky-400/15 hover:bg-sky-400/20 hover:bg-sky-400/25 hover:bg-sky-400/30 hover:bg-sky-400/40 hover:bg-sky-400/5 hover:bg-sky-500 hover:bg-sky-500/10 hover:bg-sky-500/15 hover:bg-sky-500/20 hover:bg-sky-500/25 hover:bg-sky-500/30 hover:bg-sky-500/40 hover:bg-sky-500/5 hover:bg-sky-600 hover:bg-sky-600/10 hover:bg-sky-600/15 hover:bg-sky-600/20 hover:bg-sky-600/25 hover:bg-sky-600/30 hover:bg-sky-600/40 hover:bg-sky-600/5 hover:bg-slate-300 hover:bg-slate-300/10 hover:bg-slate-300/15 hover:bg-slate-300/20 hover:bg-slate-300/25 hover:bg-slate-300/30 hover:bg-slate-300/40 hover:bg-slate-300/5 hover:bg-slate-400 hover:bg-slate-400/10 hover:bg-slate-400/15 hover:bg-slate-400/20 hover:bg-slate-400/25 hover:bg-slate-400/30 hover:bg-slate-400/40 hover:bg-slate-400/5 hover:bg-slate-500 hover:bg-slate-500/10 hover:bg-slate-500/15 hover:bg-slate-500/20 hover:bg-slate-500/25 hover:bg-slate-500/30 hover:bg-slate-500/40 hover:bg-slate-500/5 hover:bg-slate-600 hover:bg-slate-600/10 hover:bg-slate-600/15 hover:bg-slate-600/20 hover:bg-slate-600/25 hover:bg-slate-600/30 hover:bg-slate-600/40 hover:bg-slate-600/5 hover:bg-teal-300 hover:bg-teal-300/10 hover:bg-teal-300/15 hover:bg-teal-300/20 hover:bg-teal-300/25 hover:bg-teal-300/30 hover:bg-teal-300/40 hover:bg-teal-300/5 hover:bg-teal-400 hover:bg-teal-400/10 hover:bg-teal-400/15 hover:bg-teal-400/20 hover:bg-teal-400/25 hover:bg-teal-400/30 hover:bg-teal-400/40 hover:bg-teal-400/5 hover:bg-teal-500 hover:bg-teal-500/10 hover:bg-teal-500/15 hover:bg-teal-500/20 hover:bg-teal-500/25 hover:bg-teal-500/30 hover:bg-teal-500/40 hover:bg-teal-500/5 hover:bg-teal-600 hover:bg-teal-600/10 hover:bg-teal-600/15 hover:bg-teal-600/20 hover:bg-teal-600/25 hover:bg-teal-600/30 hover:bg-teal-600/40 hover:bg-teal-600/5 hover:bg-violet-300 hover:bg-violet-300/10 hover:bg-violet-300/15 hover:bg-violet-300/20 hover:bg-violet-300/25 hover:bg-violet-300/30 hover:bg-violet-300/40 hover:bg-violet-300/5 hover:bg-violet-400 hover:bg-violet-400/10 hover:bg-violet-400/15 hover:bg-violet-400/20 hover:bg-violet-400/25 hover:bg-violet-400/30 hover:bg-violet-400/40 hover:bg-violet-400/5 hover:bg-violet-500 hover:bg-violet-500/10 hover:bg-violet-500/15 hover:bg-violet-500/20 hover:bg-violet-500/25 hover:bg-violet-500/30 hover:bg-violet-500/40 hover:bg-violet-500/5 hover:bg-violet-600 hover:bg-violet-600/10 hover:bg-violet-600/15 hover:bg-violet-600/20 hover:bg-violet-600/25 hover:bg-violet-600/30 hover:bg-violet-600/40 hover:bg-violet-600/5 hover:text-amber-300 hover:text-amber-400 hover:text-amber-500 hover:text-amber-600 hover:text-blue-300 hover:text-blue-400 hover:text-blue-500 hover:text-blue-600 hover:text-cyan-300 hover:text-cyan-400 hover:text-cyan-500 hover:text-cyan-600 hover:text-emerald-300 hover:text-emerald-400 hover:text-emerald-500 hover:text-emerald-600 hover:text-fuchsia-300 hover:text-fuchsia-400 hover:text-fuchsia-500 hover:text-fuchsia-600 hover:text-indigo-300 hover:text-indigo-400 hover:text-indigo-500 hover:text-indigo-600 hover:text-lime-300 hover:text-lime-400 hover:text-lime-500 hover:text-lime-600 hover:text-orange-300 hover:text-orange-400 hover:text-orange-500 hover:text-orange-600 hover:text-pink-300 hover:text-pink-400 hover:text-pink-500 hover:text-pink-600 hover:text-purple-300 hover:text-purple-400 hover:text-purple-500 hover:text-purple-600 hover:text-rose-300 hover:text-rose-400 hover:text-rose-500 hover:text-rose-600 hover:text-sky-300 hover:text-sky-400 hover:text-sky-500 hover:text-sky-600 hover:text-slate-300 hover:text-slate-400 hover:text-slate-500 hover:text-slate-600 hover:text-teal-300 hover:text-teal-400 hover:text-teal-500 hover:text-teal-600 hover:text-violet-300 hover:text-violet-400 hover:text-violet-500 hover:text-violet-600 text-amber-300 text-amber-400 text-amber-500 text-amber-600 text-blue-300 text-blue-400 text-blue-500 text-blue-600 text-cyan-300 text-cyan-400 text-cyan-500 text-cyan-600 text-emerald-300 text-emerald-400 text-emerald-500 text-emerald-600 text-fuchsia-300 text-fuchsia-400 text-fuchsia-500 text-fuchsia-600 text-indigo-300 text-indigo-400 text-indigo-500 text-indigo-600 text-lime-300 text-lime-400 text-lime-500 text-lime-600 text-orange-300 text-orange-400 text-orange-500 text-orange-600 text-pink-300 text-pink-400 text-pink-500 text-pink-600 text-purple-300 text-purple-400 text-purple-500 text-purple-600 text-rose-300 text-rose-400 text-rose-500 text-rose-600 text-sky-300 text-sky-400 text-sky-500 text-sky-600 text-slate-300 text-slate-400 text-slate-500 text-slate-600 text-teal-300 text-teal-400 text-teal-500 text-teal-600 text-violet-300 text-violet-400 text-violet-500 text-violet-600"></div>
   <script type="text/babel">
     const { createContext, useContext, useEffect, useMemo, useState } = React;
     const { createRoot } = ReactDOM;
@@ -1249,6 +1254,13 @@
       const [selectedBatch, setSelectedBatch] = useState(null);
       const [query, setQuery] = useState('');
       const [activeTab, setActiveTab] = useState('all');
+      const [showAuth, setShowAuth] = useState(false);
+
+      // Login card lives in a top-right popover/modal now, not inline in the
+      // hero — close it automatically the moment a session exists.
+      useEffect(() => {
+        if (profile) setShowAuth(false);
+      }, [profile]);
 
       const teacherUsers = useMemo(() => users.filter((item) => item.role === 'teacher'), [users]);
       const instituteMap = useMemo(() => Object.fromEntries(institutes.map((item) => [item.id, item])), [institutes]);
@@ -1289,8 +1301,8 @@
       const handleInstituteAction = (institute) => {
         if (!profile) {
           setSelectedInstitute(institute);
-          navigateTo('/auth');
-          addToast('Please login to view full institute details', 'error');
+          setShowAuth(true);
+          addToast('Login to view full institute details', 'error');
           return;
         }
         setSelectedInstitute(institute);
@@ -1299,8 +1311,8 @@
       const handleTeacherAction = (teacher) => {
         if (!profile) {
           setSelectedTeacher(teacher);
-          navigateTo('/auth');
-          addToast('Please login to view teacher details', 'error');
+          setShowAuth(true);
+          addToast('Login to view teacher details', 'error');
           return;
         }
         setSelectedTeacher(teacher);
@@ -1315,57 +1327,82 @@
 
       return (
         <div className="h-[100dvh] overflow-y-auto discover-bg text-slate-100">
-          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+
+            {/* TOP BAR — brand left, single login/dashboard action right so the
+                main screen stays focused on search + browsing */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-black gradient-text sm:text-2xl">Vedo</span>
+                <span className="hidden text-xs text-slate-400 sm:inline">Virtual Education Desk Operator</span>
+              </div>
+              {profile ? (
+                <button onClick={() => navigateTo(`/${profile.role}`)} className="flex-none rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:brightness-110 transition-all">
+                  My dashboard
+                </button>
+              ) : (
+                <button onClick={() => setShowAuth(true)} className="flex-none rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:brightness-110 transition-all">
+                  Login
+                </button>
+              )}
+            </div>
 
             {/* HERO */}
             <div className="hero-card rounded-[32px] border border-white/10 p-8 shadow-2xl relative overflow-hidden">
               <div className="blob blob-a"></div>
               <div className="blob blob-b"></div>
               <div className="blob blob-c"></div>
-              <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-                <div className="space-y-5">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-amber-400/10 px-3 py-1 text-sm text-amber-200">
-                    <span>🎉</span> Live coaching, classes, fees and communication in one place
-                  </div>
-                  <h1 className="text-4xl font-black leading-tight sm:text-5xl">
-                    <span className="rainbow-text">Discover institutes, batches &amp; teachers</span><br/>
-                    all in one colourful desk.
-                  </h1>
-                  <p className="max-w-2xl text-lg text-slate-300">Owners onboard institutes; teachers create classes and manage lecture groups; students join with special codes and track notes, fees, homework and marks; parents follow along.</p>
+              <div className="relative space-y-5">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-amber-400/10 px-3 py-1 text-sm text-amber-200">
+                  <span>🎉</span> Live coaching, classes, fees and communication in one place
+                </div>
+                <h1 className="text-4xl font-black leading-tight sm:text-5xl">
+                  <span className="rainbow-text">Discover institutes, batches &amp; teachers</span><br/>
+                  all in one colourful desk.
+                </h1>
+                <p className="max-w-2xl text-lg text-slate-300">Owners onboard institutes; teachers create classes and manage lecture groups; students join with special codes and track notes, fees, homework and marks; parents follow along.</p>
 
-                  {/* SEARCH */}
-                  <div className="relative max-w-xl">
-                    <div className="flex items-center gap-2 rounded-2xl border-2 border-white/15 bg-white/10 px-4 py-3 backdrop-blur focus-within:border-amber-300/70 transition-all">
-                      <span className="text-lg">🔍</span>
-                      <input
-                        type="text"
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Search institute, city, batch, subject or teacher..."
-                        className="w-full bg-transparent text-sm text-white placeholder-slate-400 outline-none"
-                      />
-                      {query && (
-                        <button onClick={() => setQuery('')} className="text-slate-400 hover:text-white text-sm">✕</button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* CATEGORY PILLS */}
-                  <div className="flex flex-wrap gap-2">
-                    {tabPills.map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`pill-btn ${activeTab === tab.id ? 'pill-btn-active' : ''}`}
-                      >{tab.icon} {tab.label}</button>
-                    ))}
+                {/* SEARCH */}
+                <div className="relative max-w-xl">
+                  <div className="flex items-center gap-2 rounded-2xl border-2 border-white/15 bg-white/10 px-4 py-3 backdrop-blur focus-within:border-amber-300/70 transition-all">
+                    <span className="text-lg">🔍</span>
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Search institute, city, batch, subject or teacher..."
+                      className="w-full bg-transparent text-sm text-white placeholder-slate-400 outline-none"
+                    />
+                    {query && (
+                      <button onClick={() => setQuery('')} className="text-slate-400 hover:text-white text-sm">✕</button>
+                    )}
                   </div>
                 </div>
-                <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6">
-                  <AuthScreen compact />
+
+                {/* CATEGORY PILLS */}
+                <div className="flex flex-wrap gap-2">
+                  {tabPills.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`pill-btn ${activeTab === tab.id ? 'pill-btn-active' : ''}`}
+                    >{tab.icon} {tab.label}</button>
+                  ))}
                 </div>
               </div>
             </div>
+
+            {showAuth && (
+              <div className="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-slate-950/70 px-4 py-6 sm:items-center" onClick={() => setShowAuth(false)}>
+                <div className="w-full max-w-sm rounded-[28px] border border-white/10 bg-slate-900/95 p-6 shadow-2xl animate-fade-in" onClick={(event) => event.stopPropagation()}>
+                  <div className="flex items-center justify-between">
+                    <div><span className="text-xl font-black gradient-text">Vedo</span><p className="text-xs text-slate-400">Virtual Education Desk Operator</p></div>
+                    <button onClick={() => setShowAuth(false)} aria-label="Close login" className="rounded-xl border border-white/10 px-2.5 py-1.5 text-sm text-slate-300 transition-all">✕</button>
+                  </div>
+                  <div className="mt-4"><AuthScreen compact /></div>
+                </div>
+              </div>
+            )}
 
             {/* STATS */}
             <div className="grid gap-3 md:grid-cols-3">
@@ -1559,7 +1596,7 @@
                 ) : (
                   <div className="mt-5 space-y-3">
                     <p className="text-sm text-slate-400">Login or create an account to open full institute details and join classes.</p>
-                    <button onClick={() => navigateTo('/auth')} className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all">Login / sign up</button>
+                    <button onClick={() => setShowAuth(true)} className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all">Login / sign up</button>
                   </div>
                 )}
               </div>
@@ -1596,7 +1633,7 @@
                     ) : (
                       <div className="mt-2 space-y-3">
                         <p>Login or create an account to join this batch with its code.</p>
-                        <button onClick={() => navigateTo('/auth')} className={`w-full rounded-xl bg-gradient-to-r ${theme.grad} px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all`}>Login / sign up</button>
+                        <button onClick={() => setShowAuth(true)} className={`w-full rounded-xl bg-gradient-to-r ${theme.grad} px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all`}>Login / sign up</button>
                       </div>
                     )}
                   </div>
@@ -1626,7 +1663,7 @@
                 ) : (
                   <div className="mt-5 space-y-3">
                     <p className="text-sm text-slate-400">Sign in to unlock teacher details and booking options.</p>
-                    <button onClick={() => navigateTo('/auth')} className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all">Login / sign up</button>
+                    <button onClick={() => setShowAuth(true)} className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2 text-sm font-medium text-white hover:brightness-110 transition-all">Login / sign up</button>
                   </div>
                 )}
               </div>
@@ -2873,11 +2910,36 @@
       const tabs = [
         { id: 'link', label: 'Link a child', icon: '🔗' },
         { id: 'overview', label: 'Overview', icon: '🏠' },
+        { id: 'growth', label: 'Growth', icon: '📈' },
         ...bottomTabs,
         { id: 'schedule', label: 'Schedule', icon: '🗓️' },
         { id: 'homework', label: 'Homework', icon: '📝' },
         { id: 'children', label: 'My children', icon: '👪' },
         { id: 'profile', label: 'Profile', icon: '👤' }
+      ];
+
+      // ---- Growth tab derived metrics (pure client-side aggregation of
+      // already-synced Firestore data — no extra reads/writes needed) ----
+      const marksAvgPct = childMarks.length
+        ? Math.round(childMarks.reduce((sum, m) => sum + (m.maxScore ? (m.score / m.maxScore) * 100 : 0), 0) / childMarks.length)
+        : null;
+      const marksTrend = [...childMarks]
+        .sort((a, b) => safeSortKey(a.createdAt) - safeSortKey(b.createdAt))
+        .slice(-8)
+        .map((m) => ({ label: m.title, pct: m.maxScore ? Math.round((m.score / m.maxScore) * 100) : 0 }));
+      const attendanceTrend = [...childAttendance]
+        .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+        .slice(-14);
+      const doubtsResolvedCount = childDoubts.filter((d) => d.status === 'resolved').length;
+      const doubtsResolvedPct = childDoubts.length ? Math.round((doubtsResolvedCount / childDoubts.length) * 100) : null;
+      const feesPaidCount = childFees.filter((f) => f.status === 'paid').length;
+      const feesPaidPct = childFees.length ? Math.round((feesPaidCount / childFees.length) * 100) : null;
+      const growthTone = (pct) => (pct === null ? 'slate' : pct >= 75 ? 'emerald' : pct >= 50 ? 'amber' : 'rose');
+      const growthCards = [
+        { key: 'attendance', label: 'Attendance', pct: attendancePct, hint: childAttendance.length ? `${presentCount}/${childAttendance.length} classes` : 'No data yet' },
+        { key: 'marks', label: 'Marks average', pct: marksAvgPct, hint: childMarks.length ? `${childMarks.length} tests` : 'No data yet' },
+        { key: 'doubts', label: 'Doubts resolved', pct: doubtsResolvedPct, hint: childDoubts.length ? `${doubtsResolvedCount}/${childDoubts.length} answered` : 'No doubts yet' },
+        { key: 'fees', label: 'Fees on track', pct: feesPaidPct, hint: childFees.length ? `${feesPaidCount}/${childFees.length} paid` : 'No fees yet' }
       ];
 
       const hasChildren = linkedChildren.length > 0;
@@ -2937,6 +2999,68 @@
                 <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                   <h3 className="text-lg font-semibold">Announcements</h3>
                   <div className="mt-3 space-y-2">{childAnnouncements.length ? childAnnouncements.slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div></div>) : <div className="text-sm text-slate-400">No announcements yet.</div>}</div>
+                </div>
+              </div>
+            )}
+
+            {hasChildren && activeTab === 'growth' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {growthCards.map((card) => {
+                    const tone = growthTone(card.pct);
+                    return (
+                      <div key={card.key} className={`glass rounded-3xl border border-${tone}-400/20 bg-${tone}-500/5 p-4 card-hover`}>
+                        <div className={`text-2xl font-bold text-${tone}-200`}>{card.pct !== null ? `${card.pct}%` : '—'}</div>
+                        <div className="mt-0.5 text-sm font-medium text-slate-200">{card.label}</div>
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                          <div className={`h-full rounded-full bg-${tone}-400`} style={{ width: `${card.pct ?? 0}%` }}></div>
+                        </div>
+                        <div className="mt-1.5 text-xs text-slate-400">{card.hint}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Marks trend</h3>
+                  <p className="text-sm text-slate-400">Last {marksTrend.length || 0} test result{marksTrend.length === 1 ? '' : 's'}, most recent on the right.</p>
+                  {marksTrend.length ? (
+                    <div className="mt-4 flex items-end gap-2" style={{ height: '120px' }}>
+                      {marksTrend.map((point, idx) => {
+                        const tone = growthTone(point.pct);
+                        return (
+                          <div key={idx} className="flex flex-1 flex-col items-center justify-end gap-1.5">
+                            <span className="text-[10px] font-semibold text-slate-300">{point.pct}%</span>
+                            <div className={`w-full rounded-t-lg bg-${tone}-400/80`} style={{ height: `${Math.max(6, point.pct)}%` }}></div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : <div className="mt-4 text-sm text-slate-400">No test results yet — a chart will appear once marks are added.</div>}
+                </div>
+
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Attendance trend</h3>
+                  <p className="text-sm text-slate-400">Last {attendanceTrend.length || 0} recorded class{attendanceTrend.length === 1 ? '' : 'es'}.</p>
+                  {attendanceTrend.length ? (
+                    <div className="mt-4 flex flex-wrap gap-1.5">
+                      {attendanceTrend.map((item) => (
+                        <div key={item.id} title={`${item.date} • ${item.present ? 'Present' : 'Absent'}`} className={`h-8 w-4 rounded-md ${item.present ? 'bg-emerald-400/80' : 'bg-rose-400/80'}`}></div>
+                      ))}
+                    </div>
+                  ) : <div className="mt-4 text-sm text-slate-400">No attendance recorded yet.</div>}
+                  <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
+                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-emerald-400/80"></span>Present</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-rose-400/80"></span>Absent</span>
+                  </div>
+                </div>
+
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">What this means</h3>
+                  <p className="mt-2 text-sm text-slate-400">
+                    {marksAvgPct === null ? "Once tests are recorded you'll see whether " + childName + "'s scores are trending up or down. " : marksAvgPct >= 75 ? `${childName} is scoring strongly, averaging ${marksAvgPct}% across recent tests. ` : marksAvgPct >= 50 ? `${childName} is averaging ${marksAvgPct}% — steady, with room to push higher. ` : `${childName}'s recent average is ${marksAvgPct}% — worth a check-in with the teacher. `}
+                    {attendancePct !== null && attendancePct < 75 ? `Attendance is at ${attendancePct}%, below the healthy 75% mark.` : ''}
+                  </p>
                 </div>
               </div>
             )}
