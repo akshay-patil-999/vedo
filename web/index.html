@@ -117,6 +117,40 @@
     .stat-amber { background: linear-gradient(135deg, rgba(245,158,11,0.35), rgba(245,158,11,0.08)); }
     .institute-card { position: relative; }
     .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* ===== Polish pass ===== */
+    body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    h1, h2, h3, h4 { letter-spacing: -0.015em; }
+
+    /* Visible, on-brand keyboard focus everywhere instead of the default blue browser ring */
+    a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 2px solid rgba(99,102,241,0.75);
+      outline-offset: 2px;
+      border-radius: 8px;
+    }
+
+    /* Smoother, slightly springier card lift with a softer shadow instead of a flat translate */
+    .card-hover { transition: transform 0.22s cubic-bezier(.2,.8,.2,1), box-shadow 0.22s cubic-bezier(.2,.8,.2,1); }
+    .card-hover:hover { transform: translateY(-3px); box-shadow: 0 14px 32px -12px rgba(99,102,241,0.28), 0 2px 8px -2px rgba(15,23,42,0.35); }
+    .card-hover:active { transform: translateY(-1px); }
+
+    .glass { box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 12px 28px -14px rgba(15,23,42,0.18); }
+    :root[data-theme='dark'] .glass { box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 16px 36px -16px rgba(0,0,0,0.55); }
+
+    /* Buttons get a touch of depth + a gentle press state so primary actions feel tactile, not flat */
+    button { transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, filter 0.15s ease, opacity 0.15s ease; }
+    button:active:not(:disabled) { transform: scale(0.97); }
+    button:disabled { cursor: not-allowed; }
+
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Content fade-in when switching tabs, so screens don't just snap into place */
+    .tab-panel { animation: tabIn 0.28s cubic-bezier(.16,1,.3,1); }
+    @keyframes tabIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+    }
   </style>
 </head>
 <body>
@@ -1441,7 +1475,7 @@
           </div>
 
           <div className="scroll-area relative min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-7xl space-y-5">
+            <div key={activeNavId || 'default'} className="tab-panel mx-auto max-w-7xl space-y-5">
               {subtitle ? <p className="-mt-1 text-sm text-slate-400">{subtitle}</p> : null}
               {children}
             </div>
@@ -2414,7 +2448,7 @@
     }
     function TeacherDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, schedules, tests, teacherPayments, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt, createSchedule, createTest, createAnnouncement } = useAppData();
+      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, schedules, tests, teacherPayments, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt, createSchedule, createTest, createAnnouncement, createFee } = useAppData();
       const [activeTab, setActiveTab] = useState('myclass');
       const [joinCode, setJoinCode] = useState('');
       const [joinTargetType, setJoinTargetType] = useState('institute');
@@ -2438,6 +2472,10 @@
       const [testTitle, setTestTitle] = useState('');
       const [testSubject, setTestSubject] = useState('');
       const [testDate, setTestDate] = useState('');
+      const [feeReminderClassId, setFeeReminderClassId] = useState('');
+      const [feeReminderStudentId, setFeeReminderStudentId] = useState('');
+      const [feeReminderAmount, setFeeReminderAmount] = useState('');
+      const [feeReminderDueDate, setFeeReminderDueDate] = useState(new Date().toISOString().slice(0, 10));
       const { addToast } = useToast();
       const approvedMemberships = joinRequests.filter((item) => item.requesterId === profile?.id && item.status === 'approved');
       const visibleInstitutes = institutes.filter((item) => item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.id) || (profile?.instituteIds || []).includes(item.id));
@@ -2483,6 +2521,13 @@
       const feesPending = classFees.filter((item) => item.status !== 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const myPayments = teacherPayments.filter((item) => item.teacherId === profile?.id).sort((a, b) => safeSortKey(b.createdAt) - safeSortKey(a.createdAt));
       const totalPaidToMe = myPayments.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const feeReminderClass = ownClasses.find((item) => item.id === feeReminderClassId) || ownClasses[0] || null;
+      const feeReminderRoster = feeReminderClass ? getStudentRosterForClass(feeReminderClass, users, joinRequests, knownStudentNameRecords) : [];
+      useEffect(() => {
+        if (ownClasses.length && (!feeReminderClassId || !ownClasses.some((item) => item.id === feeReminderClassId))) {
+          setFeeReminderClassId(ownClasses[0].id);
+        }
+      }, [ownClasses.map((item) => item.id).join('|')]);
       useEffect(() => {
         if (visibleClasses.length && (!selectedClassId || !visibleClasses.some((item) => item.id === selectedClassId))) {
           setSelectedClassId(visibleClasses[0].id);
@@ -2589,6 +2634,25 @@
         setTestTitle('');
         setTestSubject('');
         setTestDate('');
+      };
+      const createFeeReminderForStudent = async (event) => {
+        event.preventDefault();
+        if (!feeReminderClass) return addToast('Create a class first — fee reminders only work on batches you teach directly.', 'error');
+        if (!feeReminderStudentId) return addToast('Select a student to remind', 'error');
+        if (!feeReminderAmount || Number(feeReminderAmount) <= 0) return addToast('Enter a valid fee amount', 'error');
+        if (!feeReminderDueDate) return addToast('Select a due date', 'error');
+        const student = feeReminderRoster.find((item) => item.id === feeReminderStudentId);
+        if (!student) return addToast('Selected student not found', 'error');
+        await createFee({ studentId: student.id, studentName: getStudentDisplayName(student), classId: feeReminderClass.id, amount: feeReminderAmount, dueDate: feeReminderDueDate });
+        await createAnnouncement({ title: 'New fee due', message: `₹${feeReminderAmount} due on ${feeReminderDueDate} for ${feeReminderClass.name}`, studentId: student.id, studentName: getStudentDisplayName(student), classId: feeReminderClass.id, createdBy: profile.name });
+        addToast(`Fee reminder sent to ${getStudentDisplayName(student)}`, 'success');
+        setFeeReminderAmount('');
+        setFeeReminderStudentId('');
+      };
+      const nudgeExistingFee = async (feeItem) => {
+        const cls = classes.find((item) => item.id === feeItem.classId);
+        await createAnnouncement({ title: `Fee reminder for ${feeItem.studentName}`, message: `Dear ${feeItem.studentName}, your fee of ₹${feeItem.amount} for ${cls?.name || 'your class'} is due on ${feeItem.dueDate}.`, classId: cls?.id || null, studentId: feeItem.studentId || null, studentName: feeItem.studentName || '', createdBy: profile.name });
+        addToast('Reminder sent to student', 'success');
       };
       const bottomTabs = [
         { id: 'myclass', label: 'My Class', icon: '📚' },
@@ -2819,17 +2883,44 @@
                 </div>
 
                 <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Send a fee reminder</h3>
+                  <p className="text-sm text-slate-400">Create a fee due-date for one student in a batch <span className="font-semibold text-slate-200">you personally created</span> — they'll see it on their Fees tab and get notified instantly.</p>
+                  {ownClasses.length ? (
+                    <form onSubmit={createFeeReminderForStudent} className="mt-4 space-y-3">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <select value={feeReminderClassId} onChange={(event) => { setFeeReminderClassId(event.target.value); setFeeReminderStudentId(''); }} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
+                          {ownClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                        </select>
+                        <select value={feeReminderStudentId} onChange={(event) => setFeeReminderStudentId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
+                          <option value="">Select student</option>
+                          {feeReminderRoster.map((student) => <option key={student.id} value={student.id}>{getStudentDisplayName(student)}</option>)}
+                        </select>
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <input value={feeReminderAmount} onChange={(event) => setFeeReminderAmount(event.target.value)} placeholder="Fee amount (₹)" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                        <input type="date" value={feeReminderDueDate} onChange={(event) => setFeeReminderDueDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                      </div>
+                      {!feeReminderRoster.length ? <div className="rounded-2xl border border-dashed border-white/15 bg-slate-900/40 px-3 py-2.5 text-xs text-slate-400">No students have joined {feeReminderClass?.name || 'this batch'} yet.</div> : null}
+                      <button className="w-full rounded-xl bg-amber-500 px-3 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 hover:shadow-amber-500/30 disabled:cursor-not-allowed disabled:opacity-50" disabled={!feeReminderRoster.length}>Send fee reminder</button>
+                    </form>
+                  ) : (
+                    <div className="mt-4 rounded-2xl border border-dashed border-white/15 bg-slate-900/40 p-4 text-center text-sm text-slate-400">Create a class of your own in <span className="font-semibold text-slate-300">My Class</span> before you can send fee reminders.</div>
+                  )}
+                </div>
+
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                   <h3 className="text-lg font-semibold">Fee status — your classes</h3>
                   <p className="text-sm text-slate-400">Students in batches you created. Free batches don't generate a fee record.</p>
                   <div className="mt-3 space-y-2">{classFees.length ? classFees.slice(0, 8).map((item) => (
-                    <div key={item.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                      <div>
-                        <div className="font-medium">{item.studentName || 'Student'}</div>
+                    <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{item.studentName || 'Student'}</div>
                         <div className="text-xs text-slate-400">Due {item.dueDate}</div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-none items-center gap-2">
                         <span className="font-semibold text-slate-200">₹{item.amount}</span>
                         <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${item.status === 'paid' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-300'}`}>{item.status === 'paid' ? '✅ Paid' : '⏳ Pending'}</span>
+                        {item.status !== 'paid' ? <button onClick={() => nudgeExistingFee(item)} className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-2.5 py-1.5 text-xs font-semibold text-amber-200 transition-all hover:bg-amber-500/20">Remind</button> : null}
                       </div>
                     </div>
                   )) : (
