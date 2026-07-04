@@ -1059,10 +1059,6 @@
       };
 
       // ---- Push notifications (FCM) ----
-<<<<<<< HEAD
-      // notifStatus: 'unsupported' | 'default' | 'granted' | 'denied' | 'enabling'
-      const [notifStatus, setNotifStatus] = useState(() => {
-=======
       // notifStatus: 'unsupported' | 'default' | 'granted' | 'denied' | 'enabling' | 'native'
       // 'native' = running inside the Vedo Android/iOS app, where Flutter's
       // own firebase_messaging handles permission + token + background
@@ -1071,16 +1067,12 @@
       const isInsideFlutterFcmBridge = () => typeof window.FlutterFcmBridge !== 'undefined';
       const [notifStatus, setNotifStatus] = useState(() => {
         if (isInsideFlutterFcmBridge()) return 'native';
->>>>>>> 3e9381c (notification system enabled)
         if (!messagingRef || typeof Notification === 'undefined') return 'unsupported';
         return Notification.permission; // 'default' | 'granted' | 'denied'
       });
 
       const enableNotifications = async () => {
-<<<<<<< HEAD
-=======
         if (notifStatus === 'native') return { ok: true, message: 'Notifications are handled automatically by the app.' };
->>>>>>> 3e9381c (notification system enabled)
         if (!messagingRef || typeof Notification === 'undefined') {
           return { ok: false, message: 'Push notifications are not supported on this device/browser.' };
         }
@@ -1109,8 +1101,6 @@
         }
       };
 
-<<<<<<< HEAD
-=======
       // Keep the latest profile/updateUser reachable from a stable callback,
       // since window.onFlutterFcmToken is registered once but may fire at
       // any time (including before login finishes).
@@ -1150,7 +1140,6 @@
         return () => { window.onFlutterNotificationTap = null; };
       }, []);
 
->>>>>>> 3e9381c (notification system enabled)
       // Foreground messages (app open in the active tab) — show as an in-app
       // toast via a DOM CustomEvent so we don't need ToastProvider wired this
       // deep; ScreenShell/App-level listener (see AppRouter) re-broadcasts it.
