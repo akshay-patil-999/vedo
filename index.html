@@ -1428,8 +1428,9 @@
         if (item.classId) return classIds.has(item.classId);
         // Institute-wide alert — only members of that institute see it.
         if (item.instituteId) return instituteIds.has(item.instituteId);
-        // No target at all — a true system-wide broadcast.
-        return true;
+        // No target at all (old/broken announcements from before targeting
+        // existed, or anything malformed) — never show these to anyone.
+        return false;
       });
     }
 
