@@ -1059,13 +1059,28 @@
       };
 
       // ---- Push notifications (FCM) ----
+<<<<<<< HEAD
       // notifStatus: 'unsupported' | 'default' | 'granted' | 'denied' | 'enabling'
       const [notifStatus, setNotifStatus] = useState(() => {
+=======
+      // notifStatus: 'unsupported' | 'default' | 'granted' | 'denied' | 'enabling' | 'native'
+      // 'native' = running inside the Vedo Android/iOS app, where Flutter's
+      // own firebase_messaging handles permission + token + background
+      // delivery — the web Notification API / service worker path below
+      // doesn't apply (and mostly can't run) inside that WebView.
+      const isInsideFlutterFcmBridge = () => typeof window.FlutterFcmBridge !== 'undefined';
+      const [notifStatus, setNotifStatus] = useState(() => {
+        if (isInsideFlutterFcmBridge()) return 'native';
+>>>>>>> 3e9381c (notification system enabled)
         if (!messagingRef || typeof Notification === 'undefined') return 'unsupported';
         return Notification.permission; // 'default' | 'granted' | 'denied'
       });
 
       const enableNotifications = async () => {
+<<<<<<< HEAD
+=======
+        if (notifStatus === 'native') return { ok: true, message: 'Notifications are handled automatically by the app.' };
+>>>>>>> 3e9381c (notification system enabled)
         if (!messagingRef || typeof Notification === 'undefined') {
           return { ok: false, message: 'Push notifications are not supported on this device/browser.' };
         }
@@ -1094,6 +1109,48 @@
         }
       };
 
+<<<<<<< HEAD
+=======
+      // Keep the latest profile/updateUser reachable from a stable callback,
+      // since window.onFlutterFcmToken is registered once but may fire at
+      // any time (including before login finishes).
+      const profileRef = useRef(profile);
+      useEffect(() => { profileRef.current = profile; }, [profile]);
+      const updateUserRef = useRef(updateUser);
+      useEffect(() => { updateUserRef.current = updateUser; }, [updateUser]);
+
+      // Native bridge: Flutter (main.dart) calls window.onFlutterFcmToken(token)
+      // after we tell it we're ready via FlutterFcmBridge.postMessage('ready').
+      useEffect(() => {
+        window.onFlutterFcmToken = async (token) => {
+          const currentProfile = profileRef.current;
+          if (!token || !currentProfile?.id) return;
+          const existingTokens = Array.isArray(currentProfile.fcmTokens) ? currentProfile.fcmTokens : [];
+          if (existingTokens.includes(token)) return;
+          const nextProfile = { ...currentProfile, fcmTokens: [...existingTokens, token] };
+          await updateUserRef.current(nextProfile);
+          setProfile(nextProfile);
+        };
+        if (isInsideFlutterFcmBridge()) window.FlutterFcmBridge.postMessage('ready');
+        return () => { window.onFlutterFcmToken = null; };
+      }, []);
+
+      // Re-announce readiness right after login, since Flutter may have
+      // sent its token earlier while there was no profile yet to attach it to.
+      useEffect(() => {
+        if (profile?.id && isInsideFlutterFcmBridge()) window.FlutterFcmBridge.postMessage('ready');
+      }, [profile?.id]);
+
+      // Deep link: tapping a native push notification calls this with the
+      // path the Cloud Function attached (e.g. '/student').
+      useEffect(() => {
+        window.onFlutterNotificationTap = (path) => {
+          if (path) navigateTo(path);
+        };
+        return () => { window.onFlutterNotificationTap = null; };
+      }, []);
+
+>>>>>>> 3e9381c (notification system enabled)
       // Foreground messages (app open in the active tab) — show as an in-app
       // toast via a DOM CustomEvent so we don't need ToastProvider wired this
       // deep; ScreenShell/App-level listener (see AppRouter) re-broadcasts it.
