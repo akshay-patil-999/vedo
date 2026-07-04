@@ -1362,26 +1362,91 @@
       );
     }
 
+    // Works out exactly which announcements a given logged-in profile should
+    // be allowed to see, mirroring the visibility rules each dashboard already
+    // uses for its own Overview/Alerts feed. Used by the notification bell so
+    // a targeted alert (a specific student's fee reminder, a doubt reply, a
+    // single batch's homework, a timetable slot, etc.) only ever reaches the
+    // intended student/teacher/owner/parent — never every logged-in user.
+    function getVisibleAnnouncementsForProfile(profile, announcements, classes, institutes, joinRequests, users) {
+      if (!profile) return [];
+      const role = profile.role;
+      const approvedMemberships = (joinRequests || []).filter((r) => r.requesterId === profile.id && r.status === 'approved');
+      const classIds = new Set();
+      const instituteIds = new Set();
+      const studentIds = new Set([profile.id]);
+
+      if (role === 'student') {
+        (classes || []).forEach((c) => {
+          const has = c.studentIds?.includes(profile.id) || (profile.classIds || []).includes(c.id) || approvedMemberships.some((r) => r.targetType === 'class' && r.targetId === c.id);
+          if (has) classIds.add(c.id);
+        });
+        (institutes || []).forEach((i) => {
+          const has = i.studentIds?.includes(profile.id) || (profile.instituteIds || []).includes(i.id) || approvedMemberships.some((r) => r.targetType === 'institute' && r.targetId === i.id);
+          if (has) instituteIds.add(i.id);
+        });
+      } else if (role === 'teacher') {
+        (classes || []).forEach((c) => {
+          const inst = (institutes || []).find((i) => i.id === c.instituteId);
+          const isAssigned = c.teacherId === profile.id || c.teacherIds?.includes(profile.id) || c.ownerId === profile.id;
+          const instTeacherMatch = !!inst && (inst.teacherIds?.includes(profile.id) || inst.ownerId === profile.id);
+          const approvedClass = approvedMemberships.some((r) => r.targetType === 'class' && r.targetId === c.id);
+          const approvedInst = approvedMemberships.some((r) => r.targetType === 'institute' && r.targetId === c.instituteId);
+          const profileClassAccess = (profile.classIds || []).includes(c.id);
+          const profileInstAccess = (profile.instituteIds || []).includes(c.instituteId);
+          if (isAssigned || instTeacherMatch || approvedClass || approvedInst || profileClassAccess || profileInstAccess) classIds.add(c.id);
+        });
+        (institutes || []).forEach((i) => {
+          const has = i.teacherIds?.includes(profile.id) || approvedMemberships.some((r) => r.targetType === 'institute' && r.targetId === i.id) || (profile.instituteIds || []).includes(i.id);
+          if (has) instituteIds.add(i.id);
+        });
+      } else if (role === 'owner') {
+        (institutes || []).forEach((i) => { if (i.ownerId === profile.id) instituteIds.add(i.id); });
+        (classes || []).forEach((c) => { if (c.ownerId === profile.id) classIds.add(c.id); });
+      } else if (role === 'parent') {
+        const myRecord = (users || []).find((u) => u.id === profile.id) || profile;
+        (myRecord.linkedChildren || []).forEach((child) => studentIds.add(child.id));
+        const childIds = Array.from(studentIds).filter((id) => id !== profile.id);
+        const childRecords = childIds.map((id) => (users || []).find((u) => u.id === id)).filter(Boolean);
+        (classes || []).forEach((c) => {
+          const has = childIds.some((id) => c.studentIds?.includes(id)) || childRecords.some((cr) => (cr.classIds || []).includes(c.id));
+          if (has) classIds.add(c.id);
+        });
+        (institutes || []).forEach((i) => {
+          const has = childIds.some((id) => i.studentIds?.includes(id)) || childRecords.some((cr) => (cr.instituteIds || []).includes(i.id));
+          if (has) instituteIds.add(i.id);
+        });
+      }
+
+      return (announcements || []).filter((item) => {
+        if (!item) return false;
+        // Personal alert (fee reminder, doubt reply, feedback, approval, etc.)
+        // — only the exact addressed student (or their linked parent) sees it.
+        if (item.studentId) return studentIds.has(item.studentId);
+        // Batch-level alert (homework, note, test, timetable slot) — only
+        // people actually enrolled/teaching in that batch see it.
+        if (item.classId) return classIds.has(item.classId);
+        // Institute-wide alert — only members of that institute see it.
+        if (item.instituteId) return instituteIds.has(item.instituteId);
+        // No target at all — a true system-wide broadcast.
+        return true;
+      });
+    }
+
     function NotificationBell() {
       // Real backend-connected notification bell (Vedo-style bell UI, wired to
       // the live `announcements` Firestore collection instead of mock data).
       const { profile } = useAuth();
-      const { announcements } = useAppData();
+      const { announcements, classes, institutes, joinRequests, users } = useAppData();
       const [open, setOpen] = useState(false);
       const [lastSeen, setLastSeen] = useState(() => Number(db.get('vedo_notifs_seen', 0)) || 0);
 
       const relevant = useMemo(() => {
-        return (announcements || [])
-          .filter((item) => {
-            if (!item) return false;
-            if (item.instituteId && profile?.instituteId && item.instituteId !== profile.instituteId) return false;
-            if (item.classId && profile?.classIds && !profile.classIds.includes(item.classId)) return false;
-            return true;
-          })
+        return getVisibleAnnouncementsForProfile(profile, announcements, classes, institutes, joinRequests, users)
           .slice()
           .sort((a, b) => safeSortKey(b.createdAt) - safeSortKey(a.createdAt))
           .slice(0, 8);
-      }, [announcements, profile]);
+      }, [announcements, classes, institutes, joinRequests, users, profile]);
 
       const unreadCount = relevant.filter((item) => safeSortKey(item.createdAt) > lastSeen).length;
 
