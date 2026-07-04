@@ -158,7 +158,7 @@
     // Get this from Firebase Console → Project settings → Cloud Messaging →
     // "Web Push certificates" → generate/copy the key pair. Push notifications
     // silently no-op until this is filled in.
-    const VEDO_FCM_VAPID_KEY = 'BKf8FSyO4xyW2Tnn4VctIrpMcXPIN2Fvw5ml51XGzhW0BIxFCJqjkTmlEwovGJnlkEHhwSNf4HW8tbC2jNaSp2Y';
+    const VEDO_FCM_VAPID_KEY = 'PASTE_YOUR_WEB_PUSH_VAPID_KEY_HERE';
 
     let firestoreRef = null;
     let authRef = null;
@@ -591,8 +591,8 @@
         return institute;
       };
 
-      const createClass = async ({ instituteId, ownerId, teacherId, teacherName, name, subject, fee, schedule, description }) => {
-        const cls = { id: `CLS-${Date.now()}`, instituteId: instituteId || null, ownerId: ownerId || null, teacherId: teacherId || null, teacherName: teacherName || '', name, subject, fee: Number(fee || 0), schedule: schedule || 'Weekly', description: description || '', code: generateCode(), createdAt: stamp(), teacherIds: teacherId ? [teacherId] : [], studentIds: [] };
+      const createClass = async ({ instituteId, ownerId, teacherId, teacherName, name, subject, fee, feeType, schedule, description }) => {
+        const cls = { id: `CLS-${Date.now()}`, instituteId: instituteId || null, ownerId: ownerId || null, teacherId: teacherId || null, teacherName: teacherName || '', name, subject, fee: Number(fee || 0), feeType: feeType === 'free' ? 'free' : 'paid', schedule: schedule || 'Weekly', description: description || '', code: generateCode(), createdAt: stamp(), teacherIds: teacherId ? [teacherId] : [], studentIds: [] };
         setClasses((prev) => [cls, ...prev]);
         if (backendReady && firestoreRef) await firestoreRef.collection('classes').doc(cls.id).set(cls);
         if (instituteId) {
@@ -681,13 +681,17 @@
         }
 
         if (request.role === 'student') {
-          const fee = { id: `FEE-${Date.now()}`, studentId: request.requesterId, studentName: request.requesterName, classId: request.targetType === 'class' ? request.targetId : null, status: 'pending', amount: 0, dueDate: stamp().slice(0, 10), createdAt: stamp() };
-          setFees((prev) => [fee, ...prev]);
-          if (backendReady && firestoreRef) {
-            try {
-              await firestoreRef.collection('fees').doc(fee.id).set(fee);
-            } catch (err) {
-              console.warn('Failed to persist starter fee record to Firestore', err);
+          const joinedClass = request.targetType === 'class' ? classes.find((item) => item.id === request.targetId) : null;
+          const isFreeClass = joinedClass?.feeType === 'free';
+          if (!isFreeClass) {
+            const fee = { id: `FEE-${Date.now()}`, studentId: request.requesterId, studentName: request.requesterName, classId: request.targetType === 'class' ? request.targetId : null, status: 'pending', amount: Number(joinedClass?.fee || 0), dueDate: stamp().slice(0, 10), createdAt: stamp() };
+            setFees((prev) => [fee, ...prev]);
+            if (backendReady && firestoreRef) {
+              try {
+                await firestoreRef.collection('fees').doc(fee.id).set(fee);
+              } catch (err) {
+                console.warn('Failed to persist starter fee record to Firestore', err);
+              }
             }
           }
         }
@@ -1356,7 +1360,7 @@
                     <div className={`rounded-2xl border px-3 py-2.5 text-xs font-medium ${statusClasses}`}>{statusLabel}</div>
                     <button onClick={handleEnableNotifications} disabled={notifBusy || notifStatus === 'granted' || notifStatus === 'denied' || notifStatus === 'unsupported'} className={`w-full rounded-2xl border px-3 py-3 text-left text-sm card-hover transition-all disabled:cursor-default ${notifStatus === 'granted' ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : notifStatus === 'denied' || notifStatus === 'unsupported' ? 'border-white/10 bg-white/5 text-slate-400' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>{notifBusy ? '⏳ Requesting permission...' : notifLabel}</button>
                     <button onClick={toggleTheme} className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm card-hover hover:bg-white/10 transition-all">{theme === 'light' ? '🌙 Switch to dark mode' : '☀️ Switch to light mode'}</button>
-                    <button onClick={() => { setMenuOpen(false); navigateTo('/discover'); }} className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-left text-sm card-hover hover:bg-white/10 transition-all">🏠 Home</button>
+                    <button onClick={() => { setMenuOpen(false); navigateTo('/discover'); }} className="w-full rounded-2xl border border-indigo-400/20 bg-indigo-500/10 px-3 py-3 text-left text-sm font-medium text-indigo-200 card-hover hover:bg-indigo-500/20 transition-all">🔍 Explore institutes, teachers &amp; classes</button>
                   </div>
                 </div>
 
@@ -2280,6 +2284,7 @@
       const [className, setClassName] = useState('');
       const [subject, setSubject] = useState('');
       const [fee, setFee] = useState('');
+      const [feeType, setFeeType] = useState('paid'); // 'paid' | 'free' — for the class-creation form below
       const [schedule, setSchedule] = useState('Weekly');
       const [homeworkTitle, setHomeworkTitle] = useState('');
       const [homeworkDesc, setHomeworkDesc] = useState('');
@@ -2332,7 +2337,10 @@
       const [doubtReplyDrafts, setDoubtReplyDrafts] = useState({});
       const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
       const myTimetable = schedules.filter((item) => visibleClasses.some((cls) => cls.id === item.classId) || visibleInstitutes.some((inst) => inst.id === item.instituteId)).sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day) || (a.time || '').localeCompare(b.time || ''));
-      const classFees = fees.filter((item) => visibleClasses.some((cls) => cls.id === item.classId));
+      // Wallet must only reflect classes THIS teacher personally created —
+      // fees for institute batches they merely teach in belong to that
+      // institute's owner, not to this teacher.
+      const classFees = fees.filter((item) => ownClasses.some((cls) => cls.id === item.classId));
       const feesCollected = classFees.filter((item) => item.status === 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const feesPending = classFees.filter((item) => item.status !== 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const myPayments = teacherPayments.filter((item) => item.teacherId === profile?.id).sort((a, b) => safeSortKey(b.createdAt) - safeSortKey(a.createdAt));
@@ -2356,11 +2364,13 @@
         event.preventDefault();
         if (!className.trim()) return;
         const instituteId = visibleInstitutes[0]?.id || null;
-        await createClass({ instituteId, teacherId: profile.id, teacherName: profile.name, name: className, subject, fee, schedule, description: 'Created from teacher dashboard' });
-        addToast('Class created with a new join code', 'success');
+        const finalFee = feeType === 'free' ? 0 : fee;
+        await createClass({ instituteId, teacherId: profile.id, teacherName: profile.name, name: className, subject, fee: finalFee, feeType, schedule, description: 'Created from teacher dashboard' });
+        addToast(feeType === 'free' ? 'Free class created with a new join code' : 'Class created with a new join code', 'success');
         setClassName('');
         setSubject('');
         setFee('');
+        setFeeType('paid');
       };
       const approveAsTeacher = async (requestId) => {
         await approveRequest(requestId);
@@ -2477,15 +2487,28 @@
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">My class</h3>
                 <p className="text-sm text-slate-400">Classes you've created yourself, with their student and co-teacher roster.</p>
-                <form onSubmit={createNewClass} className="mt-4 grid gap-3 md:grid-cols-2 rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-                  <input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Class name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
-                  <input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
-                  <input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                <form onSubmit={createNewClass} className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Class name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                    <input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                  </div>
+                  <div>
+                    <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Fee</div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setFeeType('paid')} className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${feeType === 'paid' ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}>💰 Paid</button>
+                      <button type="button" onClick={() => setFeeType('free')} className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${feeType === 'free' ? 'bg-emerald-600 text-white' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}>🎁 Free</button>
+                    </div>
+                  </div>
+                  {feeType === 'paid' ? (
+                    <input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Monthly fee (₹)" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                  ) : (
+                    <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 px-3 py-3 text-sm text-emerald-200">🎁 This will be a free batch — students won't get any fee reminders.</div>
+                  )}
                   <select value={schedule} onChange={(event) => setSchedule(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
                     <option value="Weekly">Weekly</option>
                     <option value="Daily">Daily</option>
                   </select>
-                  <button className="md:col-span-2 rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Create class</button>
+                  <button className="w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-semibold hover:bg-indigo-500 transition-all">Create class</button>
                 </form>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">{ownClasses.length ? ownClasses.map((item) => {
                   const roster = getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords);
@@ -2495,7 +2518,10 @@
                     <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
                       <button type="button" onClick={() => setExpandedClassId(isOpen ? '' : item.id)} className="w-full text-left transition-all">
                         <div className="flex items-center justify-between gap-2">
-                          <div className="font-medium">{item.name}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium">{item.name}</div>
+                            {item.feeType === 'free' ? <span className="rounded-full bg-emerald-500/15 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300">🎁 FREE</span> : <span className="rounded-full bg-amber-500/15 border border-amber-400/30 px-2 py-0.5 text-[10px] font-bold text-amber-300">₹{item.fee}</span>}
+                          </div>
                           <span className="text-xs text-indigo-300">{isOpen ? 'Hide roster ▲' : 'View roster ▼'}</span>
                         </div>
                         <div className="mt-1 flex flex-wrap gap-2 text-sm text-slate-400">
@@ -2591,26 +2617,79 @@
                 </div>
               </div>
             )}
-            {activeTab === 'wallet' && (
-              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
-                <h3 className="text-lg font-semibold">Wallet</h3>
-                <p className="text-sm text-slate-400">Fee collection from your batches and payments made to you by your owner/institute.</p>
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  <div className="metric-card rounded-2xl p-4"><div className="text-xs uppercase tracking-wide text-slate-400">Fees collected</div><div className="mt-1 text-2xl font-semibold text-emerald-300">₹{feesCollected}</div></div>
-                  <div className="metric-card rounded-2xl p-4"><div className="text-xs uppercase tracking-wide text-slate-400">Fees pending</div><div className="mt-1 text-2xl font-semibold text-amber-300">₹{feesPending}</div></div>
-                  <div className="metric-card rounded-2xl p-4"><div className="text-xs uppercase tracking-wide text-slate-400">Paid to you (total)</div><div className="mt-1 text-2xl font-semibold text-indigo-300">₹{totalPaidToMe}</div></div>
-                  <div className="metric-card rounded-2xl p-4"><div className="text-xs uppercase tracking-wide text-slate-400">Payments received</div><div className="mt-1 text-2xl font-semibold">{myPayments.length}</div></div>
+            {activeTab === 'wallet' && (() => {
+              const totalOwnFees = feesCollected + feesPending;
+              const collectionPct = totalOwnFees ? Math.round((feesCollected / totalOwnFees) * 100) : null;
+              return (
+              <div className="space-y-4">
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Wallet</h3>
+                  <p className="text-sm text-slate-400">Fee collection from the batches <span className="font-semibold text-slate-200">you personally created</span>, plus payments made to you by an owner/institute. Fees for institute batches you only teach in are managed by that batch's owner.</p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4">
+                      <div className="text-2xl font-bold text-emerald-200">₹{feesCollected}</div>
+                      <div className="text-xs text-emerald-200/80">Fees collected</div>
+                    </div>
+                    <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4">
+                      <div className="text-2xl font-bold text-amber-200">₹{feesPending}</div>
+                      <div className="text-xs text-amber-200/80">Fees pending</div>
+                    </div>
+                    <div className="rounded-2xl border border-indigo-400/20 bg-indigo-500/10 p-4">
+                      <div className="text-2xl font-bold text-indigo-200">₹{totalPaidToMe}</div>
+                      <div className="text-xs text-indigo-200/80">Paid to you (total)</div>
+                    </div>
+                    <div className="rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4">
+                      <div className="text-2xl font-bold text-sky-200">{myPayments.length}</div>
+                      <div className="text-xs text-sky-200/80">Payments received</div>
+                    </div>
+                  </div>
+                  {collectionPct !== null && (
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between text-xs text-slate-400"><span>Collection rate — your classes only</span><span className="font-semibold text-slate-200">{collectionPct}%</span></div>
+                      <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+                        <div className={`h-full rounded-full ${collectionPct >= 75 ? 'bg-emerald-400' : collectionPct >= 40 ? 'bg-amber-400' : 'bg-rose-400'}`} style={{ width: `${collectionPct}%` }}></div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="mt-4">
-                  <div className="text-sm font-semibold text-slate-200">Payment history</div>
-                  <div className="mt-2 space-y-2">{myPayments.length ? myPayments.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">₹{item.amount}</div><div className="text-sm text-slate-400">{item.note || 'Payout'} • {safeDateText(item.createdAt)}</div></div>) : <div className="text-sm text-slate-400">No payments recorded yet.</div>}</div>
+
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Payment history</h3>
+                  <p className="text-sm text-slate-400">What your owner/institute has paid you.</p>
+                  <div className="mt-3 space-y-2">{myPayments.length ? myPayments.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
+                      <div>
+                        <div className="font-medium">{item.note || 'Payout'}</div>
+                        <div className="text-xs text-slate-400">{safeDateText(item.createdAt)}</div>
+                      </div>
+                      <span className="font-black text-indigo-300">₹{item.amount}</span>
+                    </div>
+                  )) : (
+                    <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-center text-sm text-slate-400">💤 No payments recorded yet — they'll show up here as soon as your owner pays you.</div>
+                  )}</div>
                 </div>
-                <div className="mt-4">
-                  <div className="text-sm font-semibold text-slate-200">Fee status in your batches</div>
-                  <div className="mt-2 space-y-2">{classFees.length ? classFees.slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.studentName || 'Student'}</div><div className="text-sm text-slate-400">₹{item.amount} • Status: {item.status}</div></div>) : <div className="text-sm text-slate-400">No fee records yet for your batches.</div>}</div>
+
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Fee status — your classes</h3>
+                  <p className="text-sm text-slate-400">Students in batches you created. Free batches don't generate a fee record.</p>
+                  <div className="mt-3 space-y-2">{classFees.length ? classFees.slice(0, 8).map((item) => (
+                    <div key={item.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
+                      <div>
+                        <div className="font-medium">{item.studentName || 'Student'}</div>
+                        <div className="text-xs text-slate-400">Due {item.dueDate}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-200">₹{item.amount}</span>
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${item.status === 'paid' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-amber-500/10 text-amber-300'}`}>{item.status === 'paid' ? '✅ Paid' : '⏳ Pending'}</span>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-center text-sm text-slate-400">🎉 No fee records yet for your own batches — either no one's joined yet, or your classes are all free.</div>
+                  )}</div>
                 </div>
               </div>
-            )}
+              );
+            })()}
             {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Student join approvals</h3><div className="mt-3 space-y-3">{teacherRequests.length ? teacherRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 card-hover"><div className="flex items-start justify-between gap-4"><div><div className="font-medium">{item.requesterName} wants to join {item.targetName}</div><div className="text-sm text-slate-400">Type: {item.targetType} • Role: {item.role}</div></div><div className="space-x-2"><button onClick={() => approveAsTeacher(item.id)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs hover:bg-emerald-500 transition-all">Approve</button><button onClick={() => rejectAsTeacher(item.id)} className="rounded-xl bg-rose-500 px-3 py-2 text-xs hover:bg-rose-400 transition-all">Reject</button></div></div></div>) : <div className="text-sm text-slate-400">No pending student join approvals right now.</div>}</div></div>}
             {activeTab === 'homework' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Assign homework</h3><form onSubmit={createNewHomework} className="mt-3 space-y-3"><select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">{visibleClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={homeworkTitle} onChange={(event) => setHomeworkTitle(event.target.value)} placeholder="Homework title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={homeworkDesc} onChange={(event) => setHomeworkDesc(event.target.value)} placeholder="Description" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={homeworkDue} onChange={(event) => setHomeworkDue(event.target.value)} placeholder="Due date" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-emerald-600 px-3 py-2 text-sm hover:bg-emerald-500 transition-all">Assign to class</button></form><div className="mt-4 space-y-2">{homeworks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Due: {item.dueDate}</div></div>)}</div></div>}
             {activeTab === 'test' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Schedule a test</h3><form onSubmit={createNewTest} className="mt-3 space-y-3"><select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">{visibleClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={testTitle} onChange={(event) => setTestTitle(event.target.value)} placeholder="Test title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={testSubject} onChange={(event) => setTestSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input type="date" value={testDate} onChange={(event) => setTestDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Schedule test</button></form><div className="mt-4 space-y-2">{tests.filter((item) => visibleClasses.some((cls) => cls.id === item.classId)).slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.subject} • Date: {item.dueDate || 'TBA'}</div></div>)}</div></div>}
