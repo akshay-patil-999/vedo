@@ -1636,16 +1636,19 @@
         { id: 'teachers', label: 'Teachers', icon: '👩‍🏫' },
       ];
 
+      const PREVIEW_COUNT = 6;
+      const previewInstitutes = activeTab === 'all' ? filteredInstitutes.slice(0, PREVIEW_COUNT) : filteredInstitutes;
+      const previewClasses = activeTab === 'all' ? filteredClasses.slice(0, PREVIEW_COUNT) : filteredClasses;
+      const previewTeachers = activeTab === 'all' ? filteredTeachers.slice(0, PREVIEW_COUNT) : filteredTeachers;
+
       return (
         <div className="h-[100dvh] overflow-y-auto discover-bg text-slate-100">
-          <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
 
-            {/* TOP BAR — brand left, single login/dashboard action right so the
-                main screen stays focused on search + browsing */}
+            {/* TOP BAR — brand left, single login/dashboard action right */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black gradient-text sm:text-2xl">Vedo</span>
-                <span className="hidden text-xs text-slate-400 sm:inline">Virtual Education Desk Operator</span>
               </div>
               {profile ? (
                 <button onClick={() => navigateTo(`/${profile.role}`)} className="flex-none rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:brightness-110 transition-all">
@@ -1658,20 +1661,15 @@
               )}
             </div>
 
-            {/* HERO */}
-            <div className="hero-card rounded-[32px] border border-white/10 p-8 shadow-2xl relative overflow-hidden">
+            {/* HERO — short 2-line title, search bar directly beneath, no scrolling needed */}
+            <div className="hero-card rounded-[28px] border border-white/10 p-5 shadow-2xl relative overflow-hidden sm:p-6">
               <div className="blob blob-a"></div>
               <div className="blob blob-b"></div>
               <div className="blob blob-c"></div>
-              <div className="relative space-y-5">
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-amber-400/10 px-3 py-1 text-sm text-amber-200">
-                  <span>🎉</span> Live coaching, classes, fees and communication in one place
-                </div>
-                <h1 className="text-4xl font-black leading-tight sm:text-5xl">
-                  <span className="rainbow-text">Discover institutes, batches &amp; teachers</span><br/>
-                  all in one colourful desk.
+              <div className="relative space-y-4">
+                <h1 className="max-w-xl text-2xl font-black leading-snug sm:text-3xl">
+                  <span className="rainbow-text">Discover institutes, batches &amp; teachers</span>
                 </h1>
-                <p className="max-w-2xl text-lg text-slate-300">Owners onboard institutes; teachers create classes and manage lecture groups; students join with special codes and track notes, fees, homework and marks; parents follow along.</p>
 
                 {/* SEARCH */}
                 <div className="relative max-w-xl">
@@ -1715,22 +1713,6 @@
               </div>
             )}
 
-            {/* STATS */}
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="stat-card stat-indigo">
-                <div className="text-sm opacity-80">🏫 Institutes</div>
-                <div className="mt-2 text-3xl font-black">{institutes.length}</div>
-              </div>
-              <div className="stat-card stat-emerald">
-                <div className="text-sm opacity-80">📚 Batches &amp; classes</div>
-                <div className="mt-2 text-3xl font-black">{classes.length}</div>
-              </div>
-              <div className="stat-card stat-amber">
-                <div className="text-sm opacity-80">👩‍🏫 Teachers</div>
-                <div className="mt-2 text-3xl font-black">{teacherUsers.length}</div>
-              </div>
-            </div>
-
             {noResults && (
               <div className="glass rounded-3xl border border-white/10 p-8 text-center text-slate-400">
                 <span className="text-3xl block mb-2">🔎</span>
@@ -1738,125 +1720,134 @@
               </div>
             )}
 
-            {/* INSTITUTES */}
+            {/* INSTITUTES — swipeable recommendation row, like a suggestions feed */}
             {showInstitutes && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold flex items-center gap-2">🏫 Institute directory <span className="text-sm font-medium text-slate-400">({filteredInstitutes.length})</span></h3>
-                </div>
+                <h3 className="text-lg font-bold flex items-center gap-2">🏫 Institutes <span className="text-sm font-medium text-slate-400">({filteredInstitutes.length})</span></h3>
                 {filteredInstitutes.length === 0 ? (
                   <div className="glass rounded-3xl border border-white/10 p-6 text-sm text-slate-400">No institutes to show yet.</div>
                 ) : (
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {filteredInstitutes.map((item) => {
+                  <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
+                    {previewInstitutes.map((item) => {
                       const instBatches = classes.filter((classItem) => classItem.instituteId === item.id);
                       return (
-                        <div key={item.id} className="glass rounded-3xl border border-white/10 p-5 card-hover institute-card">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <h3 className="text-lg font-semibold">{item.name}</h3>
-                              <p className="mt-1 text-sm text-slate-400">📍 {item.city}</p>
+                        <div key={item.id} className="w-[250px] flex-none snap-start glass rounded-3xl border border-white/10 p-4 card-hover institute-card">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h3 className="truncate text-base font-semibold">{item.name}</h3>
+                              <p className="mt-0.5 text-xs text-slate-400">📍 {item.city}</p>
                             </div>
-                            <span className="rounded-xl bg-indigo-500/15 border border-indigo-400/30 px-2.5 py-1 text-xs font-bold text-indigo-200">{instBatches.length} batches</span>
+                            <span className="flex-none rounded-lg bg-indigo-500/15 border border-indigo-400/30 px-2 py-0.5 text-[10px] font-bold text-indigo-200">{instBatches.length} batches</span>
                           </div>
-                          <p className="mt-3 text-sm text-slate-400 line-clamp-2">{item.description}</p>
-                          {instBatches.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-1.5">Batches &amp; fee</p>
-                              <div className="flex flex-wrap gap-1.5">
-                                {instBatches.slice(0, 5).map((batchItem) => {
-                                  const theme = getSubjectTheme(batchItem.subject);
-                                  return (
-                                    <button
-                                      key={batchItem.id}
-                                      onClick={() => setSelectedBatch(batchItem)}
-                                      className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition-all hover:brightness-125 ${theme.chip}`}
-                                    >{batchItem.name} • ₹{batchItem.fee}</button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                          <div className="mt-4 flex items-center justify-between">
-                            <span className="text-xs uppercase tracking-[0.25em] text-slate-500">Code {item.code}</span>
-                            <button onClick={() => handleInstituteAction(item)} className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-2 text-sm font-semibold text-white hover:brightness-110 transition-all">View details</button>
+                          <div className="mt-3 flex items-center justify-between">
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Code {item.code}</span>
+                            <button onClick={() => handleInstituteAction(item)} className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:brightness-110 transition-all">View</button>
                           </div>
                         </div>
                       );
                     })}
+                    {activeTab === 'all' && filteredInstitutes.length > PREVIEW_COUNT && (
+                      <button onClick={() => setActiveTab('institutes')} className="flex w-[140px] flex-none snap-start flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-indigo-400/30 bg-indigo-500/5 p-4 text-center card-hover hover:bg-indigo-500/10 transition-all">
+                        <span className="text-xl">➜</span>
+                        <span className="text-xs font-semibold text-indigo-200">Explore all institutes</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
             )}
 
-            {/* BATCHES */}
+            {/* BATCHES — swipeable recommendation row */}
             {showBatches && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold flex items-center gap-2">📚 Batches &amp; classes <span className="text-sm font-medium text-slate-400">({filteredClasses.length})</span></h3>
-                </div>
+                <h3 className="text-lg font-bold flex items-center gap-2">📚 Batches &amp; classes <span className="text-sm font-medium text-slate-400">({filteredClasses.length})</span></h3>
                 {filteredClasses.length === 0 ? (
                   <div className="glass rounded-3xl border border-white/10 p-6 text-sm text-slate-400">No batches to show yet.</div>
                 ) : (
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {filteredClasses.map((item) => {
+                  <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
+                    {previewClasses.map((item) => {
                       const theme = getSubjectTheme(item.subject);
                       const inst = instituteMap[item.instituteId];
                       return (
                         <button
                           key={item.id}
                           onClick={() => setSelectedBatch(item)}
-                          className="text-left glass rounded-3xl border border-white/10 p-5 card-hover overflow-hidden relative"
+                          className="w-[230px] flex-none snap-start text-left glass rounded-3xl border border-white/10 p-4 card-hover overflow-hidden relative"
                         >
                           <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${theme.grad}`}></div>
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <h4 className="text-base font-bold">{item.name}</h4>
-                              <p className="mt-1 text-xs text-slate-400">{inst ? `🏫 ${inst.name} • ${inst.city}` : 'Independent batch'}</p>
-                            </div>
-                            <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${theme.chip}`}>{item.subject || 'General'}</span>
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="truncate text-sm font-bold">{item.name}</h4>
+                            <span className={`flex-none rounded-lg border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${theme.chip}`}>{item.subject || 'General'}</span>
                           </div>
+                          <p className="mt-1 truncate text-xs text-slate-400">{inst ? `🏫 ${inst.name}` : 'Independent batch'}</p>
                           <div className="mt-3 flex items-center justify-between text-sm">
-                            <span className="text-slate-400">{item.schedule || 'Weekly'}</span>
+                            <span className="text-xs text-slate-400">{item.schedule || 'Weekly'}</span>
                             <span className="font-black text-emerald-300">₹{item.fee}</span>
                           </div>
-                          {item.teacherName && <p className="mt-1.5 text-xs text-slate-500">👤 {item.teacherName}</p>}
                         </button>
                       );
                     })}
+                    {activeTab === 'all' && filteredClasses.length > PREVIEW_COUNT && (
+                      <button onClick={() => setActiveTab('batches')} className="flex w-[140px] flex-none snap-start flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-emerald-400/30 bg-emerald-500/5 p-4 text-center card-hover hover:bg-emerald-500/10 transition-all">
+                        <span className="text-xl">➜</span>
+                        <span className="text-xs font-semibold text-emerald-200">Explore all batches</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
             )}
 
-            {/* TEACHERS */}
+            {/* TEACHERS — swipeable recommendation row */}
             {showTeachers && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold flex items-center gap-2">👩‍🏫 Teachers <span className="text-sm font-medium text-slate-400">({filteredTeachers.length})</span></h3>
-                </div>
+                <h3 className="text-lg font-bold flex items-center gap-2">👩‍🏫 Teachers <span className="text-sm font-medium text-slate-400">({filteredTeachers.length})</span></h3>
                 {filteredTeachers.length === 0 ? (
                   <div className="glass rounded-3xl border border-white/10 p-6 text-sm text-slate-400">No teachers to show yet.</div>
                 ) : (
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {filteredTeachers.map((teacher, index) => {
+                  <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
+                    {previewTeachers.map((teacher, index) => {
                       const palette = ['from-emerald-500 to-teal-500', 'from-indigo-500 to-blue-500', 'from-fuchsia-500 to-purple-500', 'from-amber-500 to-orange-500', 'from-sky-500 to-cyan-500'];
                       const grad = palette[index % palette.length];
                       return (
-                        <div key={teacher.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 card-hover flex items-center gap-3">
-                          <div className={`w-11 h-11 shrink-0 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center font-black text-white text-sm`}>
+                        <div key={teacher.id} className="w-[210px] flex-none snap-start rounded-2xl border border-white/10 bg-slate-900/70 p-4 card-hover text-center">
+                          <div className={`mx-auto w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center font-black text-white text-sm`}>
                             {(teacher.name || teacher.email || '?').slice(0, 2).toUpperCase()}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold truncate">{teacher.name}</div>
-                            <div className="text-sm text-slate-400 truncate">{teacher.email}</div>
+                          <div className="mt-2 min-w-0">
+                            <div className="truncate font-semibold">{teacher.name}</div>
+                            <div className="truncate text-xs text-slate-400">{teacher.email}</div>
                           </div>
-                          <button onClick={() => handleTeacherAction(teacher)} className="shrink-0 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-2 text-xs font-semibold text-white hover:brightness-110 transition-all">View profile</button>
+                          <button onClick={() => handleTeacherAction(teacher)} className="mt-3 w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:brightness-110 transition-all">View profile</button>
                         </div>
                       );
                     })}
+                    {activeTab === 'all' && filteredTeachers.length > PREVIEW_COUNT && (
+                      <button onClick={() => setActiveTab('teachers')} className="flex w-[140px] flex-none snap-start flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-amber-400/30 bg-amber-500/5 p-4 text-center card-hover hover:bg-amber-500/10 transition-all">
+                        <span className="text-xl">➜</span>
+                        <span className="text-xs font-semibold text-amber-200">Explore all teachers</span>
+                      </button>
+                    )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* STATS — moved below the feed so search + results are visible first */}
+            {activeTab === 'all' && (
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="stat-card stat-indigo">
+                  <div className="text-sm opacity-80">🏫 Institutes</div>
+                  <div className="mt-2 text-3xl font-black">{institutes.length}</div>
+                </div>
+                <div className="stat-card stat-emerald">
+                  <div className="text-sm opacity-80">📚 Batches &amp; classes</div>
+                  <div className="mt-2 text-3xl font-black">{classes.length}</div>
+                </div>
+                <div className="stat-card stat-amber">
+                  <div className="text-sm opacity-80">👩‍🏫 Teachers</div>
+                  <div className="mt-2 text-3xl font-black">{teacherUsers.length}</div>
+                </div>
               </div>
             )}
 
