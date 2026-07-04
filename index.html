@@ -393,6 +393,19 @@
       return 0;
     }
 
+    // Used for homework/test due-date badges — keeps the "is this urgent"
+    // logic in one place instead of copy-pasted per screen.
+    function dueDateUrgency(dueDate) {
+      if (!dueDate) return null;
+      const due = new Date(dueDate + 'T23:59:59');
+      if (Number.isNaN(due.getTime())) return null;
+      const diffDays = Math.ceil((due.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) return { label: 'Overdue', tone: 'rose' };
+      if (diffDays === 0) return { label: 'Due today', tone: 'amber' };
+      if (diffDays <= 2) return { label: `Due in ${diffDays}d`, tone: 'amber' };
+      return { label: `Due in ${diffDays}d`, tone: 'emerald' };
+    }
+
     const API_BASE = (window.__VEDO_BACKEND_BASE__ || '/api').replace(/\/$/, '');
     const OFFLINE_QUEUE_KEY = StorageKeys.OFFLINE;
 
@@ -618,6 +631,19 @@
         if (!request) return;
         const nextStatus = 'approved';
         setJoinRequests((prev) => prev.map((item) => item.id === requestId ? { ...item, status: nextStatus, updatedAt: stamp() } : item));
+        if (request.role === 'student') {
+          try {
+            await createAnnouncement({
+              title: 'Request approved 🎉',
+              message: `Your request to join ${request.targetName} was approved — you're in!`,
+              studentId: request.requesterId,
+              studentName: request.requesterName,
+              createdBy: 'Vedo'
+            });
+          } catch (err) {
+            console.warn('Failed to send approval notification', err);
+          }
+        }
         if (backendReady && firestoreRef) {
           try {
             await firestoreRef.collection('joinRequests').doc(requestId).set({ ...request, status: nextStatus, updatedAt: stamp() }, { merge: true });
@@ -2308,15 +2334,19 @@
                 <div className="mt-4 space-y-2">
                   {myHomeworks.length ? myHomeworks.map((item) => {
                     const submitted = (item.submissions || []).some((sub) => sub.studentId === profile?.id);
+                    const urgency = !submitted ? dueDateUrgency(item.dueDate) : null;
                     return (
                       <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                        <div className="font-medium">{item.title}</div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-medium">{item.title}</div>
+                          {urgency ? <span className={`flex-none rounded-full px-2 py-0.5 text-[10px] font-bold bg-${urgency.tone}-500/15 text-${urgency.tone}-300 border border-${urgency.tone}-400/30`}>{urgency.label}</span> : null}
+                        </div>
                         <div className="text-sm text-slate-400">{item.description}</div>
                         <div className="mt-1 text-xs text-slate-400">Due: {item.dueDate || 'No due date'} • {getClassName(item.classId)}</div>
                         {submitted ? <span className="mt-3 inline-flex rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">✅ Submitted</span> : <button onClick={() => submitSelectedHomework(item.id)} className="mt-3 rounded-xl bg-emerald-600 px-3 py-2 text-xs hover:bg-emerald-500 transition-all">Mark submitted</button>}
                       </div>
                     );
-                  }) : <div className="text-sm text-slate-400">No homework yet.</div>}
+                  }) : <div className="rounded-2xl border border-dashed border-white/15 bg-slate-900/40 p-6 text-center text-sm text-slate-400">📭 No homework yet — you're all caught up!</div>}
                 </div>
               </div>
             )}
@@ -2384,7 +2414,7 @@
     }
     function TeacherDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, schedules, tests, teacherPayments, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt, createSchedule, createTest } = useAppData();
+      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, schedules, tests, teacherPayments, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt, createSchedule, createTest, createAnnouncement } = useAppData();
       const [activeTab, setActiveTab] = useState('myclass');
       const [joinCode, setJoinCode] = useState('');
       const [joinTargetType, setJoinTargetType] = useState('institute');
@@ -2492,7 +2522,8 @@
         event.preventDefault();
         if (!homeworkTitle.trim()) return;
         await createHomework({ title: homeworkTitle, description: homeworkDesc, dueDate: homeworkDue, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null, createdBy: profile.name });
-        addToast('Homework assigned', 'success');
+        await createAnnouncement({ title: `New homework: ${homeworkTitle}`, message: `${homeworkTitle}${homeworkDue ? ` — due ${homeworkDue}` : ''}`, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || null, createdBy: profile.name });
+        addToast('Homework assigned and students notified', 'success');
         setHomeworkTitle('');
         setHomeworkDesc('');
         setHomeworkDue('');
@@ -2501,6 +2532,7 @@
         event.preventDefault();
         if (!noteTitle.trim()) return;
         await createNote({ title: noteTitle, content: noteContent, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null, createdBy: profile.name });
+        await createAnnouncement({ title: `New note: ${noteTitle}`, message: 'A new note was shared with your batch.', classId: targetClass?.id || null, instituteId: targetClass?.instituteId || null, createdBy: profile.name });
         addToast('Note shared with students', 'success');
         setNoteTitle('');
         setNoteContent('');
@@ -2512,9 +2544,10 @@
         if (!studentId) return addToast('No student is linked to this teacher yet.', 'error');
         const student = visibleStudents.find((item) => item.id === studentId) || null;
         await addFeedback({ text: feedbackText, studentId, studentName: getStudentDisplayName(student), teacherId: profile.id, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null });
+        await createAnnouncement({ title: 'New feedback from your teacher', message: feedbackText.slice(0, 140), studentId, studentName: getStudentDisplayName(student), createdBy: profile.name });
         setFeedbackText('');
         setSelectedFeedbackStudent('');
-        addToast('Feedback saved', 'success');
+        addToast('Feedback saved and student notified', 'success');
       };
       const markDoubtResolved = async (doubtId) => {
         await resolveDoubt(doubtId);
@@ -2551,7 +2584,8 @@
         event.preventDefault();
         if (!testTitle.trim()) return;
         await createTest({ title: testTitle, subject: testSubject, dueDate: testDate, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null, createdBy: profile.name });
-        addToast('Test scheduled for your students', 'success');
+        await createAnnouncement({ title: `New test: ${testTitle}`, message: `${testSubject || 'Test'}${testDate ? ` — on ${testDate}` : ''}`, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || null, createdBy: profile.name });
+        addToast('Test scheduled and students notified', 'success');
         setTestTitle('');
         setTestSubject('');
         setTestDate('');
@@ -2933,7 +2967,8 @@
         const student = classStudents.find((item) => item.id === selectedStudent) || users.find((item) => item.id === selectedStudent) || null;
         if (!student) return addToast('Selected student not found', 'error');
         await createFee({ studentId: student.id, studentName: getStudentDisplayName(student), classId: selectedClass, amount: fee, dueDate: feeDueDate });
-        addToast('Fee reminder created', 'success');
+        await createAnnouncement({ title: 'New fee due', message: `₹${fee} due on ${feeDueDate}`, studentId: student.id, studentName: getStudentDisplayName(student), classId: selectedClass, createdBy: profile.name });
+        addToast('Fee reminder created and student notified', 'success');
         setFee('');
       };
       const sendFeeReminder = async (feeItem) => {
