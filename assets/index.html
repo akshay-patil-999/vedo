@@ -1185,6 +1185,123 @@
     };
     const fnColor = (id) => functionColors[id] || 'indigo';
 
+    // =====================================================
+    // SHARED CALENDAR-STYLE COMPONENTS
+    // Used by Student/Teacher/Parent/Owner dashboards so timetable and
+    // attendance look like a real planner (Byju's/Vedantu-style) instead of
+    // a plain list — horizontally-scrollable day columns on mobile, a real
+    // month grid for attendance.
+    // =====================================================
+    const CALENDAR_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const CALENDAR_DAY_SHORT = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' };
+    const CALENDAR_PALETTE = ['indigo', 'sky', 'emerald', 'amber', 'rose', 'violet', 'cyan', 'fuchsia', 'teal', 'orange'];
+    function calendarColorFor(text) {
+      const str = text || '';
+      let hash = 0;
+      for (let i = 0; i < str.length; i += 1) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+      return CALENDAR_PALETTE[hash % CALENDAR_PALETTE.length];
+    }
+
+    function WeeklyTimetable({ items, getClassName, onSlotClick, activeSlotId, renderSlotExtra, emptyLabel }) {
+      const todayName = CALENDAR_DAYS[(new Date().getDay() + 6) % 7];
+      const byDay = CALENDAR_DAYS.map((day) => ({
+        day,
+        items: (items || []).filter((it) => it.day === day).sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+      }));
+      if (!items || !items.length) {
+        return <div className="rounded-2xl border border-dashed border-white/15 bg-slate-900/50 p-6 text-center text-sm text-slate-400">{emptyLabel || 'No timetable set yet.'}</div>;
+      }
+      return (
+        <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
+          {byDay.map(({ day, items: dayItems }) => {
+            const isToday = day === todayName;
+            return (
+              <div key={day} className={`w-[136px] flex-none snap-start rounded-2xl border p-2 ${isToday ? 'border-indigo-400/40 bg-indigo-500/5' : 'border-white/10 bg-slate-900/40'}`}>
+                <div className={`mb-2 rounded-xl px-2 py-1.5 text-center text-xs font-bold ${isToday ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-300'}`}>
+                  {CALENDAR_DAY_SHORT[day]}{isToday ? ' • Today' : ''}
+                </div>
+                <div className="space-y-1.5">
+                  {dayItems.length ? dayItems.map((item) => {
+                    const c = calendarColorFor(item.subject || item.title || item.classId);
+                    const active = activeSlotId === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => onSlotClick && onSlotClick(item)}
+                        className={`relative w-full rounded-xl border px-2 py-2 text-left transition-all ${active ? `border-${c}-400/60 bg-${c}-500/25` : `border-${c}-400/20 bg-${c}-500/10 hover:bg-${c}-500/20`}`}
+                      >
+                        <div className={`text-[11px] font-bold leading-tight text-${c}-200`}>{item.subject || item.title}</div>
+                        <div className="mt-0.5 text-[10px] text-slate-400">{item.time || 'Time TBA'}</div>
+                        {getClassName ? <div className="mt-0.5 truncate text-[10px] text-slate-500">{getClassName(item.classId)}</div> : null}
+                        {renderSlotExtra ? renderSlotExtra(item) : null}
+                      </button>
+                    );
+                  }) : <div className="rounded-xl border border-dashed border-white/10 px-2 py-4 text-center text-[10px] text-slate-600">—</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    function MonthAttendanceCalendar({ records }) {
+      const today = new Date();
+      const [viewDate, setViewDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+      const year = viewDate.getFullYear();
+      const month = viewDate.getMonth();
+      const pad = (n) => String(n).padStart(2, '0');
+      const startWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const byDate = {};
+      (records || []).forEach((r) => {
+        if (!r?.date) return;
+        (byDate[r.date] ||= []).push(r);
+      });
+      const cells = [];
+      for (let i = 0; i < startWeekday; i += 1) cells.push(null);
+      for (let d = 1; d <= daysInMonth; d += 1) cells.push(d);
+      const monthLabel = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+      return (
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <button onClick={() => setViewDate(new Date(year, month - 1, 1))} className="rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm hover:bg-white/10 transition-all">‹</button>
+            <div className="text-sm font-semibold text-slate-200">{monthLabel}</div>
+            <button onClick={() => setViewDate(new Date(year, month + 1, 1))} className="rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-sm hover:bg-white/10 transition-all">›</button>
+          </div>
+          <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[10px] text-slate-500">
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <div key={i}>{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {cells.map((d, idx) => {
+              if (d === null) return <div key={idx}></div>;
+              const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
+              const dayRecords = byDate[dateStr] || [];
+              const allPresent = dayRecords.length && dayRecords.every((r) => r.present);
+              const tone = !dayRecords.length ? null : allPresent ? 'emerald' : 'rose';
+              const isToday = dateStr === todayStr;
+              return (
+                <div
+                  key={idx}
+                  title={dayRecords.length ? `${dayRecords.length} record${dayRecords.length === 1 ? '' : 's'} — ${allPresent ? 'Present' : 'Absent'}` : 'No class recorded'}
+                  className={`flex aspect-square items-center justify-center rounded-lg border text-xs font-medium transition-all ${tone ? `border-${tone}-400/30 bg-${tone}-500/20 text-${tone}-200` : 'border-white/5 bg-white/5 text-slate-500'} ${isToday ? 'ring-2 ring-indigo-400/60' : ''}`}
+                >
+                  {d}
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-emerald-400/60"></span>Present</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-rose-400/60"></span>Absent</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-white/10"></span>No class</span>
+          </div>
+        </div>
+      );
+    }
+
     function NotificationBell() {
       // Real backend-connected notification bell (Vedo-style bell UI, wired to
       // the live `announcements` Firestore collection instead of mock data).
@@ -2179,18 +2296,9 @@
             {activeTab === 'timetable' && (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">My timetable</h3>
-                <p className="text-sm text-slate-400">Set by your owner/teacher for your batches, day-wise.</p>
-                <div className="mt-4 space-y-2">
-                  {myTimetable.length ? myTimetable.map((item) => (
-                    <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="font-medium">{item.subject || item.title}</div>
-                        <span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">{item.day}</span>
-                      </div>
-                      <div className="mt-1 text-sm text-slate-400">{item.time || 'Time TBA'} • {item.frequency || 'Weekly'}</div>
-                      <div className="mt-1 text-xs text-slate-400">{getClassName(item.classId)}{item.instituteId ? ` • ${getInstituteName(item.instituteId)}` : ''}</div>
-                    </div>
-                  )) : <div className="text-sm text-slate-400">No timetable has been shared for your batches yet.</div>}
+                <p className="text-sm text-slate-400">Set by your owner/teacher for your batches — swipe sideways to see the whole week.</p>
+                <div className="mt-4">
+                  <WeeklyTimetable items={myTimetable} getClassName={getClassName} emptyLabel="No timetable has been shared for your batches yet." />
                 </div>
               </div>
             )}
@@ -2572,51 +2680,58 @@
                 }) : <div className="text-sm text-slate-400">You haven't joined an institute yet — use ☰ → Join institute / class.</div>}</div>
               </div>
             )}
-            {activeTab === 'timetable' && (
-              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
-                <h3 className="text-lg font-semibold">My timetable</h3>
-                <p className="text-sm text-slate-400">Weekly/daily timetable set by your owner for your classes and institute batches. Tap a slot to mark attendance for that batch.</p>
-                <div className="mt-4 space-y-2">
-                  {myTimetable.length ? myTimetable.map((item) => {
-                    const cls = classes.find((c) => c.id === item.classId);
-                    const roster = cls ? getStudentRosterForClass(cls, users, joinRequests, knownStudentNameRecords) : [];
-                    const isOpen = expandedScheduleId === item.id;
-                    return (
-                      <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                        <button type="button" onClick={() => openScheduleAttendance(item)} className="w-full text-left transition-all">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="font-medium">{item.subject || item.title}</div>
-                            <span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">{item.day}</span>
-                          </div>
-                          <div className="mt-1 text-sm text-slate-400">{item.time || 'Time TBA'} • {cls?.name || 'Batch'} • {item.frequency || 'Weekly'}</div>
-                          <div className="mt-1 text-xs text-indigo-300">{isOpen ? 'Hide attendance ▲' : 'Mark attendance ▼'}</div>
-                        </button>
-                        {isOpen && (
-                          <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
-                            <input type="date" value={attendanceDate} onChange={(event) => setAttendanceDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm" />
-                            <div className="space-y-1">
-                              {roster.length ? roster.map((student) => {
-                                const present = attendanceDraft[student.id] !== false;
-                                return (
-                                  <div key={student.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm">
-                                    <span className="text-slate-100">{getStudentDisplayName(student)}</span>
-                                    <div className="flex gap-1">
-                                      <button type="button" onClick={() => toggleAttendanceDraft(student.id, true)} className={`rounded-xl px-2.5 py-1 text-xs ${present ? 'bg-emerald-600 text-white' : 'bg-white/5 text-slate-300'} transition-all`}>Present</button>
-                                      <button type="button" onClick={() => toggleAttendanceDraft(student.id, false)} className={`rounded-xl px-2.5 py-1 text-xs ${!present ? 'bg-rose-500 text-white' : 'bg-white/5 text-slate-300'} transition-all`}>Absent</button>
-                                    </div>
-                                  </div>
-                                );
-                              }) : <div className="text-sm text-slate-400">No students in this batch yet.</div>}
-                            </div>
-                            {roster.length ? <button onClick={() => submitScheduleAttendance(item)} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs hover:bg-indigo-500 transition-all">Save attendance for this slot</button> : null}
-                          </div>
-                        )}
+            {activeTab === 'timetable' && (() => {
+              const expandedItem = myTimetable.find((item) => item.id === expandedScheduleId) || null;
+              const expandedClass = expandedItem ? classes.find((c) => c.id === expandedItem.classId) : null;
+              const expandedRoster = expandedClass ? getStudentRosterForClass(expandedClass, users, joinRequests, knownStudentNameRecords) : [];
+              return (
+                <div className="space-y-4">
+                  <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                    <h3 className="text-lg font-semibold">My timetable</h3>
+                    <p className="text-sm text-slate-400">Tap a slot to mark attendance for that batch — swipe sideways for the whole week.</p>
+                    <div className="mt-4">
+                      <WeeklyTimetable
+                        items={myTimetable}
+                        getClassName={(id) => classes.find((c) => c.id === id)?.name || 'Batch'}
+                        onSlotClick={openScheduleAttendance}
+                        activeSlotId={expandedScheduleId}
+                        emptyLabel="No timetable has been set for your classes/institutes yet — ask your owner to add one."
+                      />
+                    </div>
+                  </div>
+
+                  {expandedItem && (
+                    <div className="glass rounded-3xl border border-indigo-400/20 bg-indigo-500/5 p-5 card-hover animate-fade-in">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold">{expandedItem.subject || expandedItem.title}</h3>
+                          <p className="text-sm text-slate-400">{expandedItem.day} • {expandedItem.time || 'Time TBA'} • {expandedClass?.name || 'Batch'}</p>
+                        </div>
+                        <button onClick={() => setExpandedScheduleId('')} aria-label="Close" className="rounded-xl border border-white/10 px-2.5 py-1.5 text-sm text-slate-300 transition-all">✕</button>
                       </div>
-                    );
-                  }) : <div className="text-sm text-slate-400">No timetable has been set for your classes/institutes yet — ask your owner to add one.</div>}
+                      <div className="mt-4 space-y-3">
+                        <input type="date" value={attendanceDate} onChange={(event) => setAttendanceDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm" />
+                        <div className="space-y-1">
+                          {expandedRoster.length ? expandedRoster.map((student) => {
+                            const present = attendanceDraft[student.id] !== false;
+                            return (
+                              <div key={student.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm">
+                                <span className="text-slate-100">{getStudentDisplayName(student)}</span>
+                                <div className="flex gap-1">
+                                  <button type="button" onClick={() => toggleAttendanceDraft(student.id, true)} className={`rounded-xl px-2.5 py-1 text-xs ${present ? 'bg-emerald-600 text-white' : 'bg-white/5 text-slate-300'} transition-all`}>Present</button>
+                                  <button type="button" onClick={() => toggleAttendanceDraft(student.id, false)} className={`rounded-xl px-2.5 py-1 text-xs ${!present ? 'bg-rose-500 text-white' : 'bg-white/5 text-slate-300'} transition-all`}>Absent</button>
+                                </div>
+                              </div>
+                            );
+                          }) : <div className="text-sm text-slate-400">No students in this batch yet.</div>}
+                        </div>
+                        {expandedRoster.length ? <button onClick={() => submitScheduleAttendance(expandedItem)} className="w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-semibold hover:bg-indigo-500 transition-all">Save attendance for this slot</button> : null}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
             {activeTab === 'wallet' && (() => {
               const totalOwnFees = feesCollected + feesPending;
               const collectionPct = totalOwnFees ? Math.round((feesCollected / totalOwnFees) * 100) : null;
@@ -2924,7 +3039,8 @@
                 </div>
               );
             }) : <div className="text-sm text-slate-400">Create a batch to get started.</div>}</div></div>}
-            {activeTab === 'schedule' && (
+            {activeTab === 'schedule' && (() => {
+              return (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">Schedule / timetable</h3>
                 <p className="text-sm text-slate-400">Set a weekly or daily timetable per batch. Teachers and students see it in their Timetable tab and get notified.</p>
@@ -2946,24 +3062,24 @@
                   </div>
                   <button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Add timetable slot</button>
                 </form>
-                <div className="mt-4 space-y-2">
-                  {ownerSchedules.length ? ownerSchedules.map((item) => {
-                    const cls = classes.find((c) => c.id === item.classId);
-                    return (
-                      <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="font-medium">{item.subject || item.title}</div>
-                            <div className="mt-1 text-sm text-slate-400">{item.day} • {item.time || 'Time TBA'} • {item.frequency || 'Weekly'} • {cls?.name || 'Batch'}</div>
-                          </div>
-                          <button onClick={() => removeScheduleSlot(item.id)} className="rounded-xl bg-rose-500/10 px-2.5 py-1 text-xs font-medium text-rose-300 hover:bg-rose-500/20 transition-all">Remove</button>
-                        </div>
-                      </div>
-                    );
-                  }) : <div className="text-sm text-slate-400">No timetable slots yet.</div>}
+                <div className="mt-4">
+                  <WeeklyTimetable
+                    items={ownerSchedules}
+                    getClassName={(id) => classes.find((c) => c.id === id)?.name || 'Batch'}
+                    emptyLabel="No timetable slots yet."
+                    renderSlotExtra={(item) => (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(event) => { event.stopPropagation(); removeScheduleSlot(item.id); }}
+                        className="absolute right-1 top-1 rounded-md bg-rose-500/20 px-1.5 py-0.5 text-[9px] font-bold text-rose-300 hover:bg-rose-500/30"
+                      >✕</span>
+                    )}
+                  />
                 </div>
               </div>
-            )}
+              );
+            })()}
             {activeTab === 'alerts' && (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">Alerts & reminders</h3>
@@ -3287,14 +3403,25 @@
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">Attendance</h3>
                 <div className="mt-2 text-sm text-slate-400">{attendancePct !== null ? `${presentCount} of ${childAttendance.length} classes attended (${attendancePct}%)` : 'No attendance recorded yet.'}</div>
-                <div className="mt-4 space-y-2">{childAttendance.length ? childAttendance.slice(0, 25).map((item) => <div key={item.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><span>{item.date} • {getClassName(item.classId)}</span><span className={item.present ? 'text-sm font-medium text-emerald-300' : 'text-sm font-medium text-rose-300'}>{item.present ? 'Present' : 'Absent'}</span></div>) : <div className="text-sm text-slate-400">No attendance recorded yet.</div>}</div>
+                <div className="mt-4">
+                  <MonthAttendanceCalendar records={childAttendance} />
+                </div>
+                {childAttendance.length ? (
+                  <div className="mt-5">
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Recent records</div>
+                    <div className="space-y-2">{childAttendance.slice(0, 8).map((item) => <div key={item.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><span>{item.date} • {getClassName(item.classId)}</span><span className={item.present ? 'text-sm font-medium text-emerald-300' : 'text-sm font-medium text-rose-300'}>{item.present ? 'Present' : 'Absent'}</span></div>)}</div>
+                  </div>
+                ) : null}
               </div>
             )}
 
             {hasChildren && activeTab === 'schedule' && (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">Timetable</h3>
-                <div className="mt-4 space-y-2">{childSchedule.length ? childSchedule.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="flex items-center justify-between gap-3"><div className="font-medium">{item.subject || item.title}</div><span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">{item.day}</span></div><div className="mt-1 text-sm text-slate-400">{item.time || 'Time TBA'} • {getClassName(item.classId)}</div></div>) : <div className="text-sm text-slate-400">No timetable shared yet.</div>}</div>
+                <p className="text-sm text-slate-400">Swipe sideways to see the whole week.</p>
+                <div className="mt-4">
+                  <WeeklyTimetable items={childSchedule} getClassName={getClassName} emptyLabel="No timetable shared yet." />
+                </div>
               </div>
             )}
 
