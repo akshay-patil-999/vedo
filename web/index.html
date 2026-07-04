@@ -3061,6 +3061,16 @@
       const { addToast } = useToast();
       const myInstitutes = institutes.filter((item) => item.ownerId === profile?.id);
       const ownerClasses = classes.filter((item) => item.ownerId === profile?.id);
+      // Only alerts that actually belong to this owner's own institutes/batches
+      // (or a student inside them) — a teacher's homework/test alert for a
+      // batch this owner has nothing to do with should never show up here.
+      const ownerAnnouncements = announcements.filter((item) => {
+        if (!item) return false;
+        if (item.classId) return ownerClasses.some((cls) => cls.id === item.classId);
+        if (item.instituteId) return myInstitutes.some((inst) => inst.id === item.instituteId);
+        if (item.studentId) return ownerClasses.some((cls) => getStudentRosterForClass(cls, users, joinRequests).some((student) => student.id === item.studentId));
+        return false;
+      });
       const selectedClassObj = ownerClasses.find((item) => item.id === selectedClass) || null;
       const knownStudentNameRecords = [...(fees || []), ...(marks || []), ...(feedbacks || []), ...(attendances || []), ...((homeworks || []).flatMap((hw) => hw.submissions || []))];
       const classStudents = selectedClassObj ? getStudentRosterForClass(selectedClassObj, users, joinRequests, knownStudentNameRecords) : [];
@@ -3282,7 +3292,7 @@
                   </div>
                   <button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Send</button>
                 </form>
-                <div className="mt-4 space-y-2">{announcements.slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div><div className="mt-1 text-xs text-slate-400">{item.studentName ? `To: ${item.studentName}` : item.classId ? 'Batch alert' : item.instituteId ? 'Institute alert' : 'General'}</div></div>)}</div>
+                <div className="mt-4 space-y-2">{ownerAnnouncements.length ? ownerAnnouncements.slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.message}</div><div className="mt-1 text-xs text-slate-400">{item.studentName ? `To: ${item.studentName}` : item.classId ? 'Batch alert' : item.instituteId ? 'Institute alert' : 'General'}</div></div>) : <div className="text-sm text-slate-400">No alerts sent yet for your institutes/batches.</div>}</div>
               </div>
             )}
             {activeTab === 'wallet' && (
