@@ -3148,7 +3148,15 @@
         const inst = cls ? institutes.find((item) => item.id === cls.instituteId) : null;
         const title = `Fee reminder for ${feeItem.studentName}`;
         const message = `Dear ${feeItem.studentName}, your fee of ₹${feeItem.amount} for ${cls?.name || 'the class'}${inst ? ` at ${inst.name}` : ''} is due on ${feeItem.dueDate}.`;
-        await createAnnouncement({ title, message, instituteId: inst?.id || null, classId: cls?.id || null, createdBy: profile.name });
+        await createAnnouncement({ 
+          title, 
+          message, 
+          instituteId: inst?.id || null, 
+          classId: cls?.id || null, 
+          studentId: feeItem.studentId || null,
+          studentName: feeItem.studentName || '',
+          createdBy: profile.name 
+        });
         addToast('Payment reminder sent', 'success');
       };
       const addScheduleSlot = async (event) => {
