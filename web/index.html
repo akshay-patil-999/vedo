@@ -1489,7 +1489,82 @@
         </div>
       );
     }
+    function NotificationPopupStack() {
+      const { profile } = useAuth();
+      const { announcements, classes, institutes, joinRequests, users } = useAppData();
+      const [queue, setQueue] = useState([]);
+      const [dragX, setDragX] = useState(0);
+      const [dragging, setDragging] = useState(false);
+      const startX = useRef(0);
+      const seenKey = profile?.id ? `vedo_popup_seen_${profile.id}` : null;
 
+  // Runs once when the dashboard mounts (app open / login) — not on every
+  // tab switch, since this component's instance stays mounted while the
+  // user navigates between tabs inside the same dashboard.
+      useEffect(() => {
+        if (!profile || !seenKey) return;
+        const seenIds = new Set(db.get(seenKey, []));
+        const relevant = getVisibleAnnouncementsForProfile(profile, announcements, classes, institutes, joinRequests, users)
+          .filter((item) => !seenIds.has(item.id))
+          .sort((a, b) => safeSortKey(a.createdAt) - safeSortKey(b.createdAt));
+        setQueue(relevant);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [profile?.id]);
+
+      if (!queue.length) return null;
+      const current = queue[0];
+
+      const markSeenAndAdvance = () => {
+        if (seenKey) {
+          const seenIds = db.get(seenKey, []);
+          if (!seenIds.includes(current.id)) db.set(seenKey, [...seenIds, current.id]);
+        }
+        setQueue((prev) => prev.slice(1));
+        setDragX(0);
+      };
+
+      const posX = (e) => (e.touches ? e.touches[0].clientX : e.clientX);
+      const onDown = (e) => { setDragging(true); startX.current = posX(e); };
+      const onMove = (e) => { if (dragging) setDragX(posX(e) - startX.current); };
+      const onUp = () => { setDragging(false); Math.abs(dragX) > 90 ? markSeenAndAdvance() : setDragX(0); };
+
+      const iconFor = (t) => {
+        const s = (t || '').toLowerCase();
+        if (s.includes('fee')) return '💰';
+        if (s.includes('homework')) return '📝';
+        if (s.includes('test')) return '📊';
+        if (s.includes('doubt') || s.includes('reply')) return '🤖';
+        if (s.includes('timetable')) return '🗓️';
+        if (s.includes('feedback')) return '💬';
+        if (s.includes('approved')) return '🎉';
+        return '📢';
+      };
+
+      return (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/70 px-4" onClick={(e) => e.target === e.currentTarget && markSeenAndAdvance()}>
+          <div
+            className="w-full max-w-sm select-none rounded-[28px] border border-white/10 bg-slate-900 p-5 shadow-2xl"
+            style={{ transform: `translateX(${dragX}px) rotate(${dragX / 20}deg)`, opacity: 1 - Math.min(Math.abs(dragX) / 250, 0.6), transition: dragging ? 'none' : 'transform .25s ease, opacity .25s ease' }}
+            onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={() => dragging && onUp()}
+            onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-3xl">{iconFor(current.title)}</span>
+              <button onClick={markSeenAndAdvance} className="rounded-xl border border-white/10 px-2.5 py-1.5 text-sm text-slate-300">✕</button>
+            </div>
+            <h3 className="mt-3 text-lg font-semibold text-slate-100">{current.title}</h3>
+            <p className="mt-1 text-sm text-slate-400">{current.message}</p>
+            <div className="mt-3 text-xs text-slate-500">{safeDateText(current.createdAt)}</div>
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-xs text-slate-500">{queue.length > 1 ? `+${queue.length - 1} more • ` : ''}swipe or tap ✕</span>
+              <div className="flex gap-1">
+                {queue.slice(0, 5).map((_, idx) => <span key={idx} className={`h-1.5 rounded-full ${idx === 0 ? 'w-6 bg-indigo-400' : 'w-1.5 bg-white/20'}`}></span>)}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     function ScreenShell({ title, subtitle, children, navItems, bottomNavItems, activeNavId, onNavChange }) {
       const { profile, logout, notifStatus, enableNotifications } = useAuth();
       const { navigateTo } = useNav();
@@ -1519,6 +1594,7 @@
 
       return (
         <div className="app-frame fixed inset-0 flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
+           <NotificationPopupStack />
           {/* soft colour blobs for a livelier, less flat background — purely decorative */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-40">
             <div className={`absolute -top-24 -left-16 h-56 w-56 rounded-full bg-${accent}-500/25 blur-3xl`}></div>
