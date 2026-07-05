@@ -1024,6 +1024,7 @@
       const [authUser, setAuthUser] = useState(null);
       const [profile, setProfile] = useState(null);
       const [loading, setLoading] = useState(true);
+      const authFlowRef = useRef(false);
 
       useEffect(() => {
         if (!backendReady || !authRef) {
@@ -1031,38 +1032,55 @@
           return;
         }
         const unsubscribe = authRef.onAuthStateChanged(async (user) => {
+          if (authFlowRef.current) return;
+
           setAuthUser(user);
           if (!user) {
             setProfile(null);
             setLoading(false);
             return;
           }
-          const snapshot = await firestoreRef.collection('users').doc(user.uid).get();
-          let profileData;
-          if (snapshot.exists) {
-            profileData = { id: user.uid, ...snapshot.data() };
-          } else {
-            profileData = { id: user.uid, role: 'student', name: user.email, instituteIds: [], classIds: [] };
+          try {
+            const snapshot = await firestoreRef.collection('users').doc(user.uid).get();
+            if (!snapshot.exists) {
+              await authRef.signOut();
+              setProfile(null);
+              setLoading(false);
+              return;
+            }
+            const profileData = { id: user.uid, ...snapshot.data() };
+            setProfile(profileData);
+            const target = profileData.role === 'owner' ? '/owner'
+              : profileData.role === 'teacher' ? '/teacher'
+              : profileData.role === 'parent' ? '/parent'
+              : '/student';
+            navigateTo(target);
+          } catch (err) {
+            console.warn('Failed to restore session profile', err);
+            setProfile(null);
           }
-          setProfile(profileData);
-          const target = profileData.role === 'owner' ? '/owner'
-            : profileData.role === 'teacher' ? '/teacher'
-            : profileData.role === 'parent' ? '/parent'
-            : '/student';
-          navigateTo(target);
           setLoading(false);
         });
         return unsubscribe;
       }, []);
 
-      const login = async (email, password) => {
+      const login = async (email, password, expectedRole) => {
         if (!backendReady || !authRef) {
           return { ok: false, message: 'Backend offline right now — please check your connection and try again.' };
         }
+        authFlowRef.current = true;
         try {
           const result = await authRef.signInWithEmailAndPassword(email, password);
           const snapshot = await firestoreRef.collection('users').doc(result.user.uid).get();
-          const profileData = snapshot.exists ? { id: result.user.uid, ...snapshot.data() } : { id: result.user.uid, role: 'student', name: result.user.email, instituteIds: [], classIds: [] };
+          if (!snapshot.exists) {
+            await authRef.signOut();
+            return { ok: false, message: 'No account found for this login. Please sign up first.' };
+          }
+          const profileData = { id: result.user.uid, ...snapshot.data() };
+          if (expectedRole && profileData.role !== expectedRole) {
+            await authRef.signOut();
+            return { ok: false, message: `This account is registered as "${roleLabels[profileData.role] || profileData.role}". Select that role to log in.` };
+          }
           setProfile(profileData);
           setAuthUser(result.user);
           const target = profileData.role === 'owner' ? '/owner' : profileData.role === 'teacher' ? '/teacher' : profileData.role === 'parent' ? '/parent' : '/student';
@@ -1070,18 +1088,25 @@
           return { ok: true };
         } catch (error) {
           return { ok: false, message: error.message || 'Login failed.' };
+        } finally {
+          authFlowRef.current = false;
         }
       };
 
       const isInsideFlutterApp = () => typeof window.FlutterGoogleAuth !== 'undefined';
 
       // Used only for LOGIN and for the "already has a profile" case during signup.
-      const finishGoogleProfile = async (user) => {
+      const finishGoogleProfile = async (user, expectedRole) => {
         const snapshot = await firestoreRef.collection('users').doc(user.uid).get();
         if (!snapshot.exists) {
-          return { ok: false, message: 'No account found for this Google account. Please sign up first.', noProfile: true, firebaseUser: user };
+          await authRef.signOut();
+          return { ok: false, message: 'No account found for this Google account. Please sign up first.' };
         }
         const profileData = { id: user.uid, ...snapshot.data() };
+        if (expectedRole && profileData.role !== expectedRole) {
+          await authRef.signOut();
+          return { ok: false, message: `This Google account is registered as "${roleLabels[profileData.role] || profileData.role}". Select that role to log in.` };
+        }
         setProfile(profileData);
         setAuthUser(user);
         const target = profileData.role === 'owner' ? '/owner' : profileData.role === 'teacher' ? '/teacher' : profileData.role === 'parent' ? '/parent' : '/student';
@@ -1101,6 +1126,7 @@
         if (!backendReady || !authRef || !googleProviderRef) {
           return { ok: false, message: 'Google sign-in is not available right now.' };
         }
+        authFlowRef.current = true;
         try {
           const result = await authRef.signInWithPopup(googleProviderRef);
           const snapshot = await firestoreRef.collection('users').doc(result.user.uid).get();
@@ -1110,12 +1136,14 @@
             setAuthUser(result.user);
             const target = profileData.role === 'owner' ? '/owner' : profileData.role === 'teacher' ? '/teacher' : profileData.role === 'parent' ? '/parent' : '/student';
             navigateTo(target);
+            authFlowRef.current = false;
             return { ok: true, alreadyExisted: true };
           }
           setPendingGoogleUser(result.user);
           setPendingGoogleRole(preferredRole || 'student');
           return { ok: true, needsPassword: true };
         } catch (error) {
+          authFlowRef.current = false;
           return { ok: false, message: error.message || 'Google sign-in failed.' };
         }
       };
@@ -1153,6 +1181,8 @@
           return { ok: true };
         } catch (error) {
           return { ok: false, message: error.message || 'Could not set password. Please try again.' };
+        } finally {
+          authFlowRef.current = false;
         }
       };
 
@@ -1162,47 +1192,55 @@
         }
         setPendingGoogleUser(null);
         setPendingGoogleRole('student');
+        authFlowRef.current = false;
       };
 
-      const loginWithGoogleNative = () => {
+      const loginWithGoogleNative = (expectedRole) => {
         return new Promise((resolve) => {
+          authFlowRef.current = true;
           window.onFlutterGoogleAuth = async (result) => {
             window.onFlutterGoogleAuth = null;
             if (!result || !result.success) {
+              authFlowRef.current = false;
               resolve({ ok: false, message: result?.error === 'cancelled' ? 'Google sign-in was cancelled.' : 'Google sign-in failed. Please try again.' });
               return;
             }
             try {
               const credential = firebase.auth.GoogleAuthProvider.credential(result.idToken, result.accessToken);
               const signInResult = await authRef.signInWithCredential(credential);
-              const outcome = await finishGoogleProfile(signInResult.user);
+              const outcome = await finishGoogleProfile(signInResult.user, expectedRole);
               resolve(outcome);
             } catch (error) {
               resolve({ ok: false, message: error.message || 'Google sign-in failed.' });
+            } finally {
+              authFlowRef.current = false;
             }
           };
           window.FlutterGoogleAuth.postMessage('login');
         });
       };
 
-      // LOGIN ONLY: no password step here — if the account already has a
-      // Google-linked profile, this logs them straight in. If no profile
-      // exists yet, it tells them to sign up first (does NOT create one).
-      const loginWithGoogle = async () => {
+      // LOGIN ONLY: requires an existing Firestore profile AND (if a role
+      // was selected) a matching role — otherwise it signs the person out
+      // and rejects, it never creates or guesses a profile.
+      const loginWithGoogle = async (expectedRole) => {
         if (!backendReady || !authRef) {
           return { ok: false, message: 'Google sign-in needs backend connection. Please try again shortly.' };
         }
         if (isInsideFlutterApp()) {
-          return loginWithGoogleNative();
+          return loginWithGoogleNative(expectedRole);
         }
         if (!googleProviderRef) {
           return { ok: false, message: 'Google sign-in is not available right now.' };
         }
+        authFlowRef.current = true;
         try {
           const result = await authRef.signInWithPopup(googleProviderRef);
-          return await finishGoogleProfile(result.user);
+          return await finishGoogleProfile(result.user, expectedRole);
         } catch (error) {
           return { ok: false, message: error.message || 'Google sign-in failed.' };
+        } finally {
+          authFlowRef.current = false;
         }
       };
 
@@ -1210,6 +1248,7 @@
         if (!backendReady || !authRef) {
           return { ok: false, message: 'Backend offline right now — please check your connection and try again.' };
         }
+        authFlowRef.current = true;
         try {
           const result = await authRef.createUserWithEmailAndPassword(email, password);
           const profileData = { id: result.user.uid, authUid: result.user.uid, email, name, role, instituteIds: [], classIds: [], createdAt: stamp() };
@@ -1224,6 +1263,8 @@
           return { ok: true };
         } catch (error) {
           return { ok: false, message: error.message || 'Signup failed.' };
+        } finally {
+          authFlowRef.current = false;
         }
       };
 
@@ -2252,7 +2293,7 @@
         setMessage('');
         setBusy(true);
         if (mode === 'login') {
-          const result = await login(email, password);
+          const result = await login(email, password, role);
           if (!result.ok) {
             setMessage(result.message);
             addToast(result.message, 'error');
@@ -2288,11 +2329,12 @@
       };
 
       // Login tab → Google button. No password step — straight login,
-      // or an error if no account exists yet.
+      // but only if an account already exists AND its role matches the
+      // one selected above. Otherwise it rejects cleanly.
       const handleGoogleLogin = async () => {
         setMessage('');
         setBusy(true);
-        const result = await loginWithGoogle();
+        const result = await loginWithGoogle(role);
         if (!result.ok) {
           setMessage(result.message);
           addToast(result.message, 'error');
