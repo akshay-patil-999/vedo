@@ -1279,7 +1279,7 @@
       return CALENDAR_PALETTE[hash % CALENDAR_PALETTE.length];
     }
 
-    function WeeklyTimetable({ items, getClassName, onSlotClick, activeSlotId, renderSlotExtra, emptyLabel }) {
+    function WeeklyTimetable({ items, getClassName, getInstituteName, onSlotClick, activeSlotId, renderSlotExtra, emptyLabel }) {
       const todayName = CALENDAR_DAYS[(new Date().getDay() + 6) % 7];
       const byDay = CALENDAR_DAYS.map((day) => ({
         day,
@@ -1311,6 +1311,7 @@
                         <div className={`text-[11px] font-bold leading-tight text-${c}-200`}>{item.subject || item.title}</div>
                         <div className="mt-0.5 text-[10px] text-slate-400">{item.time || 'Time TBA'}</div>
                         {getClassName ? <div className="mt-0.5 truncate text-[10px] text-slate-500">{getClassName(item.classId)}</div> : null}
+                        {getInstituteName && item.instituteId ? <div className="mt-0.5 truncate text-[10px] text-slate-600">{getInstituteName(item.instituteId)}</div> : null}
                         {renderSlotExtra ? renderSlotExtra(item) : null}
                       </button>
                     );
@@ -3092,6 +3093,7 @@
                       <WeeklyTimetable
                         items={myTimetable}
                         getClassName={(id) => classes.find((c) => c.id === id)?.name || 'Batch'}
+                        getInstituteName={(id) => institutes.find((inst) => inst.id === id)?.name || 'Institute'}
                         onSlotClick={openScheduleAttendance}
                         activeSlotId={expandedScheduleId}
                         emptyLabel="No timetable has been set for your classes/institutes yet — ask your owner to add one."
