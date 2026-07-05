@@ -1075,25 +1075,13 @@
 
       const isInsideFlutterApp = () => typeof window.FlutterGoogleAuth !== 'undefined';
 
-      const finishGoogleProfile = async (user, preferredRole) => {
+      // Used only for LOGIN and for the "already has a profile" case during signup.
+      const finishGoogleProfile = async (user) => {
         const snapshot = await firestoreRef.collection('users').doc(user.uid).get();
-        let profileData;
-        if (snapshot.exists) {
-          profileData = { id: user.uid, ...snapshot.data() };
-        } else {
-          profileData = {
-            id: user.uid,
-            authUid: user.uid,
-            email: user.email,
-            name: user.displayName || user.email,
-            photoURL: user.photoURL || null,
-            role: preferredRole || 'student',
-            instituteIds: [],
-            classIds: [],
-            createdAt: stamp()
-          };
-          await firestoreRef.collection('users').doc(user.uid).set(profileData);
+        if (!snapshot.exists) {
+          return { ok: false, message: 'No account found for this Google account. Please sign up first.', noProfile: true, firebaseUser: user };
         }
+        const profileData = { id: user.uid, ...snapshot.data() };
         setProfile(profileData);
         setAuthUser(user);
         const target = profileData.role === 'owner' ? '/owner' : profileData.role === 'teacher' ? '/teacher' : profileData.role === 'parent' ? '/parent' : '/student';
@@ -1101,7 +1089,82 @@
         return { ok: true };
       };
 
-      const loginWithGoogleNative = (preferredRole) => {
+      // Holds the Firebase user object between "Google popup done" and
+      // "password created" during signup. Not persisted — lives only in memory.
+      const [pendingGoogleUser, setPendingGoogleUser] = useState(null);
+      const [pendingGoogleRole, setPendingGoogleRole] = useState('student');
+
+      // STEP 1 of Google signup: open Google popup, check if a profile
+      // already exists. If it does, just log the person in. If not,
+      // pause and hand control back to the UI so it can ask for a password.
+      const startGoogleSignup = async (preferredRole) => {
+        if (!backendReady || !authRef || !googleProviderRef) {
+          return { ok: false, message: 'Google sign-in is not available right now.' };
+        }
+        try {
+          const result = await authRef.signInWithPopup(googleProviderRef);
+          const snapshot = await firestoreRef.collection('users').doc(result.user.uid).get();
+          if (snapshot.exists) {
+            const profileData = { id: result.user.uid, ...snapshot.data() };
+            setProfile(profileData);
+            setAuthUser(result.user);
+            const target = profileData.role === 'owner' ? '/owner' : profileData.role === 'teacher' ? '/teacher' : profileData.role === 'parent' ? '/parent' : '/student';
+            navigateTo(target);
+            return { ok: true, alreadyExisted: true };
+          }
+          setPendingGoogleUser(result.user);
+          setPendingGoogleRole(preferredRole || 'student');
+          return { ok: true, needsPassword: true };
+        } catch (error) {
+          return { ok: false, message: error.message || 'Google sign-in failed.' };
+        }
+      };
+
+      // STEP 2 of Google signup: attach the chosen password to the Google
+      // account, then create the Firestore profile and log in.
+      const completeGoogleSignup = async ({ password, name, instituteName, city }) => {
+        if (!pendingGoogleUser) {
+          return { ok: false, message: 'Google sign-in session expired. Please try again.' };
+        }
+        try {
+          const credential = firebase.auth.EmailAuthProvider.credential(pendingGoogleUser.email, password);
+          await pendingGoogleUser.linkWithCredential(credential);
+          const profileData = {
+            id: pendingGoogleUser.uid,
+            authUid: pendingGoogleUser.uid,
+            email: pendingGoogleUser.email,
+            name: name || pendingGoogleUser.displayName || pendingGoogleUser.email,
+            photoURL: pendingGoogleUser.photoURL || null,
+            role: pendingGoogleRole || 'student',
+            instituteIds: [],
+            classIds: [],
+            createdAt: stamp()
+          };
+          await firestoreRef.collection('users').doc(pendingGoogleUser.uid).set(profileData);
+          if (pendingGoogleRole === 'owner' && instituteName) {
+            await createInstitute({ name: instituteName, city: city || 'Pune', description: 'New institute created from signup.', ownerId: pendingGoogleUser.uid, ownerName: profileData.name });
+          }
+          setProfile(profileData);
+          setAuthUser(pendingGoogleUser);
+          setPendingGoogleUser(null);
+          setPendingGoogleRole('student');
+          const target = profileData.role === 'owner' ? '/owner' : profileData.role === 'teacher' ? '/teacher' : profileData.role === 'parent' ? '/parent' : '/student';
+          navigateTo(target);
+          return { ok: true };
+        } catch (error) {
+          return { ok: false, message: error.message || 'Could not set password. Please try again.' };
+        }
+      };
+
+      const cancelGoogleSignup = () => {
+        if (pendingGoogleUser) {
+          authRef.signOut().catch(() => {});
+        }
+        setPendingGoogleUser(null);
+        setPendingGoogleRole('student');
+      };
+
+      const loginWithGoogleNative = () => {
         return new Promise((resolve) => {
           window.onFlutterGoogleAuth = async (result) => {
             window.onFlutterGoogleAuth = null;
@@ -1112,7 +1175,7 @@
             try {
               const credential = firebase.auth.GoogleAuthProvider.credential(result.idToken, result.accessToken);
               const signInResult = await authRef.signInWithCredential(credential);
-              const outcome = await finishGoogleProfile(signInResult.user, preferredRole);
+              const outcome = await finishGoogleProfile(signInResult.user);
               resolve(outcome);
             } catch (error) {
               resolve({ ok: false, message: error.message || 'Google sign-in failed.' });
@@ -1122,19 +1185,22 @@
         });
       };
 
-      const loginWithGoogle = async (preferredRole) => {
+      // LOGIN ONLY: no password step here — if the account already has a
+      // Google-linked profile, this logs them straight in. If no profile
+      // exists yet, it tells them to sign up first (does NOT create one).
+      const loginWithGoogle = async () => {
         if (!backendReady || !authRef) {
           return { ok: false, message: 'Google sign-in needs backend connection. Please try again shortly.' };
         }
         if (isInsideFlutterApp()) {
-          return loginWithGoogleNative(preferredRole);
+          return loginWithGoogleNative();
         }
         if (!googleProviderRef) {
           return { ok: false, message: 'Google sign-in is not available right now.' };
         }
         try {
           const result = await authRef.signInWithPopup(googleProviderRef);
-          return await finishGoogleProfile(result.user, preferredRole);
+          return await finishGoogleProfile(result.user);
         } catch (error) {
           return { ok: false, message: error.message || 'Google sign-in failed.' };
         }
@@ -1245,7 +1311,7 @@
         return () => { try { unsubscribe(); } catch {} };
       }, []);
 
-      const value = { authUser, profile, loading, login, signup, logout, loginWithGoogle, notifStatus, enableNotifications };
+      const value = { authUser, profile, loading, login, signup, logout, loginWithGoogle, startGoogleSignup, completeGoogleSignup, cancelGoogleSignup, pendingGoogleUser, notifStatus, enableNotifications };
       return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
     }
 
@@ -2173,11 +2239,12 @@
       const [name, setName] = useState('');
       const [email, setEmail] = useState('');
       const [password, setPassword] = useState('');
+      const [confirmPassword, setConfirmPassword] = useState('');
       const [instituteName, setInstituteName] = useState('');
       const [city, setCity] = useState('Pune');
       const [message, setMessage] = useState('');
       const [busy, setBusy] = useState(false);
-      const { login, signup, loginWithGoogle } = useAuth();
+      const { login, signup, loginWithGoogle, startGoogleSignup, completeGoogleSignup, cancelGoogleSignup, pendingGoogleUser } = useAuth();
       const { addToast } = useToast();
 
       const handleSubmit = async (event) => {
@@ -2204,10 +2271,28 @@
         setBusy(false);
       };
 
-      const handleGoogle = async () => {
+      // Signup tab → Google button. Opens popup, then either logs the
+      // person in directly (if they already exist) or shows the
+      // "create a password" step below.
+      const handleGoogleSignup = async () => {
         setMessage('');
         setBusy(true);
-        const result = await loginWithGoogle(role);
+        const result = await startGoogleSignup(role);
+        if (!result.ok) {
+          setMessage(result.message);
+          addToast(result.message, 'error');
+        } else if (result.alreadyExisted) {
+          addToast('Welcome back — signed in with Google', 'success');
+        }
+        setBusy(false);
+      };
+
+      // Login tab → Google button. No password step — straight login,
+      // or an error if no account exists yet.
+      const handleGoogleLogin = async () => {
+        setMessage('');
+        setBusy(true);
+        const result = await loginWithGoogle();
         if (!result.ok) {
           setMessage(result.message);
           addToast(result.message, 'error');
@@ -2217,6 +2302,72 @@
         setBusy(false);
       };
 
+      // Final step of Google signup: attach the password + create profile.
+      const handleCompleteGoogleSignup = async (event) => {
+        event.preventDefault();
+        setMessage('');
+        if (!password || password.length < 6) {
+          setMessage('Password must be at least 6 characters.');
+          return;
+        }
+        if (password !== confirmPassword) {
+          setMessage('Passwords do not match.');
+          return;
+        }
+        setBusy(true);
+        const result = await completeGoogleSignup({ password, name, instituteName, city });
+        if (!result.ok) {
+          setMessage(result.message);
+          addToast(result.message, 'error');
+        } else {
+          addToast('Account created successfully', 'success');
+        }
+        setBusy(false);
+      };
+
+      const handleCancelGoogleSignup = () => {
+        cancelGoogleSignup();
+        setPassword('');
+        setConfirmPassword('');
+        setMessage('');
+      };
+
+      // ===== RENDER: password-creation step (shown right after Google
+      // popup for a brand-new signup, before the profile is created) =====
+      if (pendingGoogleUser) {
+        return (
+          <div className={compact ? '' : 'h-[100dvh] overflow-y-auto bg-slate-950 px-4 py-10'}>
+            <div className={compact ? 'space-y-4' : 'mx-auto max-w-md rounded-[32px] border border-white/10 bg-slate-900/70 p-6 shadow-2xl animate-fade-in'}>
+              {!compact && <div className="mb-4 text-center"><span className="text-2xl font-black gradient-text">Vedo</span><p className="text-xs text-slate-400 mt-1">One last step</p></div>}
+              <div className="rounded-2xl border border-indigo-400/20 bg-indigo-500/5 p-4">
+                <div className="text-sm text-slate-400">Signing up with</div>
+                <div className="mt-1 font-semibold text-slate-100">{pendingGoogleUser.email}</div>
+              </div>
+              <p className="mt-3 text-sm text-slate-400">Create a password for your account. You'll be able to log in later with either this password or "Continue with Google".</p>
+              <select value={role} onChange={(event) => setRole(event.target.value)} className={`mt-3 w-full rounded-2xl border-2 bg-slate-950/80 px-3 py-3 text-sm text-slate-100 transition-all border-${roleAccent[role] || 'indigo'}-400/40`}>
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+                <option value="owner">Institute Owner</option>
+                <option value="parent">Parent</option>
+              </select>
+              <form onSubmit={handleCompleteGoogleSignup} className="mt-3 space-y-3">
+                <input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                {role === 'owner' && <>
+                  <input value={instituteName} onChange={(event) => setInstituteName(event.target.value)} placeholder="Institute name" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                  <input value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                </>}
+                <input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Create a password (min 6 characters)" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                <input required type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Confirm password" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                <button disabled={busy} className={`w-full rounded-2xl bg-${roleAccent[role] || 'indigo'}-600 px-3 py-3 text-sm font-semibold text-white hover:bg-${roleAccent[role] || 'indigo'}-500 transition-all disabled:opacity-60`}>{busy ? 'Please wait...' : 'Finish signing up'}</button>
+                <button type="button" onClick={handleCancelGoogleSignup} className="w-full rounded-2xl border border-white/10 px-3 py-2.5 text-sm text-slate-400 hover:text-slate-200 transition-all">Cancel</button>
+              </form>
+              {message ? <div className="mt-3 rounded-2xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{message}</div> : null}
+            </div>
+          </div>
+        );
+      }
+
+      // ===== RENDER: normal login / signup form =====
       return (
         <div className={compact ? '' : 'h-[100dvh] overflow-y-auto bg-slate-950 px-4 py-10'}>
           <div className={compact ? 'space-y-4' : 'mx-auto max-w-md rounded-[32px] border border-white/10 bg-slate-900/70 p-6 shadow-2xl animate-fade-in'}>
@@ -2232,9 +2383,9 @@
               <option value="owner">Institute Owner</option>
               <option value="parent">Parent</option>
             </select>
-            <button type="button" disabled={busy} onClick={handleGoogle} className="btn-google mt-3 w-full rounded-2xl border border-white/10 bg-white px-3 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-all disabled:opacity-60">
+            <button type="button" disabled={busy} onClick={mode === 'signup' ? handleGoogleSignup : handleGoogleLogin} className="btn-google mt-3 w-full rounded-2xl border border-white/10 bg-white px-3 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100 transition-all disabled:opacity-60">
               <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.5 6 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.5 6 29.5 4 24 4c-7.5 0-13.9 4.2-17.2 10.4z"/><path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.3 35.4 26.8 36 24 36c-5.3 0-9.6-3.3-11.2-7.9l-6.5 5C9.9 39.6 16.4 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.5l6.3 5.3C40.6 36 44 30.6 44 24c0-1.3-.1-2.6-.4-3.5z"/></svg>
-              Continue with Google
+              Continue with Google{mode === 'signup' ? ' (sign up)' : ''}
             </button>
             <div className="my-3 flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-500"><div className="h-px flex-1 bg-white/10"></div>or use email<div className="h-px flex-1 bg-white/10"></div></div>
             <form onSubmit={handleSubmit} className="space-y-3">
