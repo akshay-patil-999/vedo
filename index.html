@@ -2605,7 +2605,7 @@
     }
     function TeacherDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, schedules, tests, teacherPayments, syllabi, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt, createSchedule, createTest, createAnnouncement, createFee, addSyllabusChapter, toggleSyllabusChapter } = useAppData();
+      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, schedules, tests, teacherPayments, syllabi, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt, createSchedule, createTest, createAnnouncement, createFee, addSyllabusChapter, toggleSyllabusChapter, addMark } = useAppData();
       const [activeTab, setActiveTab] = useState('myclass');
       const [joinCode, setJoinCode] = useState('');
       const [joinTargetType, setJoinTargetType] = useState('institute');
@@ -2631,6 +2631,8 @@
       const [testTitle, setTestTitle] = useState('');
       const [testSubject, setTestSubject] = useState('');
       const [testDate, setTestDate] = useState('');
+      const [marksModalTest, setMarksModalTest] = useState(null);
+      const [marksDraft, setMarksDraft] = useState({});
       const [feeReminderClassId, setFeeReminderClassId] = useState('');
       const [feeReminderStudentId, setFeeReminderStudentId] = useState('');
       const [feeReminderAmount, setFeeReminderAmount] = useState('');
@@ -2815,6 +2817,47 @@
         setTestTitle('');
         setTestSubject('');
         setTestDate('');
+      };
+      const openMarksEntry = (testItem) => {
+        const cls = classes.find((c) => c.id === testItem.classId);
+        const roster = cls ? getStudentRosterForClass(cls, users, joinRequests, knownStudentNameRecords) : [];
+        const existingMarks = marks.filter((m) => m.title === testItem.title && m.classId === testItem.classId);
+        const draft = {};
+        roster.forEach((student) => {
+          const existing = existingMarks.find((m) => m.studentId === student.id);
+          draft[student.id] = { score: existing?.score ?? '', maxScore: existing?.maxScore ?? 100 };
+        });
+        setMarksDraft(draft);
+        setMarksModalTest(testItem);
+      };
+      const updateMarksDraft = (studentId, field, value) => {
+        setMarksDraft((prev) => ({ ...prev, [studentId]: { ...prev[studentId], [field]: value } }));
+      };
+      const saveAllMarks = async () => {
+        if (!marksModalTest) return;
+        const cls = classes.find((c) => c.id === marksModalTest.classId);
+        const roster = cls ? getStudentRosterForClass(cls, users, joinRequests, knownStudentNameRecords) : [];
+        let savedCount = 0;
+        for (const student of roster) {
+          const entry = marksDraft[student.id];
+          if (!entry || entry.score === '' || entry.score === null || entry.score === undefined) continue;
+          await addMark({
+            studentId: student.id,
+            studentName: getStudentDisplayName(student),
+            title: marksModalTest.title,
+            score: entry.score,
+            maxScore: entry.maxScore || 100,
+            classId: marksModalTest.classId,
+            instituteId: marksModalTest.instituteId,
+            subject: marksModalTest.subject
+          });
+          savedCount += 1;
+        }
+        if (savedCount) {
+          await createAnnouncement({ title: `Marks published: ${marksModalTest.title}`, message: `Your marks for ${marksModalTest.title} are now available.`, classId: marksModalTest.classId, createdBy: profile.name });
+        }
+        addToast(`Marks saved for ${savedCount} student${savedCount === 1 ? '' : 's'}`, 'success');
+        setMarksModalTest(null);
       };
       const createFeeReminderForStudent = async (event) => {
         event.preventDefault();
@@ -3151,7 +3194,7 @@
             })()}
             {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Student join approvals</h3><div className="mt-3 space-y-3">{teacherRequests.length ? teacherRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 card-hover"><div className="flex items-start justify-between gap-4"><div><div className="font-medium">{item.requesterName} wants to join {item.targetName}</div><div className="text-sm text-slate-400">Type: {item.targetType} • Role: {item.role}</div></div><div className="space-x-2"><button onClick={() => approveAsTeacher(item.id)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs hover:bg-emerald-500 transition-all">Approve</button><button onClick={() => rejectAsTeacher(item.id)} className="rounded-xl bg-rose-500 px-3 py-2 text-xs hover:bg-rose-400 transition-all">Reject</button></div></div></div>) : <div className="text-sm text-slate-400">No pending student join approvals right now.</div>}</div></div>}
             {activeTab === 'homework' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Assign homework</h3><form onSubmit={createNewHomework} className="mt-3 space-y-3"><select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">{visibleClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={homeworkTitle} onChange={(event) => setHomeworkTitle(event.target.value)} placeholder="Homework title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={homeworkDesc} onChange={(event) => setHomeworkDesc(event.target.value)} placeholder="Description" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={homeworkDue} onChange={(event) => setHomeworkDue(event.target.value)} placeholder="Due date" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-emerald-600 px-3 py-2 text-sm hover:bg-emerald-500 transition-all">Assign to class</button></form><div className="mt-4 space-y-2">{visibleHomeworks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Due: {item.dueDate}</div></div>)}</div></div>}
-            {activeTab === 'test' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Schedule a test</h3><p className="text-sm text-slate-400">Subject auto-tags to your assigned subject in this batch: <span className="font-semibold text-slate-200">{mySubjectInTarget || 'none set'}</span>.</p><form onSubmit={createNewTest} className="mt-3 space-y-3"><select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">{visibleClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={testTitle} onChange={(event) => setTestTitle(event.target.value)} placeholder="Test title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />{!mySubjectInTarget ? <input value={testSubject} onChange={(event) => setTestSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /> : null}<input type="date" value={testDate} onChange={(event) => setTestDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Schedule test</button></form><div className="mt-4 space-y-2">{tests.filter((item) => visibleClasses.some((cls) => cls.id === item.classId)).slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.subject} • Date: {item.dueDate || 'TBA'}</div></div>)}</div></div>}
+            {activeTab === 'test' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Schedule a test</h3><p className="text-sm text-slate-400">Subject auto-tags to your assigned subject in this batch: <span className="font-semibold text-slate-200">{mySubjectInTarget || 'none set'}</span>.</p><form onSubmit={createNewTest} className="mt-3 space-y-3"><select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">{visibleClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={testTitle} onChange={(event) => setTestTitle(event.target.value)} placeholder="Test title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />{!mySubjectInTarget ? <input value={testSubject} onChange={(event) => setTestSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /> : null}<input type="date" value={testDate} onChange={(event) => setTestDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Schedule test</button></form><div className="mt-4 space-y-2">{tests.filter((item) => visibleClasses.some((cls) => cls.id === item.classId)).slice(0, 10).map((item) => { const testMarksCount = marks.filter((m) => m.title === item.title && m.classId === item.classId).length; return <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="flex items-start justify-between gap-2"><div><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.subject} • Date: {item.dueDate || 'TBA'}</div></div><span className="flex-none rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-300">{testMarksCount} marked</span></div><button onClick={() => openMarksEntry(item)} className="mt-2 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold hover:bg-emerald-500 transition-all">📊 Enter marks</button></div>; })}</div></div>}
             {activeTab === 'notes' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Share notes</h3><form onSubmit={shareNote} className="mt-3 space-y-3"><input value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} placeholder="Note title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={noteContent} onChange={(event) => setNoteContent(event.target.value)} placeholder="Note content" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Share note</button></form><div className="mt-4 space-y-2">{visibleNotes.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.content}</div></div>)}</div></div>}
             {activeTab === 'doubts' && (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
@@ -3191,6 +3234,34 @@
             )}
             {activeTab === 'feedback' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Feedback</h3><form onSubmit={giveFeedback} className="mt-3 space-y-2"><select value={selectedFeedbackStudent} onChange={(event) => setSelectedFeedbackStudent(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select student</option>{visibleStudents.map((student) => <option key={`${student.id}-${student.classId}`} value={student.id}>{getStudentDisplayName(student)}</option>)}</select><textarea value={feedbackText} onChange={(event) => setFeedbackText(event.target.value)} placeholder="Add feedback for a student" className="min-h-20 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-amber-500 px-3 py-2 text-sm hover:bg-amber-400 transition-all">Save feedback</button></form><div className="mt-4 space-y-2">{myFeedbacks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.studentName || 'Student'}</div><div className="text-sm text-slate-400">{item.text}</div></div>)}</div></div>}
           </div>
+          {marksModalTest && (() => {
+            const cls = classes.find((c) => c.id === marksModalTest.classId);
+            const roster = cls ? getStudentRosterForClass(cls, users, joinRequests, knownStudentNameRecords) : [];
+            return (
+              <div className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/80 px-4 py-6" onClick={() => setMarksModalTest(null)}>
+                <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-[28px] border border-white/10 bg-slate-900 p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-semibold">Enter marks — {marksModalTest.title}</h3>
+                      <p className="text-sm text-slate-400">{marksModalTest.subject} • {cls?.name}</p>
+                    </div>
+                    <button onClick={() => setMarksModalTest(null)} className="rounded-xl border border-white/10 px-2.5 py-1.5 text-sm text-slate-300">✕</button>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    {roster.length ? roster.map((student) => (
+                      <div key={student.id} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-slate-950/50 p-3">
+                        <span className="flex-1 truncate text-sm text-slate-100">{getStudentDisplayName(student)}</span>
+                        <input type="number" value={marksDraft[student.id]?.score ?? ''} onChange={(e) => updateMarksDraft(student.id, 'score', e.target.value)} placeholder="Score" className="w-20 rounded-xl border border-white/10 bg-slate-900 px-2 py-1.5 text-sm text-center" />
+                        <span className="text-slate-500">/</span>
+                        <input type="number" value={marksDraft[student.id]?.maxScore ?? 100} onChange={(e) => updateMarksDraft(student.id, 'maxScore', e.target.value)} placeholder="Max" className="w-16 rounded-xl border border-white/10 bg-slate-900 px-2 py-1.5 text-sm text-center" />
+                      </div>
+                    )) : <div className="text-sm text-slate-400">No students in this batch yet.</div>}
+                  </div>
+                  {roster.length ? <button onClick={saveAllMarks} className="mt-4 w-full rounded-xl bg-indigo-600 px-3 py-3 text-sm font-semibold hover:bg-indigo-500 transition-all">Save all marks &amp; notify students</button> : null}
+                </div>
+              </div>
+            );
+          })()}
         </ScreenShell>
       );
     }
