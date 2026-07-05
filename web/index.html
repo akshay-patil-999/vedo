@@ -10,7 +10,6 @@
   <meta name="format-detection" content="telephone=no" />
   <title>Vedo — Connected Coaching Platform</title>
   <link rel="manifest" href="manifest.json" />
-  <script>window.__VEDO_BACKEND_BASE__ = 'https://vedo.onrender.com/api';</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -4354,18 +4353,35 @@
       const { profile, loading } = useAuth();
       const isPublicRoute = currentPath === '/discover' || currentPath === '/' || currentPath === '';
       const isAuthRoute = currentPath === '/auth' || currentPath === '/login' || currentPath === '/signup';
-      const showChatbot = isPublicRoute || isAuthRoute || currentPath === '/marketplace';
+      const showAdmissionBot = isPublicRoute || isAuthRoute || currentPath === '/marketplace';
+      const chatbotVariant = showAdmissionBot ? 'corner' : 'edge';
 
-      if (loading) return <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 text-slate-100">Loading your workspace...</div>;
-      if (isAuthRoute) return <><AuthScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
-      if (currentPath === '/marketplace') return <><MarketplaceScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
-      if (!profile) return <><DiscoverScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
-      if (isPublicRoute) return <><DiscoverScreen />{showChatbot ? <AdmissionChatbot /> : null}</>;
-      if (currentPath === '/owner') return <OwnerDashboard />;
-      if (currentPath === '/teacher') return <TeacherDashboard />;
-      if (currentPath === '/parent') return <ParentDashboard />;
-      if (currentPath === '/student' || currentPath.startsWith('/student')) return <StudentDashboard />;
-      return <StudentDashboard />;
+      let screen = null;
+      if (loading) {
+        screen = <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 text-slate-100">Loading your workspace...</div>;
+      } else if (isAuthRoute) {
+        screen = <AuthScreen />;
+      } else if (currentPath === '/marketplace') {
+        screen = <MarketplaceScreen />;
+      } else if (!profile || isPublicRoute) {
+        screen = <DiscoverScreen />;
+      } else if (currentPath === '/owner') {
+        screen = <OwnerDashboard />;
+      } else if (currentPath === '/teacher') {
+        screen = <TeacherDashboard />;
+      } else if (currentPath === '/parent') {
+        screen = <ParentDashboard />;
+      } else {
+        screen = <StudentDashboard />;
+      }
+
+      return (
+        <>
+          {screen}
+          {showAdmissionBot ? <AdmissionChatbot /> : null}
+          {!loading ? <AIChatbot variant={chatbotVariant} /> : null}
+        </>
+      );
     }
 
     // ============================================================
@@ -4439,7 +4455,7 @@ Full ☰ menu also has: Link a child, Overview, Growth, Schedule, Syllabus, Home
 
 Always answer AS Vedo AI, warm and quick, short steps, exact tab names in quotes.`.trim();
 
-    function AIChatbot() {
+    function AIChatbot({ variant = 'corner' }) {
       const [open, setOpen] = useState(false);
       const [messages, setMessages] = useState([
         { role: 'assistant', content: "Hi! Mi Vedo AI 🤖 — Vedo app madhla kontahi feature, pipeline, ki 'he kasa karaych' asa doubt asel, mala vicharun bagha!" }
@@ -4498,56 +4514,71 @@ Always answer AS Vedo AI, warm and quick, short steps, exact tab names in quotes
         'Parent ne child la kasa link karaycha?'
       ];
 
-      return (
-        <div className="fixed bottom-5 left-5 z-[95] text-xs">
-          {open ? (
-            <div className="w-80 max-w-[88vw] glass rounded-3xl border border-indigo-400/20 shadow-2xl flex flex-col overflow-hidden animate-slide-in" style={{ height: '460px' }}>
-              <div className="bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 text-white p-3.5 flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🤖</span>
-                  <div>
-                    <p className="font-black text-sm gradient-text">Vedo AI</p>
-                    <p className="text-[9px] text-indigo-200">Always here to help</p>
-                  </div>
-                </div>
-                <button onClick={() => setOpen(false)} aria-label="Close chat" className="rounded-lg px-1.5 py-1 text-slate-300 hover:text-white hover:bg-white/10 transition-all">✕</button>
+      const isEdge = variant === 'edge';
+
+      const panel = (
+        <div className={`glass rounded-3xl border border-indigo-400/20 shadow-2xl flex flex-col overflow-hidden animate-slide-in fixed z-[95] w-80 max-w-[88vw] ${isEdge ? 'right-3 bottom-24' : 'bottom-5 left-5'}`} style={{ height: '460px' }}>
+          <div className="bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 text-white p-3.5 flex justify-between items-center shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🤖</span>
+              <div>
+                <p className="font-black text-sm gradient-text">Vedo AI</p>
+                <p className="text-[9px] text-indigo-200">Always here to help</p>
               </div>
-
-              <div ref={scrollRef} className="flex-1 p-3 bg-slate-950/70 space-y-2 overflow-y-auto">
-                {messages.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
-                    <p className={`p-2.5 rounded-2xl max-w-[85%] text-[11px] leading-relaxed whitespace-pre-wrap ${m.role === 'assistant' ? 'bg-slate-800 text-slate-100 border border-white/10' : 'bg-indigo-600 text-white'}`}>{m.content}</p>
-                  </div>
-                ))}
-                {loading ? (
-                  <div className="flex justify-start">
-                    <p className="p-2.5 rounded-2xl bg-slate-800 border border-white/10 text-slate-400 text-[11px] animate-pulse2">Vedo AI vichar kartoy...</p>
-                  </div>
-                ) : null}
-              </div>
-
-              {messages.length <= 1 ? (
-                <div className="px-3 pb-2 flex flex-wrap gap-1.5 shrink-0">
-                  {quickPrompts.map((q) => (
-                    <button key={q} onClick={() => quickAsk(q)} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[9px] font-medium text-indigo-200 hover:bg-indigo-500/20 transition-all">{q}</button>
-                  ))}
-                </div>
-              ) : null}
-
-              <form onSubmit={sendMessage} className="p-2.5 border-t border-white/10 bg-slate-900 shrink-0 flex gap-2">
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Kahihi vicharaa..."
-                  className="flex-1 rounded-full border border-white/10 bg-slate-950/80 px-3 py-2 text-[11px] text-slate-100"
-                />
-                <button disabled={loading} className="rounded-full bg-indigo-600 px-3.5 py-2 text-[11px] font-semibold hover:bg-indigo-500 disabled:opacity-50 transition-all">➤</button>
-              </form>
             </div>
-          ) : (
-            <button onClick={() => setOpen(true)} className="bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 hover:brightness-110 text-white w-14 h-14 rounded-full shadow-2xl text-2xl flex items-center justify-center transition-all animate-bounce2" aria-label="Open Vedo AI chatbot">🤖</button>
-          )}
+            <button onClick={() => setOpen(false)} aria-label="Close chat" className="rounded-lg px-1.5 py-1 text-slate-300 hover:text-white hover:bg-white/10 transition-all">✕</button>
+          </div>
+
+          <div ref={scrollRef} className="flex-1 p-3 bg-slate-950/70 space-y-2 overflow-y-auto">
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
+                <p className={`p-2.5 rounded-2xl max-w-[85%] text-[11px] leading-relaxed whitespace-pre-wrap ${m.role === 'assistant' ? 'bg-slate-800 text-slate-100 border border-white/10' : 'bg-indigo-600 text-white'}`}>{m.content}</p>
+              </div>
+            ))}
+            {loading ? (
+              <div className="flex justify-start">
+                <p className="p-2.5 rounded-2xl bg-slate-800 border border-white/10 text-slate-400 text-[11px] animate-pulse2">Vedo AI vichar kartoy...</p>
+              </div>
+            ) : null}
+          </div>
+
+          {messages.length <= 1 ? (
+            <div className="px-3 pb-2 flex flex-wrap gap-1.5 shrink-0">
+              {quickPrompts.map((q) => (
+                <button key={q} onClick={() => quickAsk(q)} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[9px] font-medium text-indigo-200 hover:bg-indigo-500/20 transition-all">{q}</button>
+              ))}
+            </div>
+          ) : null}
+
+          <form onSubmit={sendMessage} className="p-2.5 border-t border-white/10 bg-slate-900 shrink-0 flex gap-2">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Kahihi vicharaa..."
+              className="flex-1 rounded-full border border-white/10 bg-slate-950/80 px-3 py-2 text-[11px] text-slate-100"
+            />
+            <button disabled={loading} className="rounded-full bg-indigo-600 px-3.5 py-2 text-[11px] font-semibold hover:bg-indigo-500 disabled:opacity-50 transition-all">➤</button>
+          </form>
         </div>
+      );
+
+      if (open) return panel;
+
+      if (isEdge) {
+        return (
+          <button
+            onClick={() => setOpen(true)}
+            aria-label="Open Vedo AI chatbot"
+            className="fixed right-0 top-1/2 -translate-y-1/2 z-[95] flex flex-col items-center gap-1 rounded-l-2xl bg-gradient-to-b from-indigo-500 via-blue-500 to-cyan-400 px-1.5 py-3 text-white shadow-2xl hover:brightness-110 transition-all animate-pulse2"
+          >
+            <span className="text-base leading-none">‹</span>
+            <span className="text-sm leading-none">🤖</span>
+          </button>
+        );
+      }
+
+      return (
+        <button onClick={() => setOpen(true)} className="fixed bottom-5 left-5 z-[95] bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 hover:brightness-110 text-white w-14 h-14 rounded-full shadow-2xl text-2xl flex items-center justify-center transition-all animate-bounce2" aria-label="Open Vedo AI chatbot">🤖</button>
       );
     }
 
@@ -4560,7 +4591,6 @@ Always answer AS Vedo AI, warm and quick, short steps, exact tab names in quotes
                 <AuthProvider>
                   <ErrorBoundary>
                     <AppRouter />
-                    <AIChatbot />
                   </ErrorBoundary>
                 </AuthProvider>
               </AppDataProvider>
