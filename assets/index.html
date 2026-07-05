@@ -4367,6 +4367,189 @@
       return <StudentDashboard />;
     }
 
+    // ============================================================
+    // ===== GROQ-POWERED AI CHATBOT (persists across the app) =====
+    // ============================================================
+    const VEDO_SYSTEM_PROMPT = `You are "Vedo AI" — a friendly, sharp support assistant built INTO the Vedo app (Vedo = Virtual Education Desk Operator, a connected coaching/tuition platform). Your ONLY job is to help users understand and use Vedo. Keep answers short, step-by-step, practical, and in the same language/tone the user writes in (Hinglish/Marathi/English — mirror them). Use simple numbered steps and the exact menu/tab names below (in bold or quotes) so users can find them easily. Never invent features that aren't listed here. If unsure, say you're not sure and suggest checking with their institute/teacher/owner.
+
+===================== APP STRUCTURE =====================
+Vedo has ONE app with 4 roles: Student, Teacher, Institute Owner, Parent. Everyone starts on the "Discover" screen (search institutes/batches/teachers), then logs in / signs up (email+password OR "Continue with Google"), and lands on their role's dashboard. The ☰ menu (top-left icon) opens the FULL menu for that role; the bottom bar shows the 4 most-used tabs only.
+
+===================== DISCOVER SCREEN (before login) =====================
+- Search bar: search by institute name, city, batch/subject, teacher name, or code.
+- Tabs: Everything / Institutes / Batches & classes / Teachers.
+- Tap any card to preview it; full details need login.
+- "Login" button top-right opens Login/Signup popup.
+- Marketplace (teacher trial booking) is reached via ☰ menu → "Explore institutes, teachers & classes" → then a teacher profile → "Book a trial class".
+
+===================== SIGNUP / LOGIN =====================
+- Choose role first: Student / Teacher / Institute Owner / Parent.
+- Sign up with email+password, or "Continue with Google".
+- Institute Owners can add Institute name + City at signup — auto-creates their first institute.
+- Institutes and batches each get a unique auto-generated CODE which students/teachers use to REQUEST to join.
+
+===================== STUDENT DASHBOARD =====================
+Bottom bar: Timetable, Homework, Doubts, Test.
+Full ☰ menu also has: Join class/institute, Overview, Syllabus, Requests, Lectures, Notes, Fees, Parent Code, Profile.
+- "Join class / institute": paste the code your teacher/owner shared → sends a join REQUEST.
+- "Timetable": weekly schedule set by teacher/owner.
+- "Homework": see assignments, "Mark submitted" button when done.
+- "Doubts": pick your batch+teacher, type your doubt, teacher replies privately.
+- "Test": upcoming tests per batch.
+- "Syllabus": chapter-wise progress bar per subject.
+- "Fees": see amount/due date/status, "Mark as paid" once paid.
+- "Parent Code": share this + your login email with your parent so they can link to your account from THEIR Parent dashboard (☰ → Link a child).
+
+===================== TEACHER DASHBOARD =====================
+Bottom bar: My Class, My Institutes, Timetable, Wallet.
+Full ☰ menu also has: Join institute/class, Syllabus, Requests, Homework, Test, Notes, Doubts, Feedback.
+- "Join institute / class": paste a code to request access.
+- "My Class": CREATE your own batch — name, Subjects, fee (Paid/Free), schedule. Generates a new join code.
+- "My Institutes": institutes joined + all batches inside them.
+- "Timetable": tap a period slot to mark ATTENDANCE + mark period "done".
+- "Wallet": fees for YOUR batches, payments received, "Send a fee reminder", total periods taught.
+- "Syllabus": add chapters, tick "Mark done".
+- "Requests": approve/reject students.
+- "Homework"/"Test"/"Notes": create & assign to a batch.
+- "Doubts": reply privately or mark resolved.
+- "Feedback": pick a student, write feedback.
+
+===================== INSTITUTE OWNER DASHBOARD =====================
+Bottom bar: My Batches, Schedule, Alerts, Wallet.
+Full ☰ menu also has: Overview / Create institute, Requests, Settings.
+- "Overview": create a NEW institute (name+city) — generates institute code.
+- "My Batches": create a batch (name, subjects, fee, schedule) — generates join code. Tap to expand student+teacher roster.- "Schedule": pick a batch → add periods (subject+day+time+frequency).
+- "Alerts": send announcement to one student, one batch, or entire institute.
+- "Wallet": total fees, "Pay a teacher", payment history, teacher lecture activity (periods marked done).
+- "Requests": approve/reject teachers/students.
+
+===================== PARENT DASHBOARD =====================
+Bottom bar: Marks, Attendance, Fees, Feedback.
+Full ☰ menu also has: Link a child, Overview, Growth, Schedule, Syllabus, Homework, My children, Profile.
+- "Link a child": enter child's LOGIN EMAIL + their 8-letter Parent Code (child finds it: ☰ → Parent Code).
+- Once linked: Marks, Attendance calendar, Fees (with "Pay now"), Feedback, Doubts, Schedule, Syllabus, Homework status all visible.
+- "Growth": attendance %, marks trend chart, subject averages, doubts resolved %, fees on track %.
+- "My children": see all linked kids, unlink if needed.
+
+===================== GENERAL TIPS =====================
+- Everything revolves around CODES: institutes and batches each get one.- Dark/light mode toggle + push notifications are inside the ☰ menu.
+- If a feature seems missing, check you're on the right dashboard.
+- If something's not working, suggest contacting the institute owner/teacher.
+
+Always answer AS Vedo AI, warm and quick, short steps, exact tab names in quotes.`.trim();
+
+    function AIChatbot() {
+      const [open, setOpen] = useState(false);
+      const [messages, setMessages] = useState([
+        { role: 'assistant', content: "Hi! Mi Vedo AI 🤖 — Vedo app madhla kontahi feature, pipeline, ki 'he kasa karaych' asa doubt asel, mala vicharun bagha!" }
+      ]);
+      const [input, setInput] = useState('');
+      const [loading, setLoading] = useState(false);
+      const scrollRef = useRef(null);
+
+      useEffect(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }, [messages, loading, open]);
+
+      const sendMessage = async (event) => {
+        event?.preventDefault();
+        const text = input.trim();
+        if (!text || loading) return;
+
+        const nextMessages = [...messages, { role: 'user', content: text }];
+        setMessages(nextMessages);
+        setInput('');
+        setLoading(true);
+
+        try {
+          const res = await fetch(`${API_BASE}/ai-chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: [
+                { role: 'system', content: VEDO_SYSTEM_PROMPT },
+                ...nextMessages.slice(-12)
+              ]
+            })
+          });
+
+          if (!res.ok) throw new Error(`Server error ${res.status}`);
+          const data = await res.json();
+          const reply = data?.choices?.[0]?.message?.content?.trim() || "Sorry, reply generate karta ala nahi.";
+          setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+        } catch (err) {
+          console.warn('AI chat failed', err);
+          setMessages((prev) => [...prev, { role: 'assistant', content: `⚠️ Kahitari chook jhali. Thodya velane parat try kara.` }]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const quickAsk = (q) => {
+        setInput(q);
+        setTimeout(() => sendMessage(), 0);
+      };
+
+      const quickPrompts = [
+        'Batch madhe kasa join karaycha?',
+        'Fees kashi pay karaychi?',
+        'Timetable kasa set karaycha?',
+        'Parent ne child la kasa link karaycha?'
+      ];
+
+      return (
+        <div className="fixed bottom-5 left-5 z-[95] text-xs">
+          {open ? (
+            <div className="w-80 max-w-[88vw] glass rounded-3xl border border-indigo-400/20 shadow-2xl flex flex-col overflow-hidden animate-slide-in" style={{ height: '460px' }}>
+              <div className="bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 text-white p-3.5 flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🤖</span>
+                  <div>
+                    <p className="font-black text-sm gradient-text">Vedo AI</p>
+                    <p className="text-[9px] text-indigo-200">Always here to help</p>
+                  </div>
+                </div>
+                <button onClick={() => setOpen(false)} aria-label="Close chat" className="rounded-lg px-1.5 py-1 text-slate-300 hover:text-white hover:bg-white/10 transition-all">✕</button>
+              </div>
+
+              <div ref={scrollRef} className="flex-1 p-3 bg-slate-950/70 space-y-2 overflow-y-auto">
+                {messages.map((m, i) => (
+                  <div key={i} className={`flex ${m.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
+                    <p className={`p-2.5 rounded-2xl max-w-[85%] text-[11px] leading-relaxed whitespace-pre-wrap ${m.role === 'assistant' ? 'bg-slate-800 text-slate-100 border border-white/10' : 'bg-indigo-600 text-white'}`}>{m.content}</p>
+                  </div>
+                ))}
+                {loading ? (
+                  <div className="flex justify-start">
+                    <p className="p-2.5 rounded-2xl bg-slate-800 border border-white/10 text-slate-400 text-[11px] animate-pulse2">Vedo AI vichar kartoy...</p>
+                  </div>
+                ) : null}
+              </div>
+
+              {messages.length <= 1 ? (
+                <div className="px-3 pb-2 flex flex-wrap gap-1.5 shrink-0">
+                  {quickPrompts.map((q) => (
+                    <button key={q} onClick={() => quickAsk(q)} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[9px] font-medium text-indigo-200 hover:bg-indigo-500/20 transition-all">{q}</button>
+                  ))}
+                </div>
+              ) : null}
+
+              <form onSubmit={sendMessage} className="p-2.5 border-t border-white/10 bg-slate-900 shrink-0 flex gap-2">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Kahihi vicharaa..."
+                  className="flex-1 rounded-full border border-white/10 bg-slate-950/80 px-3 py-2 text-[11px] text-slate-100"
+                />
+                <button disabled={loading} className="rounded-full bg-indigo-600 px-3.5 py-2 text-[11px] font-semibold hover:bg-indigo-500 disabled:opacity-50 transition-all">➤</button>
+              </form>
+            </div>
+          ) : (
+            <button onClick={() => setOpen(true)} className="bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 hover:brightness-110 text-white w-14 h-14 rounded-full shadow-2xl text-2xl flex items-center justify-center transition-all animate-bounce2" aria-label="Open Vedo AI chatbot">🤖</button>
+          )}
+        </div>
+      );
+    }
+
     function App() {
       return (
         <ThemeProvider>
@@ -4376,6 +4559,7 @@
                 <AuthProvider>
                   <ErrorBoundary>
                     <AppRouter />
+                    <AIChatbot />
                   </ErrorBoundary>
                 </AuthProvider>
               </AppDataProvider>
