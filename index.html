@@ -155,11 +155,6 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- Tailwind Play CDN safelist: these classes are built dynamically at runtime via
-       template strings (e.g. `bg-${accent}-500/20`). Listing every literal combination
-       here — even hidden — guarantees the CDN compiler generates them all up front so
-       role/menu colours never flash unstyled or fail to render. Do not remove. -->
-  <div style="display:none" aria-hidden="true" id="tw-safelist" class="bg-amber-300 bg-amber-300/10 bg-amber-300/15 bg-amber-300/20 bg-amber-300/25 bg-amber-300/30 bg-amber-300/40 bg-amber-300/5 bg-amber-400 bg-amber-400/10 bg-amber-400/15 bg-amber-400/20 bg-amber-400/25 bg-amber-400/30 bg-amber-400/40 bg-amber-400/5 bg-amber-500 bg-amber-500/10 bg-amber-500/15 bg-amber-500/20 bg-amber-500/25 bg-amber-500/30 bg-amber-500/40 bg-amber-500/5 bg-amber-600 bg-amber-600/10 bg-amber-600/15 bg-amber-600/20 bg-amber-600/25 bg-amber-600/30 bg-amber-600/40 bg-amber-600/5 bg-blue-300 bg-blue-300/10 bg-blue-300/15 bg-blue-300/20 bg-blue-300/25 bg-blue-300/30 bg-blue-300/40 bg-blue-300/5 bg-blue-400 bg-blue-400/10 bg-blue-400/15 bg-blue-400/20 bg-blue-400/25 bg-blue-400/30 bg-blue-400/40 bg-blue-400/5 bg-blue-500 bg-blue-500/10 bg-blue-500/15 bg-blue-500/20 bg-blue-500/25 bg-blue-500/30 bg-blue-500/40 bg-blue-500/5 bg-blue-600 bg-blue-600/10 bg-blue-600/15 bg-blue-600/20 bg-blue-600/25 bg-blue-600/30 bg-blue-600/40 bg-blue-600/5 bg-cyan-300 bg-cyan-300/10 bg-cyan-300/15 bg-cyan-300/20 bg-cyan-300/25 bg-cyan-300/30 bg-cyan-300/40 bg-cyan-300/5 bg-cyan-400 bg-cyan-400/10 bg-cyan-400/15 bg-cyan-400/20 bg-cyan-400/25 bg-cyan-400/30 bg-cyan-400/40 bg-cyan-400/5 bg-cyan-500 bg-cyan-500/10 bg-cyan-500/15 bg-cyan-500/20 bg-cyan-500/25 bg-cyan-500/30 bg-cyan-500/40 bg-cyan-500/5 bg-cyan-600 bg-cyan-600/10 bg-cyan-600/15 bg-cyan-600/20 bg-cyan-600/25 bg-cyan-600/30 bg-cyan-600/40 bg-cyan-600/5 bg-emerald-300 bg-emerald-300/10 bg-emerald-300/15 bg-emerald-300/20 bg-emerald-300/25 bg-emerald-300/30 bg-emerald-300/40 bg-emerald-300/5 bg-emerald-400 bg-emerald-400/10 bg-emerald-400/15 bg-emerald-400/20 bg-emerald-400/25 bg-emerald-400/30 bg-emerald-400/40 bg-emerald-400/5 bg-emerald-500 bg-emerald-500/10 bg-emerald-500/15 bg-emerald-500/20 bg-emerald-500/25 bg-emerald-500/30 bg-emerald-500/40 bg-emerald-500/5 bg-emerald-600 bg-emerald-600/10 bg-emerald-600/15 bg-emerald-600/20 bg-emerald-600/25 bg-emerald-600/30 bg-emerald-600/40 bg-emerald-600/5 bg-fuchsia-300 bg-fuchsia-300/10 bg-fuchsia-300/15 bg-fuchsia-300/20 bg-fuchsia-300/25 bg-fuchsia-300/30 bg-fuchsia-300/40 bg-fuchsia-300/5 bg-fuchsia-400 bg-fuchsia-400/10 bg-fuchsia-400/15 bg-fuchsia-400/20 bg-fuchsia-400/25 bg-fuchsia-400/30 bg-fuchsia-400/40 bg-fuchsia-400/5 bg-fuchsia-500 bg-fuchsia-500/10 bg-fuchsia-500/15 bg-fuchsia-500/20 bg-fuchsia-500/25 bg-fuchsia-500/30 bg-fuchsia-500/40 bg-fuchsia-500/5 bg-fuchsia-600 bg-fuchsia-600/10 bg-fuchsia-600/15 bg-fuchsia-600/20 bg-fuchsia-600/25 bg-fuchsia-600/30 bg-fuchsia-600/40 bg-fuchsia-600/5 bg-indigo-300 bg-indigo-300/10 bg-indigo-300/15 bg-indigo-300/20 bg-indigo-300/25 bg-indigo-300/30 bg-indigo-300/40 bg-indigo-300/5 bg-indigo-400 bg-indigo-400/10 bg-indigo-400/15 bg-indigo-400/20 bg-indigo-400/25 bg-indigo-400/30 bg-indigo-400/40 bg-indigo-400/5 bg-indigo-500 bg-indigo-500/10 bg-indigo-500/15 bg-indigo-500/20 bg-indigo-500/25 bg-indigo-500/30 bg-indigo-500/40 bg-indigo-500/5 bg-indigo-600 bg-indigo-600/10 bg-indigo-600/15 bg-indigo-600/20 bg-indigo-600/25 bg-indigo-600/30 bg-indigo-600/40 bg-indigo-600/5 bg-lime-300 bg-lime-300/10 bg-lime-300/15 bg-lime-300/20 bg-lime-300/25 bg-lime-300/30 bg-lime-300/40 bg-lime-300/5 bg-lime-400 bg-lime-400/10 bg-lime-400/15 bg-lime-400/20 bg-lime-400/25 bg-lime-400/30 bg-lime-400/40 bg-lime-400/5 bg-lime-500 bg-lime-500/10 bg-lime-500/15 bg-lime-500/20 bg-lime-500/25 bg-lime-500/30 bg-lime-500/40 bg-lime-500/5 bg-lime-600 bg-lime-600/10 bg-lime-600/15 bg-lime-600/20 bg-lime-600/25 bg-lime-600/30 bg-lime-600/40 bg-lime-600/5 bg-orange-300 bg-orange-300/10 bg-orange-300/15 bg-orange-300/20 bg-orange-300/25 bg-orange-300/30 bg-orange-300/40 bg-orange-300/5 bg-orange-400 bg-orange-400/10 bg-orange-400/15 bg-orange-400/20 bg-orange-400/25 bg-orange-400/30 bg-orange-400/40 bg-orange-400/5 bg-orange-500 bg-orange-500/10 bg-orange-500/15 bg-orange-500/20 bg-orange-500/25 bg-orange-500/30 bg-orange-500/40 bg-orange-500/5 bg-orange-600 bg-orange-600/10 bg-orange-600/15 bg-orange-600/20 bg-orange-600/25 bg-orange-600/30 bg-orange-600/40 bg-orange-600/5 bg-pink-300 bg-pink-300/10 bg-pink-300/15 bg-pink-300/20 bg-pink-300/25 bg-pink-300/30 bg-pink-300/40 bg-pink-300/5 bg-pink-400 bg-pink-400/10 bg-pink-400/15 bg-pink-400/20 bg-pink-400/25 bg-pink-400/30 bg-pink-400/40 bg-pink-400/5 bg-pink-500 bg-pink-500/10 bg-pink-500/15 bg-pink-500/20 bg-pink-500/25 bg-pink-500/30 bg-pink-500/40 bg-pink-500/5 bg-pink-600 bg-pink-600/10 bg-pink-600/15 bg-pink-600/20 bg-pink-600/25 bg-pink-600/30 bg-pink-600/40 bg-pink-600/5 bg-purple-300 bg-purple-300/10 bg-purple-300/15 bg-purple-300/20 bg-purple-300/25 bg-purple-300/30 bg-purple-300/40 bg-purple-300/5 bg-purple-400 bg-purple-400/10 bg-purple-400/15 bg-purple-400/20 bg-purple-400/25 bg-purple-400/30 bg-purple-400/40 bg-purple-400/5 bg-purple-500 bg-purple-500/10 bg-purple-500/15 bg-purple-500/20 bg-purple-500/25 bg-purple-500/30 bg-purple-500/40 bg-purple-500/5 bg-purple-600 bg-purple-600/10 bg-purple-600/15 bg-purple-600/20 bg-purple-600/25 bg-purple-600/30 bg-purple-600/40 bg-purple-600/5 bg-rose-300 bg-rose-300/10 bg-rose-300/15 bg-rose-300/20 bg-rose-300/25 bg-rose-300/30 bg-rose-300/40 bg-rose-300/5 bg-rose-400 bg-rose-400/10 bg-rose-400/15 bg-rose-400/20 bg-rose-400/25 bg-rose-400/30 bg-rose-400/40 bg-rose-400/5 bg-rose-500 bg-rose-500/10 bg-rose-500/15 bg-rose-500/20 bg-rose-500/25 bg-rose-500/30 bg-rose-500/40 bg-rose-500/5 bg-rose-600 bg-rose-600/10 bg-rose-600/15 bg-rose-600/20 bg-rose-600/25 bg-rose-600/30 bg-rose-600/40 bg-rose-600/5 bg-sky-300 bg-sky-300/10 bg-sky-300/15 bg-sky-300/20 bg-sky-300/25 bg-sky-300/30 bg-sky-300/40 bg-sky-300/5 bg-sky-400 bg-sky-400/10 bg-sky-400/15 bg-sky-400/20 bg-sky-400/25 bg-sky-400/30 bg-sky-400/40 bg-sky-400/5 bg-sky-500 bg-sky-500/10 bg-sky-500/15 bg-sky-500/20 bg-sky-500/25 bg-sky-500/30 bg-sky-500/40 bg-sky-500/5 bg-sky-600 bg-sky-600/10 bg-sky-600/15 bg-sky-600/20 bg-sky-600/25 bg-sky-600/30 bg-sky-600/40 bg-sky-600/5 bg-slate-300 bg-slate-300/10 bg-slate-300/15 bg-slate-300/20 bg-slate-300/25 bg-slate-300/30 bg-slate-300/40 bg-slate-300/5 bg-slate-400 bg-slate-400/10 bg-slate-400/15 bg-slate-400/20 bg-slate-400/25 bg-slate-400/30 bg-slate-400/40 bg-slate-400/5 bg-slate-500 bg-slate-500/10 bg-slate-500/15 bg-slate-500/20 bg-slate-500/25 bg-slate-500/30 bg-slate-500/40 bg-slate-500/5 bg-slate-600 bg-slate-600/10 bg-slate-600/15 bg-slate-600/20 bg-slate-600/25 bg-slate-600/30 bg-slate-600/40 bg-slate-600/5 bg-teal-300 bg-teal-300/10 bg-teal-300/15 bg-teal-300/20 bg-teal-300/25 bg-teal-300/30 bg-teal-300/40 bg-teal-300/5 bg-teal-400 bg-teal-400/10 bg-teal-400/15 bg-teal-400/20 bg-teal-400/25 bg-teal-400/30 bg-teal-400/40 bg-teal-400/5 bg-teal-500 bg-teal-500/10 bg-teal-500/15 bg-teal-500/20 bg-teal-500/25 bg-teal-500/30 bg-teal-500/40 bg-teal-500/5 bg-teal-600 bg-teal-600/10 bg-teal-600/15 bg-teal-600/20 bg-teal-600/25 bg-teal-600/30 bg-teal-600/40 bg-teal-600/5 bg-violet-300 bg-violet-300/10 bg-violet-300/15 bg-violet-300/20 bg-violet-300/25 bg-violet-300/30 bg-violet-300/40 bg-violet-300/5 bg-violet-400 bg-violet-400/10 bg-violet-400/15 bg-violet-400/20 bg-violet-400/25 bg-violet-400/30 bg-violet-400/40 bg-violet-400/5 bg-violet-500 bg-violet-500/10 bg-violet-500/15 bg-violet-500/20 bg-violet-500/25 bg-violet-500/30 bg-violet-500/40 bg-violet-500/5 bg-violet-600 bg-violet-600/10 bg-violet-600/15 bg-violet-600/20 bg-violet-600/25 bg-violet-600/30 bg-violet-600/40 bg-violet-600/5 border-amber-300 border-amber-300/10 border-amber-300/15 border-amber-300/20 border-amber-300/25 border-amber-300/30 border-amber-300/40 border-amber-300/5 border-amber-400 border-amber-400/10 border-amber-400/15 border-amber-400/20 border-amber-400/25 border-amber-400/30 border-amber-400/40 border-amber-400/5 border-amber-500 border-amber-500/10 border-amber-500/15 border-amber-500/20 border-amber-500/25 border-amber-500/30 border-amber-500/40 border-amber-500/5 border-amber-600 border-amber-600/10 border-amber-600/15 border-amber-600/20 border-amber-600/25 border-amber-600/30 border-amber-600/40 border-amber-600/5 border-b-amber-300/10 border-b-amber-300/15 border-b-amber-300/20 border-b-amber-300/25 border-b-amber-300/30 border-b-amber-300/40 border-b-amber-300/5 border-b-amber-400/10 border-b-amber-400/15 border-b-amber-400/20 border-b-amber-400/25 border-b-amber-400/30 border-b-amber-400/40 border-b-amber-400/5 border-b-amber-500/10 border-b-amber-500/15 border-b-amber-500/20 border-b-amber-500/25 border-b-amber-500/30 border-b-amber-500/40 border-b-amber-500/5 border-b-amber-600/10 border-b-amber-600/15 border-b-amber-600/20 border-b-amber-600/25 border-b-amber-600/30 border-b-amber-600/40 border-b-amber-600/5 border-b-blue-300/10 border-b-blue-300/15 border-b-blue-300/20 border-b-blue-300/25 border-b-blue-300/30 border-b-blue-300/40 border-b-blue-300/5 border-b-blue-400/10 border-b-blue-400/15 border-b-blue-400/20 border-b-blue-400/25 border-b-blue-400/30 border-b-blue-400/40 border-b-blue-400/5 border-b-blue-500/10 border-b-blue-500/15 border-b-blue-500/20 border-b-blue-500/25 border-b-blue-500/30 border-b-blue-500/40 border-b-blue-500/5 border-b-blue-600/10 border-b-blue-600/15 border-b-blue-600/20 border-b-blue-600/25 border-b-blue-600/30 border-b-blue-600/40 border-b-blue-600/5 border-b-cyan-300/10 border-b-cyan-300/15 border-b-cyan-300/20 border-b-cyan-300/25 border-b-cyan-300/30 border-b-cyan-300/40 border-b-cyan-300/5 border-b-cyan-400/10 border-b-cyan-400/15 border-b-cyan-400/20 border-b-cyan-400/25 border-b-cyan-400/30 border-b-cyan-400/40 border-b-cyan-400/5 border-b-cyan-500/10 border-b-cyan-500/15 border-b-cyan-500/20 border-b-cyan-500/25 border-b-cyan-500/30 border-b-cyan-500/40 border-b-cyan-500/5 border-b-cyan-600/10 border-b-cyan-600/15 border-b-cyan-600/20 border-b-cyan-600/25 border-b-cyan-600/30 border-b-cyan-600/40 border-b-cyan-600/5 border-b-emerald-300/10 border-b-emerald-300/15 border-b-emerald-300/20 border-b-emerald-300/25 border-b-emerald-300/30 border-b-emerald-300/40 border-b-emerald-300/5 border-b-emerald-400/10 border-b-emerald-400/15 border-b-emerald-400/20 border-b-emerald-400/25 border-b-emerald-400/30 border-b-emerald-400/40 border-b-emerald-400/5 border-b-emerald-500/10 border-b-emerald-500/15 border-b-emerald-500/20 border-b-emerald-500/25 border-b-emerald-500/30 border-b-emerald-500/40 border-b-emerald-500/5 border-b-emerald-600/10 border-b-emerald-600/15 border-b-emerald-600/20 border-b-emerald-600/25 border-b-emerald-600/30 border-b-emerald-600/40 border-b-emerald-600/5 border-b-fuchsia-300/10 border-b-fuchsia-300/15 border-b-fuchsia-300/20 border-b-fuchsia-300/25 border-b-fuchsia-300/30 border-b-fuchsia-300/40 border-b-fuchsia-300/5 border-b-fuchsia-400/10 border-b-fuchsia-400/15 border-b-fuchsia-400/20 border-b-fuchsia-400/25 border-b-fuchsia-400/30 border-b-fuchsia-400/40 border-b-fuchsia-400/5 border-b-fuchsia-500/10 border-b-fuchsia-500/15 border-b-fuchsia-500/20 border-b-fuchsia-500/25 border-b-fuchsia-500/30 border-b-fuchsia-500/40 border-b-fuchsia-500/5 border-b-fuchsia-600/10 border-b-fuchsia-600/15 border-b-fuchsia-600/20 border-b-fuchsia-600/25 border-b-fuchsia-600/30 border-b-fuchsia-600/40 border-b-fuchsia-600/5 border-b-indigo-300/10 border-b-indigo-300/15 border-b-indigo-300/20 border-b-indigo-300/25 border-b-indigo-300/30 border-b-indigo-300/40 border-b-indigo-300/5 border-b-indigo-400/10 border-b-indigo-400/15 border-b-indigo-400/20 border-b-indigo-400/25 border-b-indigo-400/30 border-b-indigo-400/40 border-b-indigo-400/5 border-b-indigo-500/10 border-b-indigo-500/15 border-b-indigo-500/20 border-b-indigo-500/25 border-b-indigo-500/30 border-b-indigo-500/40 border-b-indigo-500/5 border-b-indigo-600/10 border-b-indigo-600/15 border-b-indigo-600/20 border-b-indigo-600/25 border-b-indigo-600/30 border-b-indigo-600/40 border-b-indigo-600/5 border-b-lime-300/10 border-b-lime-300/15 border-b-lime-300/20 border-b-lime-300/25 border-b-lime-300/30 border-b-lime-300/40 border-b-lime-300/5 border-b-lime-400/10 border-b-lime-400/15 border-b-lime-400/20 border-b-lime-400/25 border-b-lime-400/30 border-b-lime-400/40 border-b-lime-400/5 border-b-lime-500/10 border-b-lime-500/15 border-b-lime-500/20 border-b-lime-500/25 border-b-lime-500/30 border-b-lime-500/40 border-b-lime-500/5 border-b-lime-600/10 border-b-lime-600/15 border-b-lime-600/20 border-b-lime-600/25 border-b-lime-600/30 border-b-lime-600/40 border-b-lime-600/5 border-b-orange-300/10 border-b-orange-300/15 border-b-orange-300/20 border-b-orange-300/25 border-b-orange-300/30 border-b-orange-300/40 border-b-orange-300/5 border-b-orange-400/10 border-b-orange-400/15 border-b-orange-400/20 border-b-orange-400/25 border-b-orange-400/30 border-b-orange-400/40 border-b-orange-400/5 border-b-orange-500/10 border-b-orange-500/15 border-b-orange-500/20 border-b-orange-500/25 border-b-orange-500/30 border-b-orange-500/40 border-b-orange-500/5 border-b-orange-600/10 border-b-orange-600/15 border-b-orange-600/20 border-b-orange-600/25 border-b-orange-600/30 border-b-orange-600/40 border-b-orange-600/5 border-b-pink-300/10 border-b-pink-300/15 border-b-pink-300/20 border-b-pink-300/25 border-b-pink-300/30 border-b-pink-300/40 border-b-pink-300/5 border-b-pink-400/10 border-b-pink-400/15 border-b-pink-400/20 border-b-pink-400/25 border-b-pink-400/30 border-b-pink-400/40 border-b-pink-400/5 border-b-pink-500/10 border-b-pink-500/15 border-b-pink-500/20 border-b-pink-500/25 border-b-pink-500/30 border-b-pink-500/40 border-b-pink-500/5 border-b-pink-600/10 border-b-pink-600/15 border-b-pink-600/20 border-b-pink-600/25 border-b-pink-600/30 border-b-pink-600/40 border-b-pink-600/5 border-b-purple-300/10 border-b-purple-300/15 border-b-purple-300/20 border-b-purple-300/25 border-b-purple-300/30 border-b-purple-300/40 border-b-purple-300/5 border-b-purple-400/10 border-b-purple-400/15 border-b-purple-400/20 border-b-purple-400/25 border-b-purple-400/30 border-b-purple-400/40 border-b-purple-400/5 border-b-purple-500/10 border-b-purple-500/15 border-b-purple-500/20 border-b-purple-500/25 border-b-purple-500/30 border-b-purple-500/40 border-b-purple-500/5 border-b-purple-600/10 border-b-purple-600/15 border-b-purple-600/20 border-b-purple-600/25 border-b-purple-600/30 border-b-purple-600/40 border-b-purple-600/5 border-b-rose-300/10 border-b-rose-300/15 border-b-rose-300/20 border-b-rose-300/25 border-b-rose-300/30 border-b-rose-300/40 border-b-rose-300/5 border-b-rose-400/10 border-b-rose-400/15 border-b-rose-400/20 border-b-rose-400/25 border-b-rose-400/30 border-b-rose-400/40 border-b-rose-400/5 border-b-rose-500/10 border-b-rose-500/15 border-b-rose-500/20 border-b-rose-500/25 border-b-rose-500/30 border-b-rose-500/40 border-b-rose-500/5 border-b-rose-600/10 border-b-rose-600/15 border-b-rose-600/20 border-b-rose-600/25 border-b-rose-600/30 border-b-rose-600/40 border-b-rose-600/5 border-b-sky-300/10 border-b-sky-300/15 border-b-sky-300/20 border-b-sky-300/25 border-b-sky-300/30 border-b-sky-300/40 border-b-sky-300/5 border-b-sky-400/10 border-b-sky-400/15 border-b-sky-400/20 border-b-sky-400/25 border-b-sky-400/30 border-b-sky-400/40 border-b-sky-400/5 border-b-sky-500/10 border-b-sky-500/15 border-b-sky-500/20 border-b-sky-500/25 border-b-sky-500/30 border-b-sky-500/40 border-b-sky-500/5 border-b-sky-600/10 border-b-sky-600/15 border-b-sky-600/20 border-b-sky-600/25 border-b-sky-600/30 border-b-sky-600/40 border-b-sky-600/5 border-b-slate-300/10 border-b-slate-300/15 border-b-slate-300/20 border-b-slate-300/25 border-b-slate-300/30 border-b-slate-300/40 border-b-slate-300/5 border-b-slate-400/10 border-b-slate-400/15 border-b-slate-400/20 border-b-slate-400/25 border-b-slate-400/30 border-b-slate-400/40 border-b-slate-400/5 border-b-slate-500/10 border-b-slate-500/15 border-b-slate-500/20 border-b-slate-500/25 border-b-slate-500/30 border-b-slate-500/40 border-b-slate-500/5 border-b-slate-600/10 border-b-slate-600/15 border-b-slate-600/20 border-b-slate-600/25 border-b-slate-600/30 border-b-slate-600/40 border-b-slate-600/5 border-b-teal-300/10 border-b-teal-300/15 border-b-teal-300/20 border-b-teal-300/25 border-b-teal-300/30 border-b-teal-300/40 border-b-teal-300/5 border-b-teal-400/10 border-b-teal-400/15 border-b-teal-400/20 border-b-teal-400/25 border-b-teal-400/30 border-b-teal-400/40 border-b-teal-400/5 border-b-teal-500/10 border-b-teal-500/15 border-b-teal-500/20 border-b-teal-500/25 border-b-teal-500/30 border-b-teal-500/40 border-b-teal-500/5 border-b-teal-600/10 border-b-teal-600/15 border-b-teal-600/20 border-b-teal-600/25 border-b-teal-600/30 border-b-teal-600/40 border-b-teal-600/5 border-b-violet-300/10 border-b-violet-300/15 border-b-violet-300/20 border-b-violet-300/25 border-b-violet-300/30 border-b-violet-300/40 border-b-violet-300/5 border-b-violet-400/10 border-b-violet-400/15 border-b-violet-400/20 border-b-violet-400/25 border-b-violet-400/30 border-b-violet-400/40 border-b-violet-400/5 border-b-violet-500/10 border-b-violet-500/15 border-b-violet-500/20 border-b-violet-500/25 border-b-violet-500/30 border-b-violet-500/40 border-b-violet-500/5 border-b-violet-600/10 border-b-violet-600/15 border-b-violet-600/20 border-b-violet-600/25 border-b-violet-600/30 border-b-violet-600/40 border-b-violet-600/5 border-blue-300 border-blue-300/10 border-blue-300/15 border-blue-300/20 border-blue-300/25 border-blue-300/30 border-blue-300/40 border-blue-300/5 border-blue-400 border-blue-400/10 border-blue-400/15 border-blue-400/20 border-blue-400/25 border-blue-400/30 border-blue-400/40 border-blue-400/5 border-blue-500 border-blue-500/10 border-blue-500/15 border-blue-500/20 border-blue-500/25 border-blue-500/30 border-blue-500/40 border-blue-500/5 border-blue-600 border-blue-600/10 border-blue-600/15 border-blue-600/20 border-blue-600/25 border-blue-600/30 border-blue-600/40 border-blue-600/5 border-cyan-300 border-cyan-300/10 border-cyan-300/15 border-cyan-300/20 border-cyan-300/25 border-cyan-300/30 border-cyan-300/40 border-cyan-300/5 border-cyan-400 border-cyan-400/10 border-cyan-400/15 border-cyan-400/20 border-cyan-400/25 border-cyan-400/30 border-cyan-400/40 border-cyan-400/5 border-cyan-500 border-cyan-500/10 border-cyan-500/15 border-cyan-500/20 border-cyan-500/25 border-cyan-500/30 border-cyan-500/40 border-cyan-500/5 border-cyan-600 border-cyan-600/10 border-cyan-600/15 border-cyan-600/20 border-cyan-600/25 border-cyan-600/30 border-cyan-600/40 border-cyan-600/5 border-emerald-300 border-emerald-300/10 border-emerald-300/15 border-emerald-300/20 border-emerald-300/25 border-emerald-300/30 border-emerald-300/40 border-emerald-300/5 border-emerald-400 border-emerald-400/10 border-emerald-400/15 border-emerald-400/20 border-emerald-400/25 border-emerald-400/30 border-emerald-400/40 border-emerald-400/5 border-emerald-500 border-emerald-500/10 border-emerald-500/15 border-emerald-500/20 border-emerald-500/25 border-emerald-500/30 border-emerald-500/40 border-emerald-500/5 border-emerald-600 border-emerald-600/10 border-emerald-600/15 border-emerald-600/20 border-emerald-600/25 border-emerald-600/30 border-emerald-600/40 border-emerald-600/5 border-fuchsia-300 border-fuchsia-300/10 border-fuchsia-300/15 border-fuchsia-300/20 border-fuchsia-300/25 border-fuchsia-300/30 border-fuchsia-300/40 border-fuchsia-300/5 border-fuchsia-400 border-fuchsia-400/10 border-fuchsia-400/15 border-fuchsia-400/20 border-fuchsia-400/25 border-fuchsia-400/30 border-fuchsia-400/40 border-fuchsia-400/5 border-fuchsia-500 border-fuchsia-500/10 border-fuchsia-500/15 border-fuchsia-500/20 border-fuchsia-500/25 border-fuchsia-500/30 border-fuchsia-500/40 border-fuchsia-500/5 border-fuchsia-600 border-fuchsia-600/10 border-fuchsia-600/15 border-fuchsia-600/20 border-fuchsia-600/25 border-fuchsia-600/30 border-fuchsia-600/40 border-fuchsia-600/5 border-indigo-300 border-indigo-300/10 border-indigo-300/15 border-indigo-300/20 border-indigo-300/25 border-indigo-300/30 border-indigo-300/40 border-indigo-300/5 border-indigo-400 border-indigo-400/10 border-indigo-400/15 border-indigo-400/20 border-indigo-400/25 border-indigo-400/30 border-indigo-400/40 border-indigo-400/5 border-indigo-500 border-indigo-500/10 border-indigo-500/15 border-indigo-500/20 border-indigo-500/25 border-indigo-500/30 border-indigo-500/40 border-indigo-500/5 border-indigo-600 border-indigo-600/10 border-indigo-600/15 border-indigo-600/20 border-indigo-600/25 border-indigo-600/30 border-indigo-600/40 border-indigo-600/5 border-lime-300 border-lime-300/10 border-lime-300/15 border-lime-300/20 border-lime-300/25 border-lime-300/30 border-lime-300/40 border-lime-300/5 border-lime-400 border-lime-400/10 border-lime-400/15 border-lime-400/20 border-lime-400/25 border-lime-400/30 border-lime-400/40 border-lime-400/5 border-lime-500 border-lime-500/10 border-lime-500/15 border-lime-500/20 border-lime-500/25 border-lime-500/30 border-lime-500/40 border-lime-500/5 border-lime-600 border-lime-600/10 border-lime-600/15 border-lime-600/20 border-lime-600/25 border-lime-600/30 border-lime-600/40 border-lime-600/5 border-orange-300 border-orange-300/10 border-orange-300/15 border-orange-300/20 border-orange-300/25 border-orange-300/30 border-orange-300/40 border-orange-300/5 border-orange-400 border-orange-400/10 border-orange-400/15 border-orange-400/20 border-orange-400/25 border-orange-400/30 border-orange-400/40 border-orange-400/5 border-orange-500 border-orange-500/10 border-orange-500/15 border-orange-500/20 border-orange-500/25 border-orange-500/30 border-orange-500/40 border-orange-500/5 border-orange-600 border-orange-600/10 border-orange-600/15 border-orange-600/20 border-orange-600/25 border-orange-600/30 border-orange-600/40 border-orange-600/5 border-pink-300 border-pink-300/10 border-pink-300/15 border-pink-300/20 border-pink-300/25 border-pink-300/30 border-pink-300/40 border-pink-300/5 border-pink-400 border-pink-400/10 border-pink-400/15 border-pink-400/20 border-pink-400/25 border-pink-400/30 border-pink-400/40 border-pink-400/5 border-pink-500 border-pink-500/10 border-pink-500/15 border-pink-500/20 border-pink-500/25 border-pink-500/30 border-pink-500/40 border-pink-500/5 border-pink-600 border-pink-600/10 border-pink-600/15 border-pink-600/20 border-pink-600/25 border-pink-600/30 border-pink-600/40 border-pink-600/5 border-purple-300 border-purple-300/10 border-purple-300/15 border-purple-300/20 border-purple-300/25 border-purple-300/30 border-purple-300/40 border-purple-300/5 border-purple-400 border-purple-400/10 border-purple-400/15 border-purple-400/20 border-purple-400/25 border-purple-400/30 border-purple-400/40 border-purple-400/5 border-purple-500 border-purple-500/10 border-purple-500/15 border-purple-500/20 border-purple-500/25 border-purple-500/30 border-purple-500/40 border-purple-500/5 border-purple-600 border-purple-600/10 border-purple-600/15 border-purple-600/20 border-purple-600/25 border-purple-600/30 border-purple-600/40 border-purple-600/5 border-rose-300 border-rose-300/10 border-rose-300/15 border-rose-300/20 border-rose-300/25 border-rose-300/30 border-rose-300/40 border-rose-300/5 border-rose-400 border-rose-400/10 border-rose-400/15 border-rose-400/20 border-rose-400/25 border-rose-400/30 border-rose-400/40 border-rose-400/5 border-rose-500 border-rose-500/10 border-rose-500/15 border-rose-500/20 border-rose-500/25 border-rose-500/30 border-rose-500/40 border-rose-500/5 border-rose-600 border-rose-600/10 border-rose-600/15 border-rose-600/20 border-rose-600/25 border-rose-600/30 border-rose-600/40 border-rose-600/5 border-sky-300 border-sky-300/10 border-sky-300/15 border-sky-300/20 border-sky-300/25 border-sky-300/30 border-sky-300/40 border-sky-300/5 border-sky-400 border-sky-400/10 border-sky-400/15 border-sky-400/20 border-sky-400/25 border-sky-400/30 border-sky-400/40 border-sky-400/5 border-sky-500 border-sky-500/10 border-sky-500/15 border-sky-500/20 border-sky-500/25 border-sky-500/30 border-sky-500/40 border-sky-500/5 border-sky-600 border-sky-600/10 border-sky-600/15 border-sky-600/20 border-sky-600/25 border-sky-600/30 border-sky-600/40 border-sky-600/5 border-slate-300 border-slate-300/10 border-slate-300/15 border-slate-300/20 border-slate-300/25 border-slate-300/30 border-slate-300/40 border-slate-300/5 border-slate-400 border-slate-400/10 border-slate-400/15 border-slate-400/20 border-slate-400/25 border-slate-400/30 border-slate-400/40 border-slate-400/5 border-slate-500 border-slate-500/10 border-slate-500/15 border-slate-500/20 border-slate-500/25 border-slate-500/30 border-slate-500/40 border-slate-500/5 border-slate-600 border-slate-600/10 border-slate-600/15 border-slate-600/20 border-slate-600/25 border-slate-600/30 border-slate-600/40 border-slate-600/5 border-teal-300 border-teal-300/10 border-teal-300/15 border-teal-300/20 border-teal-300/25 border-teal-300/30 border-teal-300/40 border-teal-300/5 border-teal-400 border-teal-400/10 border-teal-400/15 border-teal-400/20 border-teal-400/25 border-teal-400/30 border-teal-400/40 border-teal-400/5 border-teal-500 border-teal-500/10 border-teal-500/15 border-teal-500/20 border-teal-500/25 border-teal-500/30 border-teal-500/40 border-teal-500/5 border-teal-600 border-teal-600/10 border-teal-600/15 border-teal-600/20 border-teal-600/25 border-teal-600/30 border-teal-600/40 border-teal-600/5 border-violet-300 border-violet-300/10 border-violet-300/15 border-violet-300/20 border-violet-300/25 border-violet-300/30 border-violet-300/40 border-violet-300/5 border-violet-400 border-violet-400/10 border-violet-400/15 border-violet-400/20 border-violet-400/25 border-violet-400/30 border-violet-400/40 border-violet-400/5 border-violet-500 border-violet-500/10 border-violet-500/15 border-violet-500/20 border-violet-500/25 border-violet-500/30 border-violet-500/40 border-violet-500/5 border-violet-600 border-violet-600/10 border-violet-600/15 border-violet-600/20 border-violet-600/25 border-violet-600/30 border-violet-600/40 border-violet-600/5 hover:bg-amber-300 hover:bg-amber-300/10 hover:bg-amber-300/15 hover:bg-amber-300/20 hover:bg-amber-300/25 hover:bg-amber-300/30 hover:bg-amber-300/40 hover:bg-amber-300/5 hover:bg-amber-400 hover:bg-amber-400/10 hover:bg-amber-400/15 hover:bg-amber-400/20 hover:bg-amber-400/25 hover:bg-amber-400/30 hover:bg-amber-400/40 hover:bg-amber-400/5 hover:bg-amber-500 hover:bg-amber-500/10 hover:bg-amber-500/15 hover:bg-amber-500/20 hover:bg-amber-500/25 hover:bg-amber-500/30 hover:bg-amber-500/40 hover:bg-amber-500/5 hover:bg-amber-600 hover:bg-amber-600/10 hover:bg-amber-600/15 hover:bg-amber-600/20 hover:bg-amber-600/25 hover:bg-amber-600/30 hover:bg-amber-600/40 hover:bg-amber-600/5 hover:bg-blue-300 hover:bg-blue-300/10 hover:bg-blue-300/15 hover:bg-blue-300/20 hover:bg-blue-300/25 hover:bg-blue-300/30 hover:bg-blue-300/40 hover:bg-blue-300/5 hover:bg-blue-400 hover:bg-blue-400/10 hover:bg-blue-400/15 hover:bg-blue-400/20 hover:bg-blue-400/25 hover:bg-blue-400/30 hover:bg-blue-400/40 hover:bg-blue-400/5 hover:bg-blue-500 hover:bg-blue-500/10 hover:bg-blue-500/15 hover:bg-blue-500/20 hover:bg-blue-500/25 hover:bg-blue-500/30 hover:bg-blue-500/40 hover:bg-blue-500/5 hover:bg-blue-600 hover:bg-blue-600/10 hover:bg-blue-600/15 hover:bg-blue-600/20 hover:bg-blue-600/25 hover:bg-blue-600/30 hover:bg-blue-600/40 hover:bg-blue-600/5 hover:bg-cyan-300 hover:bg-cyan-300/10 hover:bg-cyan-300/15 hover:bg-cyan-300/20 hover:bg-cyan-300/25 hover:bg-cyan-300/30 hover:bg-cyan-300/40 hover:bg-cyan-300/5 hover:bg-cyan-400 hover:bg-cyan-400/10 hover:bg-cyan-400/15 hover:bg-cyan-400/20 hover:bg-cyan-400/25 hover:bg-cyan-400/30 hover:bg-cyan-400/40 hover:bg-cyan-400/5 hover:bg-cyan-500 hover:bg-cyan-500/10 hover:bg-cyan-500/15 hover:bg-cyan-500/20 hover:bg-cyan-500/25 hover:bg-cyan-500/30 hover:bg-cyan-500/40 hover:bg-cyan-500/5 hover:bg-cyan-600 hover:bg-cyan-600/10 hover:bg-cyan-600/15 hover:bg-cyan-600/20 hover:bg-cyan-600/25 hover:bg-cyan-600/30 hover:bg-cyan-600/40 hover:bg-cyan-600/5 hover:bg-emerald-300 hover:bg-emerald-300/10 hover:bg-emerald-300/15 hover:bg-emerald-300/20 hover:bg-emerald-300/25 hover:bg-emerald-300/30 hover:bg-emerald-300/40 hover:bg-emerald-300/5 hover:bg-emerald-400 hover:bg-emerald-400/10 hover:bg-emerald-400/15 hover:bg-emerald-400/20 hover:bg-emerald-400/25 hover:bg-emerald-400/30 hover:bg-emerald-400/40 hover:bg-emerald-400/5 hover:bg-emerald-500 hover:bg-emerald-500/10 hover:bg-emerald-500/15 hover:bg-emerald-500/20 hover:bg-emerald-500/25 hover:bg-emerald-500/30 hover:bg-emerald-500/40 hover:bg-emerald-500/5 hover:bg-emerald-600 hover:bg-emerald-600/10 hover:bg-emerald-600/15 hover:bg-emerald-600/20 hover:bg-emerald-600/25 hover:bg-emerald-600/30 hover:bg-emerald-600/40 hover:bg-emerald-600/5 hover:bg-fuchsia-300 hover:bg-fuchsia-300/10 hover:bg-fuchsia-300/15 hover:bg-fuchsia-300/20 hover:bg-fuchsia-300/25 hover:bg-fuchsia-300/30 hover:bg-fuchsia-300/40 hover:bg-fuchsia-300/5 hover:bg-fuchsia-400 hover:bg-fuchsia-400/10 hover:bg-fuchsia-400/15 hover:bg-fuchsia-400/20 hover:bg-fuchsia-400/25 hover:bg-fuchsia-400/30 hover:bg-fuchsia-400/40 hover:bg-fuchsia-400/5 hover:bg-fuchsia-500 hover:bg-fuchsia-500/10 hover:bg-fuchsia-500/15 hover:bg-fuchsia-500/20 hover:bg-fuchsia-500/25 hover:bg-fuchsia-500/30 hover:bg-fuchsia-500/40 hover:bg-fuchsia-500/5 hover:bg-fuchsia-600 hover:bg-fuchsia-600/10 hover:bg-fuchsia-600/15 hover:bg-fuchsia-600/20 hover:bg-fuchsia-600/25 hover:bg-fuchsia-600/30 hover:bg-fuchsia-600/40 hover:bg-fuchsia-600/5 hover:bg-indigo-300 hover:bg-indigo-300/10 hover:bg-indigo-300/15 hover:bg-indigo-300/20 hover:bg-indigo-300/25 hover:bg-indigo-300/30 hover:bg-indigo-300/40 hover:bg-indigo-300/5 hover:bg-indigo-400 hover:bg-indigo-400/10 hover:bg-indigo-400/15 hover:bg-indigo-400/20 hover:bg-indigo-400/25 hover:bg-indigo-400/30 hover:bg-indigo-400/40 hover:bg-indigo-400/5 hover:bg-indigo-500 hover:bg-indigo-500/10 hover:bg-indigo-500/15 hover:bg-indigo-500/20 hover:bg-indigo-500/25 hover:bg-indigo-500/30 hover:bg-indigo-500/40 hover:bg-indigo-500/5 hover:bg-indigo-600 hover:bg-indigo-600/10 hover:bg-indigo-600/15 hover:bg-indigo-600/20 hover:bg-indigo-600/25 hover:bg-indigo-600/30 hover:bg-indigo-600/40 hover:bg-indigo-600/5 hover:bg-lime-300 hover:bg-lime-300/10 hover:bg-lime-300/15 hover:bg-lime-300/20 hover:bg-lime-300/25 hover:bg-lime-300/30 hover:bg-lime-300/40 hover:bg-lime-300/5 hover:bg-lime-400 hover:bg-lime-400/10 hover:bg-lime-400/15 hover:bg-lime-400/20 hover:bg-lime-400/25 hover:bg-lime-400/30 hover:bg-lime-400/40 hover:bg-lime-400/5 hover:bg-lime-500 hover:bg-lime-500/10 hover:bg-lime-500/15 hover:bg-lime-500/20 hover:bg-lime-500/25 hover:bg-lime-500/30 hover:bg-lime-500/40 hover:bg-lime-500/5 hover:bg-lime-600 hover:bg-lime-600/10 hover:bg-lime-600/15 hover:bg-lime-600/20 hover:bg-lime-600/25 hover:bg-lime-600/30 hover:bg-lime-600/40 hover:bg-lime-600/5 hover:bg-orange-300 hover:bg-orange-300/10 hover:bg-orange-300/15 hover:bg-orange-300/20 hover:bg-orange-300/25 hover:bg-orange-300/30 hover:bg-orange-300/40 hover:bg-orange-300/5 hover:bg-orange-400 hover:bg-orange-400/10 hover:bg-orange-400/15 hover:bg-orange-400/20 hover:bg-orange-400/25 hover:bg-orange-400/30 hover:bg-orange-400/40 hover:bg-orange-400/5 hover:bg-orange-500 hover:bg-orange-500/10 hover:bg-orange-500/15 hover:bg-orange-500/20 hover:bg-orange-500/25 hover:bg-orange-500/30 hover:bg-orange-500/40 hover:bg-orange-500/5 hover:bg-orange-600 hover:bg-orange-600/10 hover:bg-orange-600/15 hover:bg-orange-600/20 hover:bg-orange-600/25 hover:bg-orange-600/30 hover:bg-orange-600/40 hover:bg-orange-600/5 hover:bg-pink-300 hover:bg-pink-300/10 hover:bg-pink-300/15 hover:bg-pink-300/20 hover:bg-pink-300/25 hover:bg-pink-300/30 hover:bg-pink-300/40 hover:bg-pink-300/5 hover:bg-pink-400 hover:bg-pink-400/10 hover:bg-pink-400/15 hover:bg-pink-400/20 hover:bg-pink-400/25 hover:bg-pink-400/30 hover:bg-pink-400/40 hover:bg-pink-400/5 hover:bg-pink-500 hover:bg-pink-500/10 hover:bg-pink-500/15 hover:bg-pink-500/20 hover:bg-pink-500/25 hover:bg-pink-500/30 hover:bg-pink-500/40 hover:bg-pink-500/5 hover:bg-pink-600 hover:bg-pink-600/10 hover:bg-pink-600/15 hover:bg-pink-600/20 hover:bg-pink-600/25 hover:bg-pink-600/30 hover:bg-pink-600/40 hover:bg-pink-600/5 hover:bg-purple-300 hover:bg-purple-300/10 hover:bg-purple-300/15 hover:bg-purple-300/20 hover:bg-purple-300/25 hover:bg-purple-300/30 hover:bg-purple-300/40 hover:bg-purple-300/5 hover:bg-purple-400 hover:bg-purple-400/10 hover:bg-purple-400/15 hover:bg-purple-400/20 hover:bg-purple-400/25 hover:bg-purple-400/30 hover:bg-purple-400/40 hover:bg-purple-400/5 hover:bg-purple-500 hover:bg-purple-500/10 hover:bg-purple-500/15 hover:bg-purple-500/20 hover:bg-purple-500/25 hover:bg-purple-500/30 hover:bg-purple-500/40 hover:bg-purple-500/5 hover:bg-purple-600 hover:bg-purple-600/10 hover:bg-purple-600/15 hover:bg-purple-600/20 hover:bg-purple-600/25 hover:bg-purple-600/30 hover:bg-purple-600/40 hover:bg-purple-600/5 hover:bg-rose-300 hover:bg-rose-300/10 hover:bg-rose-300/15 hover:bg-rose-300/20 hover:bg-rose-300/25 hover:bg-rose-300/30 hover:bg-rose-300/40 hover:bg-rose-300/5 hover:bg-rose-400 hover:bg-rose-400/10 hover:bg-rose-400/15 hover:bg-rose-400/20 hover:bg-rose-400/25 hover:bg-rose-400/30 hover:bg-rose-400/40 hover:bg-rose-400/5 hover:bg-rose-500 hover:bg-rose-500/10 hover:bg-rose-500/15 hover:bg-rose-500/20 hover:bg-rose-500/25 hover:bg-rose-500/30 hover:bg-rose-500/40 hover:bg-rose-500/5 hover:bg-rose-600 hover:bg-rose-600/10 hover:bg-rose-600/15 hover:bg-rose-600/20 hover:bg-rose-600/25 hover:bg-rose-600/30 hover:bg-rose-600/40 hover:bg-rose-600/5 hover:bg-sky-300 hover:bg-sky-300/10 hover:bg-sky-300/15 hover:bg-sky-300/20 hover:bg-sky-300/25 hover:bg-sky-300/30 hover:bg-sky-300/40 hover:bg-sky-300/5 hover:bg-sky-400 hover:bg-sky-400/10 hover:bg-sky-400/15 hover:bg-sky-400/20 hover:bg-sky-400/25 hover:bg-sky-400/30 hover:bg-sky-400/40 hover:bg-sky-400/5 hover:bg-sky-500 hover:bg-sky-500/10 hover:bg-sky-500/15 hover:bg-sky-500/20 hover:bg-sky-500/25 hover:bg-sky-500/30 hover:bg-sky-500/40 hover:bg-sky-500/5 hover:bg-sky-600 hover:bg-sky-600/10 hover:bg-sky-600/15 hover:bg-sky-600/20 hover:bg-sky-600/25 hover:bg-sky-600/30 hover:bg-sky-600/40 hover:bg-sky-600/5 hover:bg-slate-300 hover:bg-slate-300/10 hover:bg-slate-300/15 hover:bg-slate-300/20 hover:bg-slate-300/25 hover:bg-slate-300/30 hover:bg-slate-300/40 hover:bg-slate-300/5 hover:bg-slate-400 hover:bg-slate-400/10 hover:bg-slate-400/15 hover:bg-slate-400/20 hover:bg-slate-400/25 hover:bg-slate-400/30 hover:bg-slate-400/40 hover:bg-slate-400/5 hover:bg-slate-500 hover:bg-slate-500/10 hover:bg-slate-500/15 hover:bg-slate-500/20 hover:bg-slate-500/25 hover:bg-slate-500/30 hover:bg-slate-500/40 hover:bg-slate-500/5 hover:bg-slate-600 hover:bg-slate-600/10 hover:bg-slate-600/15 hover:bg-slate-600/20 hover:bg-slate-600/25 hover:bg-slate-600/30 hover:bg-slate-600/40 hover:bg-slate-600/5 hover:bg-teal-300 hover:bg-teal-300/10 hover:bg-teal-300/15 hover:bg-teal-300/20 hover:bg-teal-300/25 hover:bg-teal-300/30 hover:bg-teal-300/40 hover:bg-teal-300/5 hover:bg-teal-400 hover:bg-teal-400/10 hover:bg-teal-400/15 hover:bg-teal-400/20 hover:bg-teal-400/25 hover:bg-teal-400/30 hover:bg-teal-400/40 hover:bg-teal-400/5 hover:bg-teal-500 hover:bg-teal-500/10 hover:bg-teal-500/15 hover:bg-teal-500/20 hover:bg-teal-500/25 hover:bg-teal-500/30 hover:bg-teal-500/40 hover:bg-teal-500/5 hover:bg-teal-600 hover:bg-teal-600/10 hover:bg-teal-600/15 hover:bg-teal-600/20 hover:bg-teal-600/25 hover:bg-teal-600/30 hover:bg-teal-600/40 hover:bg-teal-600/5 hover:bg-violet-300 hover:bg-violet-300/10 hover:bg-violet-300/15 hover:bg-violet-300/20 hover:bg-violet-300/25 hover:bg-violet-300/30 hover:bg-violet-300/40 hover:bg-violet-300/5 hover:bg-violet-400 hover:bg-violet-400/10 hover:bg-violet-400/15 hover:bg-violet-400/20 hover:bg-violet-400/25 hover:bg-violet-400/30 hover:bg-violet-400/40 hover:bg-violet-400/5 hover:bg-violet-500 hover:bg-violet-500/10 hover:bg-violet-500/15 hover:bg-violet-500/20 hover:bg-violet-500/25 hover:bg-violet-500/30 hover:bg-violet-500/40 hover:bg-violet-500/5 hover:bg-violet-600 hover:bg-violet-600/10 hover:bg-violet-600/15 hover:bg-violet-600/20 hover:bg-violet-600/25 hover:bg-violet-600/30 hover:bg-violet-600/40 hover:bg-violet-600/5 hover:text-amber-300 hover:text-amber-400 hover:text-amber-500 hover:text-amber-600 hover:text-blue-300 hover:text-blue-400 hover:text-blue-500 hover:text-blue-600 hover:text-cyan-300 hover:text-cyan-400 hover:text-cyan-500 hover:text-cyan-600 hover:text-emerald-300 hover:text-emerald-400 hover:text-emerald-500 hover:text-emerald-600 hover:text-fuchsia-300 hover:text-fuchsia-400 hover:text-fuchsia-500 hover:text-fuchsia-600 hover:text-indigo-300 hover:text-indigo-400 hover:text-indigo-500 hover:text-indigo-600 hover:text-lime-300 hover:text-lime-400 hover:text-lime-500 hover:text-lime-600 hover:text-orange-300 hover:text-orange-400 hover:text-orange-500 hover:text-orange-600 hover:text-pink-300 hover:text-pink-400 hover:text-pink-500 hover:text-pink-600 hover:text-purple-300 hover:text-purple-400 hover:text-purple-500 hover:text-purple-600 hover:text-rose-300 hover:text-rose-400 hover:text-rose-500 hover:text-rose-600 hover:text-sky-300 hover:text-sky-400 hover:text-sky-500 hover:text-sky-600 hover:text-slate-300 hover:text-slate-400 hover:text-slate-500 hover:text-slate-600 hover:text-teal-300 hover:text-teal-400 hover:text-teal-500 hover:text-teal-600 hover:text-violet-300 hover:text-violet-400 hover:text-violet-500 hover:text-violet-600 text-amber-300 text-amber-400 text-amber-500 text-amber-600 text-blue-300 text-blue-400 text-blue-500 text-blue-600 text-cyan-300 text-cyan-400 text-cyan-500 text-cyan-600 text-emerald-300 text-emerald-400 text-emerald-500 text-emerald-600 text-fuchsia-300 text-fuchsia-400 text-fuchsia-500 text-fuchsia-600 text-indigo-300 text-indigo-400 text-indigo-500 text-indigo-600 text-lime-300 text-lime-400 text-lime-500 text-lime-600 text-orange-300 text-orange-400 text-orange-500 text-orange-600 text-pink-300 text-pink-400 text-pink-500 text-pink-600 text-purple-300 text-purple-400 text-purple-500 text-purple-600 text-rose-300 text-rose-400 text-rose-500 text-rose-600 text-sky-300 text-sky-400 text-sky-500 text-sky-600 text-slate-300 text-slate-400 text-slate-500 text-slate-600 text-teal-300 text-teal-400 text-teal-500 text-teal-600 text-violet-300 text-violet-400 text-violet-500 text-violet-600"></div>
   <script type="text/babel">
     const { createContext, useContext, useEffect, useMemo, useRef, useState } = React;
     const { createRoot } = ReactDOM;
@@ -189,9 +184,6 @@
       appId: '1:1881105365:web:9a016b072ff0b3c59ed35c'
     };
 
-    // Get this from Firebase Console → Project settings → Cloud Messaging →
-    // "Web Push certificates" → generate/copy the key pair. Push notifications
-    // silently no-op until this is filled in.
     const VEDO_FCM_VAPID_KEY = 'PASTE_YOUR_WEB_PUSH_VAPID_KEY_HERE';
 
     let firestoreRef = null;
@@ -215,8 +207,6 @@
     } catch (error) {
       console.warn('Firebase unavailable, using local fallback.', error);
     }
-    // Messaging needs its own try/catch: it's unsupported in some in-app
-    // WebViews (e.g. the Flutter shell) and on http:// origins.
     try {
       if (backendReady && typeof firebase.messaging === 'function' && firebase.messaging.isSupported && firebase.messaging.isSupported()) {
         messagingRef = firebase.messaging();
@@ -228,7 +218,7 @@
     const initialState = {
       institutes: [], classes: [], users: [], joinRequests: [], announcements: [],
       fees: [], schedules: [], notes: [], homeworks: [], doubts: [], feedbacks: [], marks: [], attendances: [],
-      tests: [], teacherPayments: [], trialBookings: []
+      tests: [], teacherPayments: [], trialBookings: [], syllabi: []
     };
 
     const roleLabels = { student: 'Student', teacher: 'Teacher', owner: 'Owner', parent: 'Parent' };
@@ -293,9 +283,6 @@
       return '';
     }
 
-    // Mirrors getStudentRosterForClass, but resolves every teacher linked to a
-    // batch (the primary teacherId plus any co-teachers in teacherIds, plus
-    // anyone with an approved teacher join-request for that batch/institute).
     function getTeacherRosterForClass(classItem, users = [], joinRequests = []) {
       if (!classItem) return [];
       const classId = classItem.id;
@@ -331,6 +318,16 @@
         const resolvedName = resolveName(id) || 'Unnamed teacher';
         return { id, name: resolvedName, email: user?.email || '', role: 'teacher', classId, className: classItem.name, displayName: resolvedName };
       });
+    }
+
+    // A teacher's subject inside a given class — falls back to the class's own
+    // single subject if no explicit teacher→subject mapping exists (e.g. the
+    // class creator, who is auto-assigned subjects[0] at creation time).
+    function getTeacherSubjectForClass(classItem, teacherId) {
+      if (!classItem) return '';
+      if (classItem.teacherSubjects && classItem.teacherSubjects[teacherId]) return classItem.teacherSubjects[teacherId];
+      if (classItem.teacherId === teacherId) return classItem.subject || (classItem.subjects || [])[0] || '';
+      return '';
     }
 
     const AuthContext = createContext(null);
@@ -427,8 +424,6 @@
       return 0;
     }
 
-    // Used for homework/test due-date badges — keeps the "is this urgent"
-    // logic in one place instead of copy-pasted per screen.
     function dueDateUrgency(dueDate) {
       if (!dueDate) return null;
       const due = new Date(dueDate + 'T23:59:59');
@@ -559,6 +554,7 @@
       const [tests, setTests] = useState(() => db.get(StorageKeys.DATA, initialState)?.tests || initialState.tests);
       const [teacherPayments, setTeacherPayments] = useState(() => db.get(StorageKeys.DATA, initialState)?.teacherPayments || initialState.teacherPayments);
       const [trialBookings, setTrialBookings] = useState(() => db.get(StorageKeys.DATA, initialState)?.trialBookings || initialState.trialBookings);
+      const [syllabi, setSyllabi] = useState(() => db.get(StorageKeys.DATA, initialState)?.syllabi || initialState.syllabi);
       const [backendStatus, setBackendStatus] = useState(() => backendReady ? 'live' : (navigator.onLine ? 'local' : 'offline'));
 
       useEffect(() => {
@@ -601,12 +597,13 @@
         attach('tests', setTests);
         attach('teacherPayments', setTeacherPayments);
         attach('trialBookings', setTrialBookings);
+        attach('syllabi', setSyllabi);
         return () => unsubs.forEach((fn) => fn());
       }, []);
 
       useEffect(() => {
-        db.set(StorageKeys.DATA, { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings });
-      }, [institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings]);
+        db.set(StorageKeys.DATA, { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, syllabi });
+      }, [institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, syllabi]);
 
       const saveDoc = async (collectionName, item) => {
         if (!backendReady || !firestoreRef) return item;
@@ -638,8 +635,20 @@
         return institute;
       };
 
-      const createClass = async ({ instituteId, ownerId, teacherId, teacherName, name, subject, fee, feeType, schedule, description }) => {
-        const cls = { id: `CLS-${Date.now()}`, instituteId: instituteId || null, ownerId: ownerId || null, teacherId: teacherId || null, teacherName: teacherName || '', name, subject, fee: Number(fee || 0), feeType: feeType === 'free' ? 'free' : 'paid', schedule: schedule || 'Weekly', description: description || '', code: generateCode(), createdAt: stamp(), teacherIds: teacherId ? [teacherId] : [], studentIds: [] };
+      const createClass = async ({ instituteId, ownerId, teacherId, teacherName, name, subjects, fee, feeType, schedule, description }) => {
+        const subjectList = Array.isArray(subjects) ? subjects.filter(Boolean) : (subjects ? [subjects] : []);
+        const cls = {
+          id: `CLS-${Date.now()}`, instituteId: instituteId || null, ownerId: ownerId || null,
+          teacherId: teacherId || null, teacherName: teacherName || '',
+          name,
+          subjects: subjectList,
+          subject: subjectList[0] || '',
+          teacherSubjects: teacherId && subjectList[0] ? { [teacherId]: subjectList[0] } : {},
+          fee: Number(fee || 0), feeType: feeType === 'free' ? 'free' : 'paid',
+          schedule: schedule || 'Weekly', description: description || '',
+          code: generateCode(), createdAt: stamp(),
+          teacherIds: teacherId ? [teacherId] : [], studentIds: []
+        };
         setClasses((prev) => [cls, ...prev]);
         if (backendReady && firestoreRef) await firestoreRef.collection('classes').doc(cls.id).set(cls);
         if (instituteId) {
@@ -653,8 +662,8 @@
         return cls;
       };
 
-      const createJoinRequest = async ({ targetType, targetId, targetName, requesterId, requesterName, role }) => {
-        const payload = { id: `REQ-${Date.now()}`, targetType, targetId, targetName, requesterId, requesterName, role, status: 'pending', createdAt: stamp() };
+      const createJoinRequest = async ({ targetType, targetId, targetName, requesterId, requesterName, role, subject }) => {
+        const payload = { id: `REQ-${Date.now()}`, targetType, targetId, targetName, requesterId, requesterName, role, subject: subject || null, status: 'pending', createdAt: stamp() };
         setJoinRequests((prev) => [payload, ...prev]);
         if (backendReady && firestoreRef) await firestoreRef.collection('joinRequests').doc(payload.id).set(payload);
         return payload;
@@ -699,10 +708,6 @@
           console.warn('Failed to persist joined member profile to Firestore', err);
         }
 
-        // Persist the membership onto the institute/class document itself too
-        // (not just on the joinRequest and the member's own profile), so the
-        // roster and counts survive a refresh even if this document is the
-        // only place a viewer looks.
         if (request.targetType === 'institute') {
           const currentInstitute = institutes.find((item) => item.id === request.targetId);
           if (currentInstitute) {
@@ -727,7 +732,11 @@
             const nextClass = {
               ...currentClass,
               studentIds: request.role === 'student' ? [...new Set([...(currentClass.studentIds || []), request.requesterId])] : currentClass.studentIds || [],
-              teacherIds: request.role === 'teacher' ? [...new Set([...(currentClass.teacherIds || []), request.requesterId])] : currentClass.teacherIds || []
+              teacherIds: request.role === 'teacher' ? [...new Set([...(currentClass.teacherIds || []), request.requesterId])] : currentClass.teacherIds || [],
+              // Remember which subject this teacher is assigned to in this batch
+              teacherSubjects: request.role === 'teacher' && request.subject
+                ? { ...(currentClass.teacherSubjects || {}), [request.requesterId]: request.subject }
+                : (currentClass.teacherSubjects || {})
             };
             setClasses((prev) => prev.map((item) => item.id === request.targetId ? nextClass : item));
             if (backendReady && firestoreRef) {
@@ -871,8 +880,8 @@
         return payload;
       };
 
-      const addMark = async ({ studentId, studentName, title, score, maxScore, classId, instituteId }) => {
-        const payload = { id: `MARK-${Date.now()}`, studentId, studentName, title, score: Number(score || 0), maxScore: Number(maxScore || 0), classId: classId || null, instituteId: instituteId || null, createdAt: stamp() };
+      const addMark = async ({ studentId, studentName, title, score, maxScore, classId, instituteId, subject }) => {
+        const payload = { id: `MARK-${Date.now()}`, studentId, studentName, title, score: Number(score || 0), maxScore: Number(maxScore || 0), classId: classId || null, instituteId: instituteId || null, subject: subject || '', createdAt: stamp() };
         setMarks((prev) => [payload, ...prev]);
         if (backendReady && firestoreRef) await firestoreRef.collection('marks').doc(payload.id).set(payload);
         return payload;
@@ -885,18 +894,6 @@
         return payload;
       };
 
-      // ------------------------------------------------------------------
-      // PARENT <-> STUDENT LINKING
-      // ------------------------------------------------------------------
-      // Every student gets a unique "parent code" generated once and stored
-      // permanently on their own user doc (so it survives refresh/relogin
-      // and syncs to Firestore like everything else). A parent links to a
-      // child by supplying the child's login email + that exact code; on
-      // success we store the relationship on BOTH sides:
-      //   - parent.linkedChildren: [{ id, name, email }]
-      //   - student.parentIds: [parentId, ...]
-      // so both the parent dashboard and any future student-side "who can
-      // see my data" screen can read it directly from their own profile.
       const ensureParentCode = async (studentId) => {
         const existing = users.find((item) => item.id === studentId);
         if (existing?.parentCode) return existing.parentCode;
@@ -938,13 +935,6 @@
         }
       };
 
-      // ------------------------------------------------------------------
-      // MARKETPLACE: TRIAL CLASS BOOKING
-      // ------------------------------------------------------------------
-      // Lets a logged-in visitor request a free trial class with a teacher
-      // straight from the public Marketplace. Persists like every other
-      // collection here (Firestore when live, local fallback otherwise) so
-      // owners/teachers can see real leads instead of a fake toast.
       const createTrialBooking = async ({ teacherId, teacherName, studentId, studentName, studentEmail, subject, message }) => {
         const payload = { id: `TRB-${Date.now()}`, teacherId: teacherId || null, teacherName: teacherName || '', studentId: studentId || null, studentName: studentName || '', studentEmail: studentEmail || '', subject: subject || '', message: message || '', status: 'pending', createdAt: stamp() };
         setTrialBookings((prev) => [payload, ...prev]);
@@ -963,7 +953,45 @@
         }
       };
 
-      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, deleteSchedule, createTest, payTeacher, createNote, createHomework, submitHomework, saveAttendance, addDoubt, resolveDoubt, replyToDoubt, addFeedback, addMark, updateUser, ensureParentCode, linkChildToParent, unlinkChild, createTrialBooking, updateTrialBookingStatus };
+      // One syllabus doc per (classId, subject) combo.
+      const upsertSyllabus = async ({ classId, subject, chapters, createdBy }) => {
+        const existing = syllabi.find((item) => item.classId === classId && item.subject === subject);
+        const payload = {
+          id: existing?.id || `SYL-${Date.now()}`,
+          classId, subject,
+          chapters: chapters || existing?.chapters || [],
+          createdBy: createdBy || existing?.createdBy || '',
+          createdAt: existing?.createdAt || stamp(),
+          updatedAt: stamp()
+        };
+        setSyllabi((prev) => [payload, ...prev.filter((item) => item.id !== payload.id)]);
+        if (backendReady && firestoreRef) await firestoreRef.collection('syllabi').doc(payload.id).set(payload);
+        return payload;
+      };
+
+      const addSyllabusChapter = async ({ classId, subject, title, createdBy }) => {
+        const existing = syllabi.find((item) => item.classId === classId && item.subject === subject);
+        const chapter = { id: `CH-${Date.now()}`, title, completed: false, completedAt: null };
+        const nextChapters = [...(existing?.chapters || []), chapter];
+        const doc = await upsertSyllabus({ classId, subject, chapters: nextChapters, createdBy });
+        try {
+          await createAnnouncement({ title: `Syllabus updated: ${title}`, message: `A new chapter was added in ${subject}`, classId, createdBy: createdBy || 'Vedo' });
+        } catch (err) {
+          console.warn('Failed to notify syllabus update', err);
+        }
+        return doc;
+      };
+
+      const toggleSyllabusChapter = async (syllabusId, chapterId, completed) => {
+        const doc = syllabi.find((item) => item.id === syllabusId);
+        if (!doc) return;
+        const nextChapters = doc.chapters.map((ch) => ch.id === chapterId ? { ...ch, completed, completedAt: completed ? stamp() : null } : ch);
+        const payload = { ...doc, chapters: nextChapters, updatedAt: stamp() };
+        setSyllabi((prev) => prev.map((item) => item.id === syllabusId ? payload : item));
+        if (backendReady && firestoreRef) await firestoreRef.collection('syllabi').doc(syllabusId).set(payload, { merge: true });
+      };
+
+      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, syllabi, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, deleteSchedule, createTest, payTeacher, createNote, createHomework, submitHomework, saveAttendance, addDoubt, resolveDoubt, replyToDoubt, addFeedback, addMark, updateUser, ensureParentCode, linkChildToParent, unlinkChild, createTrialBooking, updateTrialBookingStatus, upsertSyllabus, addSyllabusChapter, toggleSyllabusChapter };
       return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
     }
 
@@ -1022,11 +1050,6 @@
         }
       };
 
-      // Detects whether this page is running inside the Vedo Flutter WebView,
-      // where Firebase's signInWithPopup is blocked by Google
-      // ("disallowed_useragent"). In that case we ask Flutter to do a native
-      // Google Sign-In and hand back an idToken/accessToken we can exchange
-      // for a Firebase credential instead of opening a popup.
       const isInsideFlutterApp = () => typeof window.FlutterGoogleAuth !== 'undefined';
 
       const finishGoogleProfile = async (user, preferredRole) => {
@@ -1122,17 +1145,11 @@
         navigateTo('/discover');
       };
 
-      // ---- Push notifications (FCM) ----
-      // notifStatus: 'unsupported' | 'default' | 'granted' | 'denied' | 'enabling' | 'native'
-      // 'native' = running inside the Vedo Android/iOS app, where Flutter's
-      // own firebase_messaging handles permission + token + background
-      // delivery — the web Notification API / service worker path below
-      // doesn't apply (and mostly can't run) inside that WebView.
       const isInsideFlutterFcmBridge = () => typeof window.FlutterFcmBridge !== 'undefined';
       const [notifStatus, setNotifStatus] = useState(() => {
         if (isInsideFlutterFcmBridge()) return 'native';
         if (!messagingRef || typeof Notification === 'undefined') return 'unsupported';
-        return Notification.permission; // 'default' | 'granted' | 'denied'
+        return Notification.permission;
       });
 
       const enableNotifications = async () => {
@@ -1165,16 +1182,11 @@
         }
       };
 
-      // Keep the latest profile/updateUser reachable from a stable callback,
-      // since window.onFlutterFcmToken is registered once but may fire at
-      // any time (including before login finishes).
       const profileRef = useRef(profile);
       useEffect(() => { profileRef.current = profile; }, [profile]);
       const updateUserRef = useRef(updateUser);
       useEffect(() => { updateUserRef.current = updateUser; }, [updateUser]);
 
-      // Native bridge: Flutter (main.dart) calls window.onFlutterFcmToken(token)
-      // after we tell it we're ready via FlutterFcmBridge.postMessage('ready').
       useEffect(() => {
         window.onFlutterFcmToken = async (token) => {
           const currentProfile = profileRef.current;
@@ -1189,14 +1201,10 @@
         return () => { window.onFlutterFcmToken = null; };
       }, []);
 
-      // Re-announce readiness right after login, since Flutter may have
-      // sent its token earlier while there was no profile yet to attach it to.
       useEffect(() => {
         if (profile?.id && isInsideFlutterFcmBridge()) window.FlutterFcmBridge.postMessage('ready');
       }, [profile?.id]);
 
-      // Deep link: tapping a native push notification calls this with the
-      // path the Cloud Function attached (e.g. '/student').
       useEffect(() => {
         window.onFlutterNotificationTap = (path) => {
           if (path) navigateTo(path);
@@ -1204,9 +1212,6 @@
         return () => { window.onFlutterNotificationTap = null; };
       }, []);
 
-      // Foreground messages (app open in the active tab) — show as an in-app
-      // toast via a DOM CustomEvent so we don't need ToastProvider wired this
-      // deep; ScreenShell/App-level listener (see AppRouter) re-broadcasts it.
       useEffect(() => {
         if (!messagingRef) return;
         const unsubscribe = messagingRef.onMessage((payload) => {
@@ -1228,12 +1233,8 @@
       parent: 'border-amber-400/20 bg-amber-500/10 text-amber-200'
     };
 
-    // Each role gets its own primary accent so the four dashboards feel
-    // visually distinct at a glance (student=emerald, teacher=sky, owner=violet, parent=amber).
     const roleAccent = { student: 'emerald', teacher: 'sky', owner: 'violet', parent: 'amber' };
 
-    // Every nav/menu function gets its own colour so the app reads as
-    // colourful and each feature is instantly recognisable by hue.
     const functionColors = {
       home: 'indigo', overview: 'indigo', join: 'emerald', link: 'emerald',
       timetable: 'cyan', schedule: 'cyan',
@@ -1241,17 +1242,10 @@
       requests: 'sky', lectures: 'rose', notes: 'blue', fees: 'amber',
       parentcode: 'violet', profile: 'slate', myclass: 'blue', myinstitutes: 'purple',
       wallet: 'lime', feedback: 'teal', mybatches: 'blue', alerts: 'rose',
-      settings: 'slate', children: 'amber', attendance: 'teal'
+      settings: 'slate', children: 'amber', attendance: 'teal', syllabus: 'cyan', growth: 'emerald'
     };
     const fnColor = (id) => functionColors[id] || 'indigo';
 
-    // =====================================================
-    // SHARED CALENDAR-STYLE COMPONENTS
-    // Used by Student/Teacher/Parent/Owner dashboards so timetable and
-    // attendance look like a real planner (Byju's/Vedantu-style) instead of
-    // a plain list — horizontally-scrollable day columns on mobile, a real
-    // month grid for attendance.
-    // =====================================================
     const CALENDAR_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const CALENDAR_DAY_SHORT = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' };
     const CALENDAR_PALETTE = ['indigo', 'sky', 'emerald', 'amber', 'rose', 'violet', 'cyan', 'fuchsia', 'teal', 'orange'];
@@ -1362,12 +1356,6 @@
       );
     }
 
-    // Works out exactly which announcements a given logged-in profile should
-    // be allowed to see, mirroring the visibility rules each dashboard already
-    // uses for its own Overview/Alerts feed. Used by the notification bell so
-    // a targeted alert (a specific student's fee reminder, a doubt reply, a
-    // single batch's homework, a timetable slot, etc.) only ever reaches the
-    // intended student/teacher/owner/parent — never every logged-in user.
     function getVisibleAnnouncementsForProfile(profile, announcements, classes, institutes, joinRequests, users) {
       if (!profile) return [];
       const role = profile.role;
@@ -1420,23 +1408,14 @@
 
       return (announcements || []).filter((item) => {
         if (!item) return false;
-        // Personal alert (fee reminder, doubt reply, feedback, approval, etc.)
-        // — only the exact addressed student (or their linked parent) sees it.
         if (item.studentId) return studentIds.has(item.studentId);
-        // Batch-level alert (homework, note, test, timetable slot) — only
-        // people actually enrolled/teaching in that batch see it.
         if (item.classId) return classIds.has(item.classId);
-        // Institute-wide alert — only members of that institute see it.
         if (item.instituteId) return instituteIds.has(item.instituteId);
-        // No target at all (old/broken announcements from before targeting
-        // existed, or anything malformed) — never show these to anyone.
         return false;
       });
     }
 
     function NotificationBell() {
-      // Real backend-connected notification bell (Vedo-style bell UI, wired to
-      // the live `announcements` Firestore collection instead of mock data).
       const { profile } = useAuth();
       const { announcements, classes, institutes, joinRequests, users } = useAppData();
       const [open, setOpen] = useState(false);
@@ -1498,9 +1477,6 @@
       const startX = useRef(0);
       const seenKey = profile?.id ? `vedo_popup_seen_${profile.id}` : null;
 
-  // Runs once when the dashboard mounts (app open / login) — not on every
-  // tab switch, since this component's instance stays mounted while the
-  // user navigates between tabs inside the same dashboard.
       useEffect(() => {
         if (!profile || !seenKey) return;
         const seenIds = new Set(db.get(seenKey, []));
@@ -1537,6 +1513,7 @@
         if (s.includes('timetable')) return '🗓️';
         if (s.includes('feedback')) return '💬';
         if (s.includes('approved')) return '🎉';
+        if (s.includes('syllabus')) return '📘';
         return '📢';
       };
 
@@ -1565,6 +1542,57 @@
         </div>
       );
     }
+
+    // Reusable subject list "chip" builder used by owner/teacher class-creation forms.
+    function SubjectListBuilder({ subjects, onChange }) {
+      const [draft, setDraft] = useState('');
+      const add = () => {
+        const clean = draft.trim();
+        if (!clean || subjects.includes(clean)) return;
+        onChange([...subjects, clean]);
+        setDraft('');
+      };
+      const remove = (s) => onChange(subjects.filter((item) => item !== s));
+      return (
+        <div>
+          <div className="flex gap-2">
+            <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} placeholder="Subject name (e.g. Physics)" className="flex-1 rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+            <button type="button" onClick={add} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold hover:bg-indigo-500 transition-all">Add</button>
+          </div>
+          {subjects.length ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {subjects.map((s) => (
+                <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 border border-indigo-400/30 px-3 py-1 text-xs font-semibold text-indigo-200">
+                  {s}
+                  <button type="button" onClick={() => remove(s)} className="text-indigo-300 hover:text-white">✕</button>
+                </span>
+              ))}
+            </div>
+          ) : <div className="mt-2 text-xs text-slate-500">Add at least one subject.</div>}
+        </div>
+      );
+    }
+
+    // Read-only chapter progress bar for a single class × subject, used on
+    // the Student and Parent dashboards.
+    function SyllabusProgress({ classId, subject, syllabi }) {
+      const doc = syllabi.find((s) => s.classId === classId && s.subject === subject);
+      const chapters = doc?.chapters || [];
+      const doneCount = chapters.filter((c) => c.completed).length;
+      const pct = chapters.length ? Math.round((doneCount / chapters.length) * 100) : 0;
+      return (
+        <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-slate-100">{subject}</span>
+            <span className="text-slate-400">{doneCount}/{chapters.length} chapters</span>
+          </div>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-indigo-400" style={{ width: `${pct}%` }}></div>
+          </div>
+        </div>
+      );
+    }
+
     function ScreenShell({ title, subtitle, children, navItems, bottomNavItems, activeNavId, onNavChange }) {
       const { profile, logout, notifStatus, enableNotifications } = useAuth();
       const { navigateTo } = useNav();
@@ -1595,7 +1623,6 @@
       return (
         <div className="app-frame fixed inset-0 flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
            <NotificationPopupStack />
-          {/* soft colour blobs for a livelier, less flat background — purely decorative */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-40">
             <div className={`absolute -top-24 -left-16 h-56 w-56 rounded-full bg-${accent}-500/25 blur-3xl`}></div>
             <div className="absolute top-1/3 -right-16 h-56 w-56 rounded-full bg-fuchsia-500/15 blur-3xl"></div>
@@ -1709,8 +1736,6 @@
       const [activeTab, setActiveTab] = useState('all');
       const [showAuth, setShowAuth] = useState(false);
 
-      // Login card lives in a top-right popover/modal now, not inline in the
-      // hero — close it automatically the moment a session exists.
       useEffect(() => {
         if (profile) setShowAuth(false);
       }, [profile]);
@@ -1741,7 +1766,7 @@
       const filteredInstitutes = institutes.filter((item) => matches(item.name) || matches(item.city) || matches(item.description) || matches(item.code));
       const filteredClasses = classes.filter((item) => {
         const inst = instituteMap[item.instituteId];
-        return matches(item.name) || matches(item.subject) || matches(item.teacherName) || matches(item.code) || matches(inst?.name) || matches(inst?.city);
+        return matches(item.name) || matches(item.subject) || matches((item.subjects || []).join(' ')) || matches(item.teacherName) || matches(item.code) || matches(inst?.name) || matches(inst?.city);
       });
       const filteredTeachers = teacherUsers.filter((item) => matches(item.name) || matches(item.email));
 
@@ -1787,7 +1812,6 @@
         <div className="h-[100dvh] overflow-y-auto discover-bg text-slate-100">
           <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
 
-            {/* TOP BAR — brand left, single login/dashboard action right */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black gradient-text sm:text-2xl">Vedo</span>
@@ -1803,7 +1827,6 @@
               )}
             </div>
 
-            {/* HERO — short 2-line title, search bar directly beneath, no scrolling needed */}
             <div className="hero-card rounded-[28px] border border-white/10 p-5 shadow-2xl relative overflow-hidden sm:p-6">
               <div className="blob blob-a"></div>
               <div className="blob blob-b"></div>
@@ -1813,7 +1836,6 @@
                   <span className="rainbow-text">Discover institutes, batches &amp; teachers</span>
                 </h1>
 
-                {/* SEARCH */}
                 <div className="relative max-w-xl">
                   <div className="flex items-center gap-2 rounded-2xl border-2 border-white/15 bg-white/10 px-4 py-3 backdrop-blur focus-within:border-amber-300/70 transition-all">
                     <span className="text-lg">🔍</span>
@@ -1830,7 +1852,6 @@
                   </div>
                 </div>
 
-                {/* CATEGORY PILLS */}
                 <div className="flex flex-wrap gap-2">
                   {tabPills.map((tab) => (
                     <button
@@ -1862,7 +1883,6 @@
               </div>
             )}
 
-            {/* INSTITUTES — swipeable recommendation row, like a suggestions feed */}
             {showInstitutes && (
               <div className="space-y-3">
                 <h3 className="text-lg font-bold flex items-center gap-2">🏫 Institutes <span className="text-sm font-medium text-slate-400">({filteredInstitutes.length})</span></h3>
@@ -1899,7 +1919,6 @@
               </div>
             )}
 
-            {/* BATCHES — swipeable recommendation row */}
             {showBatches && (
               <div className="space-y-3">
                 <h3 className="text-lg font-bold flex items-center gap-2">📚 Batches &amp; classes <span className="text-sm font-medium text-slate-400">({filteredClasses.length})</span></h3>
@@ -1910,6 +1929,7 @@
                     {previewClasses.map((item) => {
                       const theme = getSubjectTheme(item.subject);
                       const inst = instituteMap[item.instituteId];
+                      const subjectList = item.subjects && item.subjects.length ? item.subjects : (item.subject ? [item.subject] : []);
                       return (
                         <button
                           key={item.id}
@@ -1919,8 +1939,9 @@
                           <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${theme.grad}`}></div>
                           <div className="flex items-start justify-between gap-2">
                             <h4 className="truncate text-sm font-bold">{item.name}</h4>
-                            <span className={`flex-none rounded-lg border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${theme.chip}`}>{item.subject || 'General'}</span>
+                            <span className={`flex-none rounded-lg border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${theme.chip}`}>{subjectList[0] || 'General'}</span>
                           </div>
+                          {subjectList.length > 1 ? <p className="mt-1 truncate text-[10px] text-slate-500">+{subjectList.length - 1} more subject{subjectList.length - 1 > 1 ? 's' : ''}</p> : null}
                           <p className="mt-1 truncate text-xs text-slate-400">{inst ? `🏫 ${inst.name}` : 'Independent batch'}</p>
                           <div className="mt-3 flex items-center justify-between text-sm">
                             <span className="text-xs text-slate-400">{item.schedule || 'Weekly'}</span>
@@ -1940,7 +1961,6 @@
               </div>
             )}
 
-            {/* TEACHERS — swipeable recommendation row */}
             {showTeachers && (
               <div className="space-y-3">
                 <h3 className="text-lg font-bold flex items-center gap-2">👩‍🏫 Teachers <span className="text-sm font-medium text-slate-400">({filteredTeachers.length})</span></h3>
@@ -1975,7 +1995,6 @@
               </div>
             )}
 
-            {/* STATS — moved below the feed so search + results are visible first */}
             {activeTab === 'all' && (
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="stat-card stat-indigo">
@@ -1993,7 +2012,6 @@
               </div>
             )}
 
-            {/* HOW IT WORKS */}
             {activeTab === 'all' && (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">How it works</h3>
@@ -2049,6 +2067,7 @@
 
           {selectedBatch && (() => {
             const theme = getSubjectTheme(selectedBatch.subject);
+            const subjectList = selectedBatch.subjects && selectedBatch.subjects.length ? selectedBatch.subjects : (selectedBatch.subject ? [selectedBatch.subject] : []);
             return (
               <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 px-4 py-6">
                 <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-slate-900/95 shadow-2xl overflow-hidden">
@@ -2056,7 +2075,7 @@
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-xl font-semibold">{selectedBatch.name}</h3>
-                        <p className="mt-1 text-sm text-white/80">{selectedBatch.subject || 'General'} • {selectedBatch.schedule || 'Weekly'}</p>
+                        <p className="mt-1 text-sm text-white/80">{subjectList.join(', ') || 'General'} • {selectedBatch.schedule || 'Weekly'}</p>
                       </div>
                       <button onClick={() => setSelectedBatch(null)} className="rounded-xl border border-white/30 px-3 py-2 text-sm text-white transition-all">✕</button>
                     </div>
@@ -2206,12 +2225,6 @@
       );
     }
 
-    // =====================================================
-    // MARKETPLACE — browse real teachers and book a trial class.
-    // Ported from the Vedo frontend concept, but backed by the actual
-    // `users` (role: teacher) collection and a real `trialBookings`
-    // Firestore-synced write via createTrialBooking, instead of mock data.
-    // =====================================================
     function MarketplaceScreen() {
       const { profile } = useAuth();
       const { navigateTo } = useNav();
@@ -2327,7 +2340,7 @@
 
     function StudentDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, joinRequests, announcements, fees, notes, homeworks, marks, doubts, schedules, tests, users, createJoinRequest, submitHomework, addDoubt, updateFee, ensureParentCode } = useAppData();
+      const { institutes, classes, joinRequests, announcements, fees, notes, homeworks, marks, doubts, schedules, tests, users, syllabi, createJoinRequest, submitHomework, addDoubt, updateFee, ensureParentCode } = useAppData();
       const [joinCode, setJoinCode] = useState('');
       const [activeTab, setActiveTab] = useState('timetable');
       const [doubtText, setDoubtText] = useState('');
@@ -2381,9 +2394,6 @@
           setSelectedDoubtClassId('');
         }
       }, [doubtTargets.map((item) => item.key).join('|')]);
-      // Parent code: generated once per student and persisted on their own
-      // user doc (synced to Firestore via updateUser), so it survives
-      // refresh/relogin and a parent can link at any later time.
       useEffect(() => {
         if (profile?.id && profile.role === 'student' && !myUserRecord?.parentCode) {
           ensureParentCode(profile.id);
@@ -2437,6 +2447,7 @@
         { id: 'join', label: 'Join class / institute', icon: '🔗' },
         { id: 'home', label: 'Overview', icon: '🏠' },
         ...bottomTabs,
+        { id: 'syllabus', label: 'Syllabus', icon: '📘' },
         { id: 'requests', label: `Requests${pendingRequests.length ? ` (${pendingRequests.length})` : ''}`, icon: '📩' },
         { id: 'lectures', label: 'Lectures', icon: '📹' },
         { id: 'notes', label: 'Notes', icon: '📚' },
@@ -2444,6 +2455,7 @@
         { id: 'parentcode', label: 'Parent Code', icon: '👪' },
         { id: 'profile', label: 'Profile', icon: '👤' }
       ];
+      const subjectSyllabusRows = visibleClasses.flatMap((cls) => (cls.subjects && cls.subjects.length ? cls.subjects : (cls.subject ? [cls.subject] : [])).map((sub) => ({ key: `${cls.id}::${sub}`, classId: cls.id, className: cls.name, subject: sub })));
       return (
         <ScreenShell title="Student dashboard" subtitle="Timetable, homework, doubts and tests are one tap away. Everything else lives in the ☰ menu." navItems={tabs} bottomNavItems={bottomTabs} activeNavId={activeTab} onNavChange={setActiveTab}>
           <div className="space-y-5">
@@ -2470,7 +2482,7 @@
                 </div>
                 <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                   <h3 className="text-lg font-semibold">My batches</h3>
-                  <div className="mt-3 space-y-2">{visibleClasses.length ? visibleClasses.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Fee: {item.fee} • Code: {item.code}</div></div>) : <div className="text-sm text-slate-400">No batch joined yet.</div>}</div>
+                  <div className="mt-3 space-y-2">{visibleClasses.length ? visibleClasses.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Fee: {item.fee} • Code: {item.code}</div>{item.subjects && item.subjects.length ? <div className="mt-1 flex flex-wrap gap-1">{item.subjects.map((s) => <span key={s} className="rounded-full bg-indigo-500/10 border border-indigo-400/30 px-2 py-0.5 text-[10px] font-semibold text-indigo-200">{s}</span>)}</div> : null}</div>) : <div className="text-sm text-slate-400">No batch joined yet.</div>}</div>
                 </div>
                 <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                   <h3 className="text-lg font-semibold">Announcements & alerts</h3>
@@ -2493,6 +2505,17 @@
                 <p className="text-sm text-slate-400">Set by your owner/teacher for your batches — swipe sideways to see the whole week.</p>
                 <div className="mt-4">
                   <WeeklyTimetable items={myTimetable} getClassName={getClassName} emptyLabel="No timetable has been shared for your batches yet." />
+                </div>
+              </div>
+            )}
+            {activeTab === 'syllabus' && (
+              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                <h3 className="text-lg font-semibold">Syllabus progress</h3>
+                <p className="text-sm text-slate-400">Chapter-wise progress your teachers have marked complete, per subject.</p>
+                <div className="mt-4 space-y-2">
+                  {subjectSyllabusRows.length ? subjectSyllabusRows.map((row) => (
+                    <SyllabusProgress key={row.key} classId={row.classId} subject={row.subject} syllabi={syllabi} />
+                  )) : <div className="text-sm text-slate-400">No subjects set up for your batches yet.</div>}
                 </div>
               </div>
             )}
@@ -2575,20 +2598,22 @@
                 <p className="mt-3 text-xs text-slate-500">This code stays the same and works for every parent you share it with — never share it publicly.</p>
               </div>
             )}
-            {activeTab === 'profile' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Profile</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4"><div className="font-semibold">{profile?.name}</div><div className="text-sm text-slate-400">ID: {profile?.id}</div><div className="mt-2 text-sm text-slate-400">Joined classes: {visibleClasses.length}</div></div><div className="mt-4 grid gap-2 md:grid-cols-2">{marks.filter((item) => item.studentId === profile?.id).slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Score: {item.score}/{item.maxScore}</div></div>)}</div></div>}
+            {activeTab === 'profile' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Profile</h3><div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4"><div className="font-semibold">{profile?.name}</div><div className="text-sm text-slate-400">ID: {profile?.id}</div><div className="mt-2 text-sm text-slate-400">Joined classes: {visibleClasses.length}</div></div><div className="mt-4 grid gap-2 md:grid-cols-2">{marks.filter((item) => item.studentId === profile?.id).slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Score: {item.score}/{item.maxScore}{item.subject ? ` • ${item.subject}` : ''}</div></div>)}</div></div>}
           </div>
         </ScreenShell>
       );
     }
     function TeacherDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, schedules, tests, teacherPayments, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt, createSchedule, createTest, createAnnouncement, createFee } = useAppData();
+      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, schedules, tests, teacherPayments, syllabi, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt, createSchedule, createTest, createAnnouncement, createFee, addSyllabusChapter, toggleSyllabusChapter } = useAppData();
       const [activeTab, setActiveTab] = useState('myclass');
       const [joinCode, setJoinCode] = useState('');
       const [joinTargetType, setJoinTargetType] = useState('institute');
+      const [joinTargetClass, setJoinTargetClass] = useState(null);
+      const [joinSubject, setJoinSubject] = useState('');
       const [selectedClassId, setSelectedClassId] = useState('');
       const [className, setClassName] = useState('');
-      const [subject, setSubject] = useState('');
+      const [subjects, setSubjects] = useState([]);
       const [fee, setFee] = useState('');
       const [feeType, setFeeType] = useState('paid'); // 'paid' | 'free' — for the class-creation form below
       const [schedule, setSchedule] = useState('Weekly');
@@ -2610,6 +2635,8 @@
       const [feeReminderStudentId, setFeeReminderStudentId] = useState('');
       const [feeReminderAmount, setFeeReminderAmount] = useState('');
       const [feeReminderDueDate, setFeeReminderDueDate] = useState(new Date().toISOString().slice(0, 10));
+      const [syllabusClassId, setSyllabusClassId] = useState('');
+      const [chapterDraft, setChapterDraft] = useState('');
       const { addToast } = useToast();
       const approvedMemberships = joinRequests.filter((item) => item.requesterId === profile?.id && item.status === 'approved');
       const visibleInstitutes = institutes.filter((item) => item.teacherIds?.includes(profile?.id) || approvedMemberships.some((req) => req.targetType === 'institute' && req.targetId === item.id) || (profile?.instituteIds || []).includes(item.id));
@@ -2644,17 +2671,12 @@
       const attendanceOptions = targetClass ? getStudentRosterForClass(targetClass, users, joinRequests, knownStudentNameRecords) : [];
       const attendanceRecords = targetClass ? attendances.filter((item) => item.classId === targetClass.id) : [];
       const classDoubts = doubts.filter((item) => item.teacherId ? item.teacherId === profile?.id : visibleClasses.some((cls) => cls.id === item.classId)).sort((a, b) => safeSortKey(b.createdAt) - safeSortKey(a.createdAt));
-      // Scope homework/notes/feedback lists to batches this teacher actually
-      // teaches (or feedback they personally gave) — never every batch's data.
       const visibleHomeworks = homeworks.filter((item) => visibleClasses.some((cls) => cls.id === item.classId) || visibleInstitutes.some((inst) => inst.id === item.instituteId));
       const visibleNotes = notes.filter((item) => visibleClasses.some((cls) => cls.id === item.classId) || visibleInstitutes.some((inst) => inst.id === item.instituteId) || item.createdBy === profile?.name);
       const myFeedbacks = feedbacks.filter((item) => item.teacherId === profile?.id);
       const [doubtReplyDrafts, setDoubtReplyDrafts] = useState({});
       const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
       const myTimetable = schedules.filter((item) => visibleClasses.some((cls) => cls.id === item.classId) || visibleInstitutes.some((inst) => inst.id === item.instituteId)).sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day) || (a.time || '').localeCompare(b.time || ''));
-      // Wallet must only reflect classes THIS teacher personally created —
-      // fees for institute batches they merely teach in belong to that
-      // institute's owner, not to this teacher.
       const classFees = fees.filter((item) => ownClasses.some((cls) => cls.id === item.classId));
       const feesCollected = classFees.filter((item) => item.status === 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const feesPending = classFees.filter((item) => item.status !== 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
@@ -2662,6 +2684,10 @@
       const totalPaidToMe = myPayments.reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const feeReminderClass = ownClasses.find((item) => item.id === feeReminderClassId) || ownClasses[0] || null;
       const feeReminderRoster = feeReminderClass ? getStudentRosterForClass(feeReminderClass, users, joinRequests, knownStudentNameRecords) : [];
+      const mySubjectInTarget = getTeacherSubjectForClass(targetClass, profile?.id);
+      const syllabusTargetClass = visibleClasses.find((item) => item.id === syllabusClassId) || visibleClasses[0] || null;
+      const mySyllabusSubject = getTeacherSubjectForClass(syllabusTargetClass, profile?.id);
+      const mySyllabusDoc = syllabi.find((s) => s.classId === syllabusTargetClass?.id && s.subject === mySyllabusSubject);
       useEffect(() => {
         if (ownClasses.length && (!feeReminderClassId || !ownClasses.some((item) => item.id === feeReminderClassId))) {
           setFeeReminderClassId(ownClasses[0].id);
@@ -2671,26 +2697,41 @@
         if (visibleClasses.length && (!selectedClassId || !visibleClasses.some((item) => item.id === selectedClassId))) {
           setSelectedClassId(visibleClasses[0].id);
         }
-      }, [selectedClassId, visibleClasses]);
+        if (visibleClasses.length && (!syllabusClassId || !visibleClasses.some((item) => item.id === syllabusClassId))) {
+          setSyllabusClassId(visibleClasses[0].id);
+        }
+      }, [selectedClassId, syllabusClassId, visibleClasses]);
+      const previewJoinTarget = (code) => {
+        if (joinTargetType !== 'class') { setJoinTargetClass(null); setJoinSubject(''); return; }
+        const match = classes.find((item) => item.code?.toLowerCase() === (code || '').toLowerCase());
+        setJoinTargetClass(match || null);
+        setJoinSubject(match?.subjects?.[0] || '');
+      };
       const joinByCode = async () => {
         if (!joinCode.trim()) return addToast('Please enter a join code', 'error');
         const target = joinTargetType === 'class'
           ? classes.find((item) => item.code?.toLowerCase() === joinCode.toLowerCase())
           : institutes.find((item) => item.code?.toLowerCase() === joinCode.toLowerCase());
         if (!target) return addToast('No matching class or institute found', 'error');
-        await createJoinRequest({ targetType: joinTargetType, targetId: target.id, targetName: target.name, requesterId: profile.id, requesterName: profile.name, role: 'teacher' });
+        if (joinTargetType === 'class' && target.subjects?.length && !joinSubject) {
+          return addToast('Select which subject you will teach in this batch', 'error');
+        }
+        await createJoinRequest({ targetType: joinTargetType, targetId: target.id, targetName: target.name, requesterId: profile.id, requesterName: profile.name, role: 'teacher', subject: joinTargetType === 'class' ? (joinSubject || null) : null });
         addToast(`Join request sent for ${joinTargetType}`, 'success');
         setJoinCode('');
+        setJoinTargetClass(null);
+        setJoinSubject('');
       };
       const createNewClass = async (event) => {
         event.preventDefault();
         if (!className.trim()) return;
+        if (!subjects.length) return addToast('Add at least one subject for this class', 'error');
         const instituteId = visibleInstitutes[0]?.id || null;
         const finalFee = feeType === 'free' ? 0 : fee;
-        await createClass({ instituteId, teacherId: profile.id, teacherName: profile.name, name: className, subject, fee: finalFee, feeType, schedule, description: 'Created from teacher dashboard' });
+        await createClass({ instituteId, teacherId: profile.id, teacherName: profile.name, name: className, subjects, fee: finalFee, feeType, schedule, description: 'Created from teacher dashboard' });
         addToast(feeType === 'free' ? 'Free class created with a new join code' : 'Class created with a new join code', 'success');
         setClassName('');
-        setSubject('');
+        setSubjects([]);
         setFee('');
         setFeeType('paid');
       };
@@ -2767,8 +2808,9 @@
       const createNewTest = async (event) => {
         event.preventDefault();
         if (!testTitle.trim()) return;
-        await createTest({ title: testTitle, subject: testSubject, dueDate: testDate, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null, createdBy: profile.name });
-        await createAnnouncement({ title: `New test: ${testTitle}`, message: `${testSubject || 'Test'}${testDate ? ` — on ${testDate}` : ''}`, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || null, createdBy: profile.name });
+        const autoSubject = getTeacherSubjectForClass(targetClass, profile.id);
+        await createTest({ title: testTitle, subject: autoSubject || testSubject, dueDate: testDate, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || visibleInstitutes[0]?.id || null, createdBy: profile.name });
+        await createAnnouncement({ title: `New test: ${testTitle}`, message: `${autoSubject || testSubject || 'Test'}${testDate ? ` — on ${testDate}` : ''}`, classId: targetClass?.id || null, instituteId: targetClass?.instituteId || null, createdBy: profile.name });
         addToast('Test scheduled and students notified', 'success');
         setTestTitle('');
         setTestSubject('');
@@ -2793,6 +2835,13 @@
         await createAnnouncement({ title: `Fee reminder for ${feeItem.studentName}`, message: `Dear ${feeItem.studentName}, your fee of ₹${feeItem.amount} for ${cls?.name || 'your class'} is due on ${feeItem.dueDate}.`, classId: cls?.id || null, studentId: feeItem.studentId || null, studentName: feeItem.studentName || '', createdBy: profile.name });
         addToast('Reminder sent to student', 'success');
       };
+      const addChapterToSyllabus = async () => {
+        if (!chapterDraft.trim()) return addToast('Enter a chapter/topic name', 'error');
+        if (!mySyllabusSubject) return addToast('This batch has no subject assigned to you yet', 'error');
+        await addSyllabusChapter({ classId: syllabusTargetClass.id, subject: mySyllabusSubject, title: chapterDraft, createdBy: profile.name });
+        setChapterDraft('');
+        addToast('Chapter added to syllabus', 'success');
+      };
       const bottomTabs = [
         { id: 'myclass', label: 'My Class', icon: '📚' },
         { id: 'myinstitutes', label: 'My Institutes', icon: '🏫' },
@@ -2802,6 +2851,7 @@
       const tabs = [
         { id: 'join', label: 'Join institute / class', icon: '🔗' },
         ...bottomTabs,
+        { id: 'syllabus', label: 'Syllabus', icon: '📘' },
         { id: 'requests', label: `Requests${pendingRequestCount ? ` (${pendingRequestCount})` : ''}`, icon: '📩' },
         { id: 'homework', label: 'Homework', icon: '📝' },
         { id: 'test', label: 'Test', icon: '📊' },
@@ -2817,13 +2867,18 @@
                 <h3 className="text-lg font-semibold">Join institute / class</h3>
                 <div className="mt-3 space-y-3">
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => setJoinTargetType('institute')} className={`rounded-xl px-3 py-2 text-sm ${joinTargetType === 'institute' ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-300'} transition-all`}>Institute</button>
+                    <button onClick={() => { setJoinTargetType('institute'); setJoinTargetClass(null); setJoinSubject(''); }} className={`rounded-xl px-3 py-2 text-sm ${joinTargetType === 'institute' ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-300'} transition-all`}>Institute</button>
                     <button onClick={() => setJoinTargetType('class')} className={`rounded-xl px-3 py-2 text-sm ${joinTargetType === 'class' ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-300'} transition-all`}>Class</button>
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    <input value={joinCode} onChange={(event) => setJoinCode(event.target.value)} placeholder="Enter join code" className="flex-1 rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                    <input value={joinCode} onChange={(event) => { setJoinCode(event.target.value); previewJoinTarget(event.target.value); }} placeholder="Enter join code" className="flex-1 rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
                     <button onClick={joinByCode} className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold hover:bg-emerald-500 transition-all">Request join</button>
                   </div>
+                  {joinTargetClass?.subjects?.length ? (
+                    <select value={joinSubject} onChange={(e) => setJoinSubject(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
+                      {joinTargetClass.subjects.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  ) : null}
                   <p className="text-sm text-slate-400">Teachers request access to the institute or class before they can start teaching, sharing notes, taking attendance, assigning homework, and providing feedback.</p>
                 </div>
               </div>
@@ -2835,7 +2890,10 @@
                 <form onSubmit={createNewClass} className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4">
                   <div className="grid gap-3 md:grid-cols-2">
                     <input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Class name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
-                    <input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                  </div>
+                  <div>
+                    <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Subjects</div>
+                    <SubjectListBuilder subjects={subjects} onChange={setSubjects} />
                   </div>
                   <div>
                     <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Fee</div>
@@ -2874,6 +2932,7 @@
                           <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">👨‍🎓 {roster.length} student{roster.length === 1 ? '' : 's'}</span>
                           <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">👩‍🏫 {teacherRoster.length} teacher{teacherRoster.length === 1 ? '' : 's'}</span>
                         </div>
+                        {item.subjects && item.subjects.length ? <div className="mt-1.5 flex flex-wrap gap-1">{item.subjects.map((s) => <span key={s} className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] text-slate-300">{s}</span>)}</div> : null}
                       </button>
                       {isOpen && (
                         <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
@@ -2883,7 +2942,7 @@
                           </div>
                           <div>
                             <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Teachers ({teacherRoster.length})</div>
-                            <div className="mt-1 space-y-1">{teacherRoster.length ? teacherRoster.map((teacher) => <div key={teacher.id} className="text-sm text-slate-200">• {teacher.name}{teacher.id === profile?.id ? ' (you)' : ''}</div>) : <div className="text-sm text-slate-400">No teachers linked yet.</div>}</div>
+                            <div className="mt-1 space-y-1">{teacherRoster.length ? teacherRoster.map((teacher) => <div key={teacher.id} className="text-sm text-slate-200">• {teacher.name}{teacher.id === profile?.id ? ' (you)' : ''}{getTeacherSubjectForClass(item, teacher.id) ? ` — ${getTeacherSubjectForClass(item, teacher.id)}` : ''}</div>) : <div className="text-sm text-slate-400">No teachers linked yet.</div>}</div>
                           </div>
                         </div>
                       )}
@@ -2915,6 +2974,27 @@
                     </div>
                   );
                 }) : <div className="text-sm text-slate-400">You haven't joined an institute yet — use ☰ → Join institute / class.</div>}</div>
+              </div>
+            )}
+            {activeTab === 'syllabus' && (
+              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                <h3 className="text-lg font-semibold">Syllabus — {mySyllabusSubject || 'select a class'}</h3>
+                <p className="text-sm text-slate-400">Add chapters for the subject you teach in this batch, and mark them done as you finish.</p>
+                <select value={syllabusClassId} onChange={(e) => setSyllabusClassId(e.target.value)} className="mt-3 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
+                  {visibleClasses.map((item) => <option key={item.id} value={item.id}>{item.name} — {getTeacherSubjectForClass(item, profile?.id) || 'no subject'}</option>)}
+                </select>
+                <div className="mt-3 flex gap-2">
+                  <input value={chapterDraft} onChange={(e) => setChapterDraft(e.target.value)} placeholder="Chapter/topic name" className="flex-1 rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                  <button onClick={addChapterToSyllabus} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold hover:bg-indigo-500 transition-all">Add</button>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {mySyllabusDoc?.chapters?.length ? mySyllabusDoc.chapters.map((ch) => (
+                    <div key={ch.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+                      <span className={ch.completed ? 'text-sm text-slate-400 line-through' : 'text-sm text-slate-100'}>{ch.title}</span>
+                      <button onClick={() => toggleSyllabusChapter(mySyllabusDoc.id, ch.id, !ch.completed)} className={`rounded-xl px-3 py-1.5 text-xs font-semibold ${ch.completed ? 'bg-emerald-600 text-white' : 'bg-white/5 text-slate-300'}`}>{ch.completed ? '✅ Done' : 'Mark done'}</button>
+                    </div>
+                  )) : <div className="text-sm text-slate-400">No chapters added yet.</div>}
+                </div>
               </div>
             )}
             {activeTab === 'timetable' && (() => {
@@ -3071,7 +3151,7 @@
             })()}
             {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Student join approvals</h3><div className="mt-3 space-y-3">{teacherRequests.length ? teacherRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 card-hover"><div className="flex items-start justify-between gap-4"><div><div className="font-medium">{item.requesterName} wants to join {item.targetName}</div><div className="text-sm text-slate-400">Type: {item.targetType} • Role: {item.role}</div></div><div className="space-x-2"><button onClick={() => approveAsTeacher(item.id)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs hover:bg-emerald-500 transition-all">Approve</button><button onClick={() => rejectAsTeacher(item.id)} className="rounded-xl bg-rose-500 px-3 py-2 text-xs hover:bg-rose-400 transition-all">Reject</button></div></div></div>) : <div className="text-sm text-slate-400">No pending student join approvals right now.</div>}</div></div>}
             {activeTab === 'homework' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Assign homework</h3><form onSubmit={createNewHomework} className="mt-3 space-y-3"><select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">{visibleClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={homeworkTitle} onChange={(event) => setHomeworkTitle(event.target.value)} placeholder="Homework title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={homeworkDesc} onChange={(event) => setHomeworkDesc(event.target.value)} placeholder="Description" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={homeworkDue} onChange={(event) => setHomeworkDue(event.target.value)} placeholder="Due date" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-emerald-600 px-3 py-2 text-sm hover:bg-emerald-500 transition-all">Assign to class</button></form><div className="mt-4 space-y-2">{visibleHomeworks.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Due: {item.dueDate}</div></div>)}</div></div>}
-            {activeTab === 'test' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Schedule a test</h3><form onSubmit={createNewTest} className="mt-3 space-y-3"><select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">{visibleClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={testTitle} onChange={(event) => setTestTitle(event.target.value)} placeholder="Test title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={testSubject} onChange={(event) => setTestSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input type="date" value={testDate} onChange={(event) => setTestDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Schedule test</button></form><div className="mt-4 space-y-2">{tests.filter((item) => visibleClasses.some((cls) => cls.id === item.classId)).slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.subject} • Date: {item.dueDate || 'TBA'}</div></div>)}</div></div>}
+            {activeTab === 'test' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Schedule a test</h3><p className="text-sm text-slate-400">Subject auto-tags to your assigned subject in this batch: <span className="font-semibold text-slate-200">{mySubjectInTarget || 'none set'}</span>.</p><form onSubmit={createNewTest} className="mt-3 space-y-3"><select value={selectedClassId} onChange={(event) => setSelectedClassId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">{visibleClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={testTitle} onChange={(event) => setTestTitle(event.target.value)} placeholder="Test title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />{!mySubjectInTarget ? <input value={testSubject} onChange={(event) => setTestSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /> : null}<input type="date" value={testDate} onChange={(event) => setTestDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Schedule test</button></form><div className="mt-4 space-y-2">{tests.filter((item) => visibleClasses.some((cls) => cls.id === item.classId)).slice(0, 6).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.subject} • Date: {item.dueDate || 'TBA'}</div></div>)}</div></div>}
             {activeTab === 'notes' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Share notes</h3><form onSubmit={shareNote} className="mt-3 space-y-3"><input value={noteTitle} onChange={(event) => setNoteTitle(event.target.value)} placeholder="Note title" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><textarea value={noteContent} onChange={(event) => setNoteContent(event.target.value)} placeholder="Note content" className="min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Share note</button></form><div className="mt-4 space-y-2">{visibleNotes.slice(0, 4).map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.content}</div></div>)}</div></div>}
             {activeTab === 'doubts' && (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
@@ -3121,7 +3201,7 @@
       const [instituteName, setInstituteName] = useState('');
       const [city, setCity] = useState('Pune');
       const [className, setClassName] = useState('');
-      const [subject, setSubject] = useState('');
+      const [subjects, setSubjects] = useState([]);
       const [fee, setFee] = useState('');
       const [scheduleText, setScheduleText] = useState('');
       const [selectedInstitute, setSelectedInstitute] = useState('');
@@ -3143,9 +3223,6 @@
       const { addToast } = useToast();
       const myInstitutes = institutes.filter((item) => item.ownerId === profile?.id);
       const ownerClasses = classes.filter((item) => item.ownerId === profile?.id);
-      // Only alerts that actually belong to this owner's own institutes/batches
-      // (or a student inside them) — a teacher's homework/test alert for a
-      // batch this owner has nothing to do with should never show up here.
       const ownerAnnouncements = announcements.filter((item) => {
         if (!item) return false;
         if (item.classId) return ownerClasses.some((cls) => cls.id === item.classId);
@@ -3182,10 +3259,11 @@
       const addClass = async (event) => {
         event.preventDefault();
         if (!className.trim()) return;
-        await createClass({ instituteId: selectedInstitute || null, ownerId: profile.id, name: className, subject, fee, schedule: scheduleText || 'Weekly', description: 'Batch created from owner dashboard' });
+        if (!subjects.length) return addToast('Add at least one subject for this batch', 'error');
+        await createClass({ instituteId: selectedInstitute || null, ownerId: profile.id, name: className, subjects, fee, schedule: scheduleText || 'Weekly', description: 'Batch created from owner dashboard' });
         addToast('Batch created', 'success');
         setClassName('');
-        setSubject('');
+        setSubjects([]);
         setFee('');
       };
       const sendAnnouncement = async (event) => {
@@ -3195,12 +3273,6 @@
         if (alertTarget === 'batch' && !selectedClass) return addToast('Select a specific batch for this alert', 'error');
         if (alertTarget === 'institute' && !selectedInstitute) return addToast('Select a specific institute for this alert', 'error');
         const student = alertTarget === 'student' ? (classStudents.find((item) => item.id === selectedStudent) || users.find((item) => item.id === selectedStudent)) : null;
-        // NOTE: instituteId must only be set when the target is actually
-        // "institute" — it was previously keyed off 'batch' by mistake, which
-        // left "whole institute" alerts with no instituteId/classId at all
-        // (an untargeted record) while "whole batch" alerts got an unrelated
-        // instituteId attached. That untargeted record is exactly what leaked
-        // this alert into every other institute's bell before.
         await createAnnouncement({ title: announcementTitle, message: announcementBody, instituteId: alertTarget === 'institute' ? (selectedInstitute || null) : null, classId: alertTarget !== 'institute' ? (selectedClass || null) : null, studentId: alertTarget === 'student' ? selectedStudent : null, studentName: student ? getStudentDisplayName(student) : '', createdBy: profile.name });
         addToast(alertTarget === 'student' ? 'Alert sent to student' : 'Notification sent', 'success');
         setAnnouncementTitle('');
@@ -3294,11 +3366,51 @@
                   </div>
                   <div className="mt-3 grid gap-3 md:grid-cols-3">{myInstitutes.length ? myInstitutes.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.name}</div><div className="text-sm text-slate-400">Code: {item.code}</div></div>) : <div className="text-sm text-slate-400">Create an institute first.</div>}<div className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">Pending</div><div className="text-sm text-slate-400">{relevantRequests.filter((item) => item.status === 'pending').length} approvals</div></div></div>
                 </div>
+
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Students per batch</h3>
+                  <div className="mt-3 space-y-2">
+                    {ownerClasses.length ? ownerClasses.map((cls) => {
+                      const count = getStudentRosterForClass(cls, users, joinRequests, knownStudentNameRecords).length;
+                      const maxCount = Math.max(1, ...ownerClasses.map((c) => getStudentRosterForClass(c, users, joinRequests, knownStudentNameRecords).length));
+                      return (
+                        <div key={cls.id} className="flex items-center gap-3">
+                          <span className="w-28 flex-none truncate text-sm text-slate-300">{cls.name}</span>
+                          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                            <div className="h-full rounded-full bg-emerald-400" style={{ width: `${(count / maxCount) * 100}%` }}></div>
+                          </div>
+                          <span className="w-8 flex-none text-right text-sm font-semibold text-slate-200">{count}</span>
+                        </div>
+                      );
+                    }) : <div className="text-sm text-slate-400">Create a batch to see this chart.</div>}
+                  </div>
+
+                  <h3 className="mt-6 text-lg font-semibold">Teachers per batch — subject wise</h3>
+                  <div className="mt-3 space-y-3">
+                    {ownerClasses.length ? ownerClasses.map((cls) => (
+                      <div key={cls.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3">
+                        <div className="font-medium text-slate-100">{cls.name}</div>
+                        <div className="mt-2 space-y-1">
+                          {(cls.subjects || []).length ? cls.subjects.map((sub) => {
+                            const teacherForSub = getTeacherRosterForClass(cls, users, joinRequests).find((t) => (cls.teacherSubjects || {})[t.id] === sub || (cls.teacherId === t.id && !cls.teacherSubjects?.[t.id]));
+                            return (
+                              <div key={sub} className="flex items-center justify-between text-sm">
+                                <span className="text-slate-300">{sub}</span>
+                                <span className={teacherForSub ? 'text-emerald-300' : 'text-amber-300'}>{teacherForSub ? teacherForSub.name : 'Unassigned'}</span>
+                              </div>
+                            );
+                          }) : <div className="text-xs text-slate-500">No subjects set for this batch.</div>}
+                        </div>
+                      </div>
+                    )) : <div className="text-sm text-slate-400">Create a batch to see this breakdown.</div>}
+                  </div>
+                </div>
+
                 <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Create institute</h3><form onSubmit={addInstitute} className="mt-3 space-y-3"><input value={instituteName} onChange={(event) => setInstituteName(event.target.value)} placeholder="Institute name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={city} onChange={(event) => setCity(event.target.value)} placeholder="City" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Create institute</button></form></div>
               </div>
             )}
-            {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Pending approvals</h3><div className="mt-3 space-y-2">{relevantRequests.length ? relevantRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.requesterName} wants to join</div><div className="text-sm text-slate-400">{item.targetName}</div>{item.status === 'pending' ? <div className="mt-2 flex gap-2"><button onClick={() => approveRequest(item.id)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs hover:bg-emerald-500 transition-all">Approve</button><button onClick={() => rejectRequest(item.id)} className="rounded-xl bg-rose-500 px-3 py-2 text-xs hover:bg-rose-400 transition-all">Reject</button></div> : <div className="mt-2 text-xs font-medium text-emerald-400">{item.status === 'approved' ? 'Approved' : 'Rejected'}</div>}</div>) : <div className="text-sm text-slate-400">No requests yet.</div>}</div></div>}
-            {activeTab === 'mybatches' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">My batches</h3><p className="text-sm text-slate-400">Every batch you run, with its full student and teacher roster.</p><form onSubmit={addClass} className="mt-4 space-y-3"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select institute</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Batch name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Subject" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={scheduleText} onChange={(event) => setScheduleText(event.target.value)} placeholder="Schedule" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-emerald-600 px-3 py-2 text-sm hover:bg-emerald-500 transition-all">Create batch</button></form><div className="mt-4 space-y-2">{ownerClasses.length ? ownerClasses.map((item) => {
+            {activeTab === 'requests' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">Pending approvals</h3><div className="mt-3 space-y-2">{relevantRequests.length ? relevantRequests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.requesterName} wants to join</div><div className="text-sm text-slate-400">{item.targetName}{item.subject ? ` • Subject: ${item.subject}` : ''}</div>{item.status === 'pending' ? <div className="mt-2 flex gap-2"><button onClick={() => approveRequest(item.id)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs hover:bg-emerald-500 transition-all">Approve</button><button onClick={() => rejectRequest(item.id)} className="rounded-xl bg-rose-500 px-3 py-2 text-xs hover:bg-rose-400 transition-all">Reject</button></div> : <div className="mt-2 text-xs font-medium text-emerald-400">{item.status === 'approved' ? 'Approved' : 'Rejected'}</div>}</div>) : <div className="text-sm text-slate-400">No requests yet.</div>}</div></div>}
+            {activeTab === 'mybatches' && <div className="glass rounded-3xl border border-white/10 p-5 card-hover"><h3 className="text-lg font-semibold">My batches</h3><p className="text-sm text-slate-400">Every batch you run, with its full student and teacher roster.</p><form onSubmit={addClass} className="mt-4 space-y-3"><select value={selectedInstitute} onChange={(event) => setSelectedInstitute(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm"><option value="">Select institute</option>{myInstitutes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Batch name" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><div><div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Subjects</div><SubjectListBuilder subjects={subjects} onChange={setSubjects} /></div><input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="Fee" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><input value={scheduleText} onChange={(event) => setScheduleText(event.target.value)} placeholder="Schedule" className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" /><button className="rounded-xl bg-emerald-600 px-3 py-2 text-sm hover:bg-emerald-500 transition-all">Create batch</button></form><div className="mt-4 space-y-2">{ownerClasses.length ? ownerClasses.map((item) => {
               const roster = getStudentRosterForClass(item, users, joinRequests, knownStudentNameRecords);
               const teacherRoster = getTeacherRosterForClass(item, users, joinRequests);
               const isOpen = expandedBatchId === item.id;
@@ -3314,6 +3426,7 @@
                       <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">👨‍🎓 {roster.length} student{roster.length === 1 ? '' : 's'}</span>
                       <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-300">👩‍🏫 {teacherRoster.length} teacher{teacherRoster.length === 1 ? '' : 's'}</span>
                     </div>
+                    {item.subjects && item.subjects.length ? <div className="mt-1.5 flex flex-wrap gap-1">{item.subjects.map((s) => <span key={s} className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] text-slate-300">{s}</span>)}</div> : null}
                   </button>
                   {isOpen && (
                     <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
@@ -3323,7 +3436,7 @@
                       </div>
                       <div>
                         <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Teachers ({teacherRoster.length})</div>
-                        <div className="mt-1 space-y-1">{teacherRoster.length ? teacherRoster.map((teacher) => <div key={teacher.id} className="text-sm text-slate-200">• {teacher.name}</div>) : <div className="text-sm text-slate-400">No teachers linked yet.</div>}</div>
+                        <div className="mt-1 space-y-1">{teacherRoster.length ? teacherRoster.map((teacher) => <div key={teacher.id} className="text-sm text-slate-200">• {teacher.name}{getTeacherSubjectForClass(item, teacher.id) ? ` — ${getTeacherSubjectForClass(item, teacher.id)}` : ''}</div>) : <div className="text-sm text-slate-400">No teachers linked yet.</div>}</div>
                       </div>
                     </div>
                   )}
@@ -3438,18 +3551,9 @@
       );
     }
 
-    // ------------------------------------------------------------------
-    // PARENT DASHBOARD
-    // ------------------------------------------------------------------
-    // Parents link to one or more children using the child's login email
-    // plus the unique parent code shown on the child's own dashboard
-    // (☰ → Parent Code). Once linked, the relationship is stored on both
-    // the parent's and student's `users` doc (see linkChildToParent in
-    // AppDataProvider) and syncs to Firestore like everything else, so it
-    // survives refresh/relogin on any device.
     function ParentDashboard() {
       const { profile } = useAuth();
-      const { users, classes, institutes, fees, marks, attendances, feedbacks, doubts, schedules, tests, homeworks, announcements, updateFee, linkChildToParent, unlinkChild } = useAppData();
+      const { users, classes, institutes, fees, marks, attendances, feedbacks, doubts, schedules, tests, homeworks, announcements, syllabi, updateFee, linkChildToParent, unlinkChild } = useAppData();
       const { addToast } = useToast();
       const [activeTab, setActiveTab] = useState('marks');
       const [childEmail, setChildEmail] = useState('');
@@ -3489,6 +3593,7 @@
         if (item.instituteId) return childInstitutes.some((inst) => inst.id === item.instituteId);
         return false;
       });
+      const childSyllabusRows = childClasses.flatMap((cls) => (cls.subjects && cls.subjects.length ? cls.subjects : (cls.subject ? [cls.subject] : [])).map((sub) => ({ key: `${cls.id}::${sub}`, classId: cls.id, subject: sub })));
 
       const getClassName = (id) => classes.find((c) => c.id === id)?.name || 'Class';
       const getInstituteName = (id) => institutes.find((i) => i.id === id)?.name || 'Institute';
@@ -3529,13 +3634,12 @@
         { id: 'growth', label: 'Growth', icon: '📈' },
         ...bottomTabs,
         { id: 'schedule', label: 'Schedule', icon: '🗓️' },
+        { id: 'syllabus', label: 'Syllabus', icon: '📘' },
         { id: 'homework', label: 'Homework', icon: '📝' },
         { id: 'children', label: 'My children', icon: '👪' },
         { id: 'profile', label: 'Profile', icon: '👤' }
       ];
 
-      // ---- Growth tab derived metrics (pure client-side aggregation of
-      // already-synced Firestore data — no extra reads/writes needed) ----
       const marksAvgPct = childMarks.length
         ? Math.round(childMarks.reduce((sum, m) => sum + (m.maxScore ? (m.score / m.maxScore) * 100 : 0), 0) / childMarks.length)
         : null;
@@ -3557,6 +3661,17 @@
         { key: 'doubts', label: 'Doubts resolved', pct: doubtsResolvedPct, hint: childDoubts.length ? `${doubtsResolvedCount}/${childDoubts.length} answered` : 'No doubts yet' },
         { key: 'fees', label: 'Fees on track', pct: feesPaidPct, hint: childFees.length ? `${feesPaidCount}/${childFees.length} paid` : 'No fees yet' }
       ];
+
+      const subjectAverages = useMemo(() => {
+        const grouped = {};
+        childMarks.forEach((m) => {
+          const key = m.subject || 'General';
+          if (!grouped[key]) grouped[key] = { total: 0, count: 0 };
+          grouped[key].total += m.maxScore ? (m.score / m.maxScore) * 100 : 0;
+          grouped[key].count += 1;
+        });
+        return Object.entries(grouped).map(([subject, v]) => ({ subject, avg: Math.round(v.total / v.count) }));
+      }, [childMarks]);
 
       const hasChildren = linkedChildren.length > 0;
 
@@ -3656,6 +3771,21 @@
                 </div>
 
                 <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                  <h3 className="text-lg font-semibold">Subject-wise average</h3>
+                  <div className="mt-3 space-y-2">
+                    {subjectAverages.length ? subjectAverages.map((s) => (
+                      <div key={s.subject} className="flex items-center gap-3">
+                        <span className="w-24 flex-none truncate text-sm text-slate-300">{s.subject}</span>
+                        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                          <div className={`h-full rounded-full ${s.avg >= 75 ? 'bg-emerald-400' : s.avg >= 50 ? 'bg-amber-400' : 'bg-rose-400'}`} style={{ width: `${s.avg}%` }}></div>
+                        </div>
+                        <span className="w-10 flex-none text-right text-sm font-semibold text-slate-200">{s.avg}%</span>
+                      </div>
+                    )) : <div className="text-sm text-slate-400">No subject-wise marks yet.</div>}
+                  </div>
+                </div>
+
+                <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                   <h3 className="text-lg font-semibold">Attendance trend</h3>
                   <p className="text-sm text-slate-400">Last {attendanceTrend.length || 0} recorded class{attendanceTrend.length === 1 ? '' : 'es'}.</p>
                   {attendanceTrend.length ? (
@@ -3684,7 +3814,7 @@
             {hasChildren && activeTab === 'marks' && (
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">{childName}'s test marks</h3>
-                <div className="mt-4 space-y-2">{childMarks.length ? childMarks.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Score: {item.score}/{item.maxScore}</div></div>) : <div className="text-sm text-slate-400">No marks recorded yet.</div>}</div>
+                <div className="mt-4 space-y-2">{childMarks.length ? childMarks.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">Score: {item.score}/{item.maxScore}{item.subject ? ` • ${item.subject}` : ''}</div></div>) : <div className="text-sm text-slate-400">No marks recorded yet.</div>}</div>
                 <h3 className="mt-6 text-lg font-semibold">Upcoming tests</h3>
                 <div className="mt-3 space-y-2">{childTests.length ? childTests.map((item) => <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-900/70 p-3 card-hover"><div className="font-medium">{item.title}</div><div className="text-sm text-slate-400">{item.subject} • Date: {item.dueDate || 'TBA'} • {getClassName(item.classId)}</div></div>) : <div className="text-sm text-slate-400">No tests scheduled.</div>}</div>
               </div>
@@ -3712,6 +3842,18 @@
                 <p className="text-sm text-slate-400">Swipe sideways to see the whole week.</p>
                 <div className="mt-4">
                   <WeeklyTimetable items={childSchedule} getClassName={getClassName} emptyLabel="No timetable shared yet." />
+                </div>
+              </div>
+            )}
+
+            {hasChildren && activeTab === 'syllabus' && (
+              <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
+                <h3 className="text-lg font-semibold">Syllabus progress</h3>
+                <p className="text-sm text-slate-400">Chapter-wise progress for {childName}'s subjects.</p>
+                <div className="mt-4 space-y-2">
+                  {childSyllabusRows.length ? childSyllabusRows.map((row) => (
+                    <SyllabusProgress key={row.key} classId={row.classId} subject={row.subject} syllabi={syllabi} />
+                  )) : <div className="text-sm text-slate-400">No subjects set up yet.</div>}
                 </div>
               </div>
             )}
@@ -3781,11 +3923,6 @@
       );
     }
 
-    // =====================================================
-    // ADMISSION CHATBOT (Floating) — ported from the Vedo frontend concept.
-    // Purely informational/static FAQ, same as its original design, so no
-    // backend wiring is needed here (it never reads or writes user data).
-    // =====================================================
     function AdmissionChatbot() {
       const [open, setOpen] = useState(false);
       const [chats, setChats] = useState([
