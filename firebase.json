@@ -1,1 +1,36 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"vedo-01","appId":"1:1881105365:android:60db292185724adc9ed35c","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"vedo-01","configurations":{"android":"1:1881105365:android:60db292185724adc9ed35c","web":"1:1881105365:web:9a016b072ff0b3c59ed35c"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "vedo-01",
+          "appId": "1:1881105365:android:60db292185724adc9ed35c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "vedo-01",
+          "configurations": {
+            "android": "1:1881105365:android:60db292185724adc9ed35c",
+            "web": "1:1881105365:web:9a016b072ff0b3c59ed35c"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
+}
