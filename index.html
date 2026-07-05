@@ -218,7 +218,7 @@
     const initialState = {
       institutes: [], classes: [], users: [], joinRequests: [], announcements: [],
       fees: [], schedules: [], notes: [], homeworks: [], doubts: [], feedbacks: [], marks: [], attendances: [],
-      tests: [], teacherPayments: [], trialBookings: [], syllabi: []
+      tests: [], teacherPayments: [], trialBookings: [], syllabi: [], teacherLectures: []
     };
 
     const roleLabels = { student: 'Student', teacher: 'Teacher', owner: 'Owner', parent: 'Parent' };
@@ -555,6 +555,7 @@
       const [teacherPayments, setTeacherPayments] = useState(() => db.get(StorageKeys.DATA, initialState)?.teacherPayments || initialState.teacherPayments);
       const [trialBookings, setTrialBookings] = useState(() => db.get(StorageKeys.DATA, initialState)?.trialBookings || initialState.trialBookings);
       const [syllabi, setSyllabi] = useState(() => db.get(StorageKeys.DATA, initialState)?.syllabi || initialState.syllabi);
+      const [teacherLectures, setTeacherLectures] = useState(() => db.get(StorageKeys.DATA, initialState)?.teacherLectures || initialState.teacherLectures);
       const [backendStatus, setBackendStatus] = useState(() => backendReady ? 'live' : (navigator.onLine ? 'local' : 'offline'));
 
       useEffect(() => {
@@ -598,12 +599,13 @@
         attach('teacherPayments', setTeacherPayments);
         attach('trialBookings', setTrialBookings);
         attach('syllabi', setSyllabi);
+        attach('teacherLectures', setTeacherLectures);
         return () => unsubs.forEach((fn) => fn());
       }, []);
 
       useEffect(() => {
-        db.set(StorageKeys.DATA, { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, syllabi });
-      }, [institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, syllabi]);
+        db.set(StorageKeys.DATA, { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, syllabi, teacherLectures });
+      }, [institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, syllabi, teacherLectures]);
 
       const saveDoc = async (collectionName, item) => {
         if (!backendReady || !firestoreRef) return item;
@@ -991,7 +993,28 @@
         if (backendReady && firestoreRef) await firestoreRef.collection('syllabi').doc(syllabusId).set(payload, { merge: true });
       };
 
-      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, syllabi, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, deleteSchedule, createTest, payTeacher, createNote, createHomework, submitHomework, saveAttendance, addDoubt, resolveDoubt, replyToDoubt, addFeedback, addMark, updateUser, ensureParentCode, linkChildToParent, unlinkChild, createTrialBooking, updateTrialBookingStatus, upsertSyllabus, addSyllabusChapter, toggleSyllabusChapter };
+      // Teacher self-marks a timetable slot as taught — this is what the owner
+      // later uses to work out how many periods/hours to pay for.
+      const markPeriodDone = async ({ teacherId, teacherName, classId, instituteId, subject, scheduleId, date, durationMinutes, time }) => {
+        const payload = {
+          id: `LEC-${Date.now()}`,
+          teacherId,
+          teacherName: teacherName || '',
+          classId: classId || null,
+          instituteId: instituteId || null,
+          subject: subject || '',
+          scheduleId: scheduleId || null,
+          date: date || stamp().slice(0, 10),
+          time: time || '',
+          durationMinutes: Number(durationMinutes || 0),
+          createdAt: stamp()
+        };
+        setTeacherLectures((prev) => [payload, ...prev]);
+        if (backendReady && firestoreRef) await firestoreRef.collection('teacherLectures').doc(payload.id).set(payload);
+        return payload;
+      };
+
+      const value = { institutes, classes, users, joinRequests, announcements, fees, schedules, notes, homeworks, doubts, feedbacks, marks, attendances, tests, teacherPayments, trialBookings, syllabi, teacherLectures, backendStatus, createInstitute, createClass, createJoinRequest, approveRequest, rejectRequest, createAnnouncement, createFee, updateFee, createSchedule, deleteSchedule, createTest, payTeacher, createNote, createHomework, submitHomework, saveAttendance, addDoubt, resolveDoubt, replyToDoubt, addFeedback, addMark, updateUser, ensureParentCode, linkChildToParent, unlinkChild, createTrialBooking, updateTrialBookingStatus, upsertSyllabus, addSyllabusChapter, toggleSyllabusChapter, markPeriodDone };
       return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
     }
 
@@ -2611,7 +2634,7 @@
     }
     function TeacherDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, schedules, tests, teacherPayments, syllabi, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt, createSchedule, createTest, createAnnouncement, createFee, addSyllabusChapter, toggleSyllabusChapter, addMark } = useAppData();
+      const { institutes, classes, users, joinRequests, homeworks, notes, doubts, feedbacks, attendances, fees, marks, schedules, tests, teacherPayments, syllabi, teacherLectures, createClass, createHomework, createNote, createJoinRequest, addFeedback, approveRequest, rejectRequest, saveAttendance, resolveDoubt, replyToDoubt, createSchedule, createTest, createAnnouncement, createFee, addSyllabusChapter, toggleSyllabusChapter, addMark, markPeriodDone } = useAppData();
       const [activeTab, setActiveTab] = useState('myclass');
       const [joinCode, setJoinCode] = useState('');
       const [joinTargetType, setJoinTargetType] = useState('institute');
@@ -2631,6 +2654,7 @@
       const [feedbackText, setFeedbackText] = useState('');
       const [selectedFeedbackStudent, setSelectedFeedbackStudent] = useState('');
       const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
+      const [periodDurationMinutes, setPeriodDurationMinutes] = useState(60);
       const [expandedClassId, setExpandedClassId] = useState('');
       const [expandedScheduleId, setExpandedScheduleId] = useState('');
       const [attendanceDraft, setAttendanceDraft] = useState({});
@@ -2684,12 +2708,20 @@
       const myFeedbacks = feedbacks.filter((item) => item.teacherId === profile?.id);
       const [doubtReplyDrafts, setDoubtReplyDrafts] = useState({});
       const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-      const myTimetable = schedules.filter((item) => visibleClasses.some((cls) => cls.id === item.classId) || visibleInstitutes.some((inst) => inst.id === item.instituteId)).sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day) || (a.time || '').localeCompare(b.time || ''));
+      const myTimetable = schedules.filter((item) => {
+        const cls = classes.find((c) => c.id === item.classId);
+        if (!cls) return visibleInstitutes.some((inst) => inst.id === item.instituteId);
+        if (!visibleClasses.some((c) => c.id === cls.id)) return false;
+        const mySubject = getTeacherSubjectForClass(cls, profile?.id);
+        if (!mySubject) return true;
+        return (item.subject || '').trim().toLowerCase() === mySubject.trim().toLowerCase();
+      }).sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day) || (a.time || '').localeCompare(b.time || ''));
       const classFees = fees.filter((item) => ownClasses.some((cls) => cls.id === item.classId));
       const feesCollected = classFees.filter((item) => item.status === 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const feesPending = classFees.filter((item) => item.status !== 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const myPayments = teacherPayments.filter((item) => item.teacherId === profile?.id).sort((a, b) => safeSortKey(b.createdAt) - safeSortKey(a.createdAt));
       const totalPaidToMe = myPayments.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const myCompletedLectures = teacherLectures.filter((item) => item.teacherId === profile?.id);
       const feeReminderClass = ownClasses.find((item) => item.id === feeReminderClassId) || ownClasses[0] || null;
       const feeReminderRoster = feeReminderClass ? getStudentRosterForClass(feeReminderClass, users, joinRequests, knownStudentNameRecords) : [];
       const mySubjectInTarget = getTeacherSubjectForClass(targetClass, profile?.id);
@@ -2805,12 +2837,13 @@
         const cls = classes.find((item) => item.id === scheduleItem.classId);
         if (!cls) return addToast('This timetable slot is not linked to a batch yet', 'error');
         const roster = getStudentRosterForClass(cls, users, joinRequests, knownStudentNameRecords);
-        if (!roster.length) return addToast('No students found in this batch', 'error');
         for (const student of roster) {
           const present = attendanceDraft[student.id] !== false;
           await saveAttendance({ studentId: student.id, studentName: getStudentDisplayName(student), classId: cls.id, date: attendanceDate, present });
         }
-        addToast('Attendance saved for the batch', 'success');
+        const mySubject = getTeacherSubjectForClass(cls, profile.id) || scheduleItem.subject || '';
+        await markPeriodDone({ teacherId: profile.id, teacherName: profile.name, classId: cls.id, instituteId: cls.instituteId, subject: mySubject, scheduleId: scheduleItem.id, date: attendanceDate, durationMinutes: periodDurationMinutes, time: scheduleItem.time || '' });
+        addToast(roster.length ? 'Attendance saved & period marked done ✅' : 'Period marked done ✅', 'success');
         setExpandedScheduleId('');
       };
       const createNewTest = async (event) => {
@@ -3077,6 +3110,16 @@
                       </div>
                       <div className="mt-4 space-y-3">
                         <input type="date" value={attendanceDate} onChange={(event) => setAttendanceDate(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm" />
+                        <label className="block text-sm text-slate-300">
+                          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400">Duration</span>
+                          <select value={periodDurationMinutes} onChange={(event) => setPeriodDurationMinutes(Number(event.target.value))} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm">
+                            <option value={30}>30 min</option>
+                            <option value={45}>45 min</option>
+                            <option value={60}>60 min</option>
+                            <option value={90}>90 min</option>
+                            <option value={120}>120 min</option>
+                          </select>
+                        </label>
                         <div className="space-y-1">
                           {expandedRoster.length ? expandedRoster.map((student) => {
                             const present = attendanceDraft[student.id] !== false;
@@ -3091,7 +3134,7 @@
                             );
                           }) : <div className="text-sm text-slate-400">No students in this batch yet.</div>}
                         </div>
-                        {expandedRoster.length ? <button onClick={() => submitScheduleAttendance(expandedItem)} className="w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-semibold hover:bg-indigo-500 transition-all">Save attendance for this slot</button> : null}
+                        <button onClick={() => submitScheduleAttendance(expandedItem)} className="w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-semibold hover:bg-indigo-500 transition-all">{expandedRoster.length ? 'Save attendance & mark period done ✅' : 'Mark period done ✅'}</button>
                       </div>
                     </div>
                   )}
@@ -3122,6 +3165,10 @@
                     <div className="rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4">
                       <div className="text-2xl font-bold text-sky-200">{myPayments.length}</div>
                       <div className="text-xs text-sky-200/80">Payments received</div>
+                    </div>
+                    <div className="rounded-2xl border border-teal-400/20 bg-teal-500/10 p-4">
+                      <div className="text-2xl font-bold text-teal-200">{myCompletedLectures.length}</div>
+                      <div className="text-xs text-teal-200/80">Periods completed</div>
                     </div>
                   </div>
                   {collectionPct !== null && (
@@ -3273,7 +3320,7 @@
     }
     function OwnerDashboard() {
       const { profile } = useAuth();
-      const { institutes, classes, users, joinRequests, announcements, fees, schedules, feedbacks, marks, attendances, homeworks, teacherPayments, createInstitute, createClass, createAnnouncement, createFee, createSchedule, deleteSchedule, payTeacher, approveRequest, rejectRequest } = useAppData();
+      const { institutes, classes, users, joinRequests, announcements, fees, schedules, feedbacks, marks, attendances, homeworks, teacherPayments, teacherLectures, createInstitute, createClass, createAnnouncement, createFee, createSchedule, deleteSchedule, payTeacher, approveRequest, rejectRequest } = useAppData();
       const [activeTab, setActiveTab] = useState('mybatches');
       const [instituteName, setInstituteName] = useState('');
       const [city, setCity] = useState('Pune');
@@ -3290,10 +3337,7 @@
       const [alertTarget, setAlertTarget] = useState('batch');
       const [expandedBatchId, setExpandedBatchId] = useState('');
       const [scheduleClass, setScheduleClass] = useState('');
-      const [scheduleSubject, setScheduleSubject] = useState('');
-      const [scheduleDay, setScheduleDay] = useState('Monday');
-      const [scheduleTime, setScheduleTime] = useState('');
-      const [scheduleFrequency, setScheduleFrequency] = useState('Weekly');
+      const [periodDrafts, setPeriodDrafts] = useState([{ subject: '', day: 'Monday', time: '', frequency: 'Weekly' }]);
       const [payTeacherId, setPayTeacherId] = useState('');
       const [payAmount, setPayAmount] = useState('');
       const [payNote, setPayNote] = useState('');
@@ -3319,6 +3363,14 @@
       const feesPending = ownerFees.filter((item) => item.status !== 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const ownerPayments = teacherPayments.filter((item) => allOwnerTeachers.some((teacher) => teacher.id === item.teacherId) || ownerClasses.some((cls) => cls.instituteId === item.instituteId)).sort((a, b) => safeSortKey(b.createdAt) - safeSortKey(a.createdAt));
       const totalPaidToTeachers = ownerPayments.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const ownerTeacherLectures = teacherLectures.filter((item) => ownerClasses.some((cls) => cls.id === item.classId));
+      const totalTeachingMinutes = ownerTeacherLectures.reduce((sum, item) => sum + Number(item.durationMinutes || 0), 0);
+      const totalTeachingHours = totalTeachingMinutes / 60;
+      const lecturesByTeacher = allOwnerTeachers.map((teacher) => {
+        const mine = ownerTeacherLectures.filter((item) => item.teacherId === teacher.id);
+        const totalMinutes = mine.reduce((sum, item) => sum + Number(item.durationMinutes || 0), 0);
+        return { teacher, count: mine.length, subjects: [...new Set(mine.map((item) => item.subject).filter(Boolean))], totalMinutes, hours: totalMinutes / 60 };
+      });
       const relevantRequests = [...joinRequests].filter((item) => myInstitutes.some((institute) => institute.id === item.targetId) || classes.some((cls) => cls.ownerId === profile?.id && cls.id === item.targetId)).sort((a, b) => Number(b.status === 'pending') - Number(a.status === 'pending'));
       const ownerSchedules = schedules.filter((item) => ownerClasses.some((cls) => cls.id === item.classId)).sort((a, b) => (a.day || '').localeCompare(b.day || ''));
       const scheduleTargetClass = ownerClasses.find((item) => item.id === scheduleClass) || ownerClasses[0] || null;
@@ -3326,6 +3378,20 @@
       useEffect(() => {
         if (ownerClasses.length && !scheduleClass) setScheduleClass(ownerClasses[0].id);
       }, [ownerClasses.length]);
+      useEffect(() => {
+        if (scheduleTargetClass?.subjects?.length) {
+          setPeriodDrafts((prev) => (prev.length === 1 && !prev[0].subject ? [{ ...prev[0], subject: scheduleTargetClass.subjects[0] }] : prev));
+        }
+      }, [scheduleTargetClass?.id]);
+      const addPeriodDraftRow = () => {
+        setPeriodDrafts((prev) => [...prev, { subject: scheduleTargetClass?.subjects?.[0] || '', day: 'Monday', time: '', frequency: 'Weekly' }]);
+      };
+      const updatePeriodDraft = (idx, field, value) => {
+        setPeriodDrafts((prev) => prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row)));
+      };
+      const removePeriodDraftRow = (idx) => {
+        setPeriodDrafts((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
+      };
       const addInstitute = async (event) => {
         event.preventDefault();
         if (!instituteName.trim()) return;
@@ -3387,12 +3453,14 @@
       const addScheduleSlot = async (event) => {
         event.preventDefault();
         if (!scheduleTargetClass) return addToast('Create a batch first', 'error');
-        if (!scheduleSubject.trim()) return addToast('Enter a subject/topic', 'error');
-        await createSchedule({ subject: scheduleSubject, day: scheduleDay, time: scheduleTime, frequency: scheduleFrequency, classId: scheduleTargetClass.id, instituteId: scheduleTargetClass.instituteId, createdBy: profile.name });
-        await createAnnouncement({ title: `New timetable slot: ${scheduleSubject}`, message: `${scheduleSubject} is now scheduled every ${scheduleDay} at ${scheduleTime || 'a time to be confirmed'} (${scheduleFrequency}).`, classId: scheduleTargetClass.id, instituteId: scheduleTargetClass.instituteId, createdBy: profile.name });
-        addToast('Timetable slot added and students/teacher notified', 'success');
-        setScheduleSubject('');
-        setScheduleTime('');
+        const validRows = periodDrafts.filter((row) => row.subject && row.subject.trim());
+        if (!validRows.length) return addToast('Select a subject for at least one period', 'error');
+        for (const row of validRows) {
+          await createSchedule({ subject: row.subject, day: row.day, time: row.time, frequency: row.frequency, classId: scheduleTargetClass.id, instituteId: scheduleTargetClass.instituteId, createdBy: profile.name });
+          await createAnnouncement({ title: `New timetable slot: ${row.subject}`, message: `${row.subject} is now scheduled every ${row.day} at ${row.time || 'a time to be confirmed'} (${row.frequency}).`, classId: scheduleTargetClass.id, instituteId: scheduleTargetClass.instituteId, createdBy: profile.name });
+        }
+        addToast(`${validRows.length} timetable period${validRows.length === 1 ? '' : 's'} added — students/teachers notified`, 'success');
+        setPeriodDrafts([{ subject: scheduleTargetClass?.subjects?.[0] || '', day: 'Monday', time: '', frequency: 'Weekly' }]);
       };
       const removeScheduleSlot = async (scheduleId) => {
         await deleteSchedule(scheduleId);
@@ -3530,18 +3598,34 @@
                     <option value="">Select batch</option>
                     {ownerClasses.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                   </select>
-                  <input value={scheduleSubject} onChange={(event) => setScheduleSubject(event.target.value)} placeholder="Subject / topic" required className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <select value={scheduleDay} onChange={(event) => setScheduleDay(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
-                      {dayOrder.map((day) => <option key={day} value={day}>{day}</option>)}
-                    </select>
-                    <input type="time" value={scheduleTime} onChange={(event) => setScheduleTime(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
-                    <select value={scheduleFrequency} onChange={(event) => setScheduleFrequency(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
-                      <option value="Weekly">Weekly</option>
-                      <option value="Daily">Daily</option>
-                    </select>
+                  {scheduleTargetClass && !(scheduleTargetClass.subjects || []).length ? (
+                    <div className="rounded-2xl border border-amber-400/20 bg-amber-500/5 px-3 py-2.5 text-xs text-amber-200">This batch has no subjects set yet — add subjects to it first so you can pick one here.</div>
+                  ) : null}
+                  <div className="space-y-3">
+                    {periodDrafts.map((row, idx) => (
+                      <div key={idx} className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
+                        <div className="grid gap-3 md:grid-cols-4">
+                          <select value={row.subject} onChange={(event) => updatePeriodDraft(idx, 'subject', event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
+                            <option value="">Select subject</option>
+                            {(scheduleTargetClass?.subjects || []).map((s) => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                          <select value={row.day} onChange={(event) => updatePeriodDraft(idx, 'day', event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
+                            {dayOrder.map((day) => <option key={day} value={day}>{day}</option>)}
+                          </select>
+                          <input type="time" step="900" value={row.time} onChange={(event) => updatePeriodDraft(idx, 'time', event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm" />
+                          <select value={row.frequency} onChange={(event) => updatePeriodDraft(idx, 'frequency', event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-3 text-sm">
+                            <option value="Weekly">Weekly</option>
+                            <option value="Daily">Daily</option>
+                          </select>
+                        </div>
+                        {periodDrafts.length > 1 ? (
+                          <button type="button" onClick={() => removePeriodDraftRow(idx)} className="mt-2 text-xs font-medium text-rose-300 hover:text-rose-200">✕ Remove this period</button>
+                        ) : null}
+                      </div>
+                    ))}
                   </div>
-                  <button className="rounded-xl bg-indigo-600 px-3 py-2 text-sm hover:bg-indigo-500 transition-all">Add timetable slot</button>
+                  <button type="button" onClick={addPeriodDraftRow} className="w-full rounded-xl border border-dashed border-indigo-400/30 bg-indigo-500/5 px-3 py-2.5 text-sm font-semibold text-indigo-200 hover:bg-indigo-500/10 transition-all">➕ Add another period</button>
+                  <button className="w-full rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-semibold hover:bg-indigo-500 transition-all">Save timetable</button>
                 </form>
                 <div className="mt-4">
                   <WeeklyTimetable
@@ -3587,11 +3671,13 @@
               <div className="glass rounded-3xl border border-white/10 p-5 card-hover">
                 <h3 className="text-lg font-semibold">Wallet</h3>
                 <p className="text-sm text-slate-400">Students, fee collection and teacher payouts across all your batches.</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                   <div className="metric-card rounded-2xl p-4"><div className="text-xs uppercase tracking-wide text-slate-400">Total students</div><div className="mt-1 text-2xl font-semibold">{totalUniqueStudents}</div></div>
                   <div className="metric-card rounded-2xl p-4"><div className="text-xs uppercase tracking-wide text-slate-400">Fees collected</div><div className="mt-1 text-2xl font-semibold text-emerald-300">₹{feesCollected}</div></div>
                   <div className="metric-card rounded-2xl p-4"><div className="text-xs uppercase tracking-wide text-slate-400">Fees pending</div><div className="mt-1 text-2xl font-semibold text-amber-300">₹{feesPending}</div></div>
                   <div className="metric-card rounded-2xl p-4"><div className="text-xs uppercase tracking-wide text-slate-400">Paid to teachers</div><div className="mt-1 text-2xl font-semibold text-indigo-300">₹{totalPaidToTeachers}</div></div>
+                  <div className="metric-card rounded-2xl p-4"><div className="text-xs uppercase tracking-wide text-slate-400">Periods completed</div><div className="mt-1 text-2xl font-semibold text-cyan-300">{ownerTeacherLectures.length}</div></div>
+                  <div className="metric-card rounded-2xl p-4"><div className="text-xs uppercase tracking-wide text-slate-400">Teaching hours</div><div className="mt-1 text-2xl font-semibold text-teal-300">{totalTeachingHours.toFixed(1)}h</div></div>
                 </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
@@ -3609,6 +3695,21 @@
                   <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
                     <div className="font-semibold">Payment history</div>
                     <div className="mt-2 space-y-2">{ownerPayments.length ? ownerPayments.slice(0, 6).map((item) => <div key={item.id} className="rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm"><div className="font-medium text-slate-100">{item.teacherName} • ₹{item.amount}</div><div className="text-slate-400">{item.note || 'Payout'} • {safeDateText(item.createdAt)}</div></div>) : <div className="text-sm text-slate-400">No payments recorded yet.</div>}</div>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                  <div className="font-semibold">Teacher lecture activity</div>
+                  <p className="mt-1 text-xs text-slate-400">Periods each teacher has marked done — use this to work out what to pay them.</p>
+                  <div className="mt-3 space-y-2">
+                    {lecturesByTeacher.length ? lecturesByTeacher.map((row) => (
+                      <div key={row.teacher.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm">
+                        <div className="min-w-0">
+                          <div className="truncate font-medium text-slate-100">{row.teacher.name}</div>
+                          <div className="truncate text-xs text-slate-400">{row.subjects.length ? row.subjects.join(', ') : 'No subject recorded yet'}</div>
+                        </div>
+                        <span className="flex-none rounded-full bg-indigo-500/15 border border-indigo-400/30 px-2.5 py-1 text-xs font-bold text-indigo-200">{row.count} period{row.count === 1 ? '' : 's'} • {row.hours.toFixed(1)}h</span>
+                      </div>
+                    )) : <div className="text-sm text-slate-400">No teacher has marked a period done yet.</div>}
                   </div>
                 </div>
                 <div className="mt-4">
