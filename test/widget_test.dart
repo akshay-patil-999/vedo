@@ -5,26 +5,43 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_core_platform_interface/test.dart';
+import 'package:provider/provider.dart';
 
 import 'package:vedo/main.dart';
+import 'package:vedo/providers/auth_provider.dart';
+import 'package:vedo/screens/auth/login_screen.dart';
+import 'package:vedo/screens/parent/parent_home_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setupFirebaseCoreMocks();
-
-  setUpAll(() async {
-    await Firebase.initializeApp();
-  });
 
   testWidgets('App smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
     await tester.pumpWidget(const VedoApp());
-
-    // Verify that the app title is displayed (uppercase on Splash)
     expect(find.text('VEDO'), findsWidgets);
+  });
+
+  testWidgets('Login screen shows Google sign in button', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => AuthProvider(),
+        child: const MaterialApp(home: LoginScreen()),
+      ),
+    );
+
+    expect(find.text('Continue with Google'), findsOneWidget);
+  });
+
+  testWidgets('Parent dashboard shows overview navigation', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => AuthProvider(),
+        child: const MaterialApp(home: ParentHomeScreen()),
+      ),
+    );
+
+    expect(find.text('Overview'), findsOneWidget);
   });
 }
 

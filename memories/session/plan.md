@@ -1,0 +1,4 @@
+- Inspect existing Flutter screens, providers, and services.
+- Replace the webview entry point with a native app shell.
+- Add offline-capable persistence for auth, timetable, lectures, attendance, and tasks.
+- Verify the app builds or at least the relevant Dart analysis passes.

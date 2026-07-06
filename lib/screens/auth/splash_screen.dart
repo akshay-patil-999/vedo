@@ -64,6 +64,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     await authProvider.initializeUser();
 
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('offline_mode', true);
     final isFirstTime = prefs.getBool('is_first_time') ?? true;
 
     if (!mounted) return;

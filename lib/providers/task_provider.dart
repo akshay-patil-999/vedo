@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/task_model.dart';
 import '../services/firestore_service.dart';
+import '../services/offline_cache_service.dart';
 import '../services/storage_service.dart';
 
 class TaskProvider extends ChangeNotifier {
@@ -9,6 +10,7 @@ class TaskProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _error;
+  final OfflineCacheService _offlineCacheService = OfflineCacheService();
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -20,6 +22,7 @@ class TaskProvider extends ChangeNotifier {
 
     try {
       await _firestoreService.createTask(task.toMap());
+      await _offlineCacheService.saveJson('last_task_created', task.toMap());
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -36,6 +39,7 @@ class TaskProvider extends ChangeNotifier {
 
     try {
       await _firestoreService.updateTask(taskId, data);
+      await _offlineCacheService.saveJson('last_task_updated', {'taskId': taskId, 'data': data});
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -52,6 +56,7 @@ class TaskProvider extends ChangeNotifier {
 
     try {
       await _firestoreService.deleteTask(taskId);
+      await _offlineCacheService.saveJson('last_task_deleted', {'taskId': taskId});
       _isLoading = false;
       notifyListeners();
     } catch (e) {

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'offline_cache_service.dart';
 
 /// Firestore Service - Real Firebase Firestore integration
 class FirestoreService {
@@ -8,6 +9,7 @@ class FirestoreService {
   FirestoreService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final OfflineCacheService _offlineCacheService = OfflineCacheService();
 
   // ====== TUITION OPERATIONS ======
   
@@ -133,12 +135,14 @@ class FirestoreService {
         if (bTime == null) return -1;
         return bTime.toString().compareTo(aTime.toString());
       });
+
+      await _offlineCacheService.saveJsonList('cached_tuitions', tuitions);
       
       debugPrint('FirestoreService: Found ${tuitions.length} tuitions');
       return tuitions;
     } catch (e) {
       debugPrint('FirestoreService: Error fetching teacher tuitions - $e');
-      rethrow;
+      return await _offlineCacheService.loadJsonList('cached_tuitions');
     }
   }
 
@@ -167,12 +171,14 @@ class FirestoreService {
         if (bTime == null) return -1;
         return bTime.toString().compareTo(aTime.toString());
       });
+
+      await _offlineCacheService.saveJsonList('cached_tuitions', tuitions);
       
       debugPrint('FirestoreService: Found ${tuitions.length} tuitions');
       return tuitions;
     } catch (e) {
       debugPrint('FirestoreService: Error fetching student tuitions - $e');
-      rethrow;
+      return await _offlineCacheService.loadJsonList('cached_tuitions');
     }
   }
 
@@ -240,12 +246,16 @@ class FirestoreService {
       
       final data = doc.data();
       final role = data?['role'] as String?;
+      if (role != null) {
+        await _offlineCacheService.saveJson('cached_user', data ?? {});
+      }
       
       debugPrint('FirestoreService: User role is $role');
       return role;
     } catch (e) {
       debugPrint('FirestoreService: Error fetching user role - $e');
-      return null;
+      final cachedUser = await _offlineCacheService.loadJson('cached_user');
+      return cachedUser?['role'] as String?;
     }
   }
 
@@ -285,10 +295,17 @@ class FirestoreService {
   Future<Map<String, dynamic>?> getUser(String userId) async {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
-      return doc.exists ? doc.data() : null;
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null) {
+          await _offlineCacheService.saveJson('cached_user', data);
+        }
+        return data;
+      }
+      return null;
     } catch (e) {
       debugPrint('FirestoreService: Error fetching user - $e');
-      return null;
+      return await _offlineCacheService.loadJson('cached_user');
     }
   }
 
@@ -359,14 +376,17 @@ class FirestoreService {
           .orderBy('createdAt', descending: true)
           .get();
       
-      return querySnapshot.docs.map((doc) {
+      final tasks = querySnapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
         return data;
       }).toList();
+
+      await _offlineCacheService.saveJsonList('cached_tasks', tasks);
+      return tasks;
     } catch (e) {
       debugPrint('FirestoreService: Error fetching tasks - $e');
-      return [];
+      return await _offlineCacheService.loadJsonList('cached_tasks');
     }
   }
 
@@ -431,10 +451,11 @@ class FirestoreService {
         if (bTime == null) return -1;
         return bTime.toString().compareTo(aTime.toString());
       });
+      await _offlineCacheService.saveJsonList('cached_feedbacks', list);
       return list;
     } catch (e) {
       debugPrint('FirestoreService: Error fetching feedbacks - $e');
-      return [];
+      return await _offlineCacheService.loadJsonList('cached_feedbacks');
     }
   }
 
@@ -535,19 +556,33 @@ class FirestoreService {
     }
   }
 
-  Stream<List<Map<String, dynamic>>> getAttendanceHistory(String tuitionId) {
-    return _firestore
-        .collection('attendance')
-        .where('tuitionId', isEqualTo: tuitionId)
-        .orderBy('date', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return data;
-      }).toList();
-    });
+  Stream<List<Map<String, dynamic>>> getAttendanceHistory(String tuitionId) async* {
+    final cacheKey = 'cached_attendance_history_$tuitionId';
+    final cached = await _offlineCacheService.loadJsonList(cacheKey);
+    if (cached.isNotEmpty) {
+      yield cached;
+    }
+
+    try {
+      await for (final snapshot in _firestore
+          .collection('attendance')
+          .where('tuitionId', isEqualTo: tuitionId)
+          .orderBy('date', descending: true)
+          .snapshots()) {
+        final list = snapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+        await _offlineCacheService.saveJsonList(cacheKey, list);
+        yield list;
+      }
+    } catch (e) {
+      debugPrint('FirestoreService: Error fetching attendance history - $e');
+      if (cached.isEmpty) {
+        yield [];
+      }
+    }
   }
 
   // ====== SUBMISSIONS operations ======
@@ -571,32 +606,45 @@ class FirestoreService {
     }
   }
 
-  Stream<List<Map<String, dynamic>>> getSubmissionsForTask(String taskId) {
-    return _firestore
-        .collection('submissions')
-        .where('taskId', isEqualTo: taskId)
-        .snapshots()
-        .map((snapshot) {
-      final list = snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return data;
-      }).toList();
+  Stream<List<Map<String, dynamic>>> getSubmissionsForTask(String taskId) async* {
+    final cacheKey = 'cached_submissions_$taskId';
+    final cached = await _offlineCacheService.loadJsonList(cacheKey);
+    if (cached.isNotEmpty) {
+      yield cached;
+    }
 
-      // Sort in memory to avoid composite index requirements
-      list.sort((a, b) {
-        final aTime = a['submittedAt'];
-        final bTime = b['submittedAt'];
-        if (aTime == null && bTime == null) return 0;
-        if (aTime == null) return 1;
-        if (bTime == null) return -1;
-        if (aTime is Timestamp && bTime is Timestamp) {
-          return bTime.compareTo(aTime);
-        }
-        return bTime.toString().compareTo(aTime.toString());
-      });
-      return list;
-    });
+    try {
+      await for (final snapshot in _firestore
+          .collection('submissions')
+          .where('taskId', isEqualTo: taskId)
+          .snapshots()) {
+        final list = snapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+
+        // Sort in memory to avoid composite index requirements
+        list.sort((a, b) {
+          final aTime = a['submittedAt'];
+          final bTime = b['submittedAt'];
+          if (aTime == null && bTime == null) return 0;
+          if (aTime == null) return 1;
+          if (bTime == null) return -1;
+          if (aTime is Timestamp && bTime is Timestamp) {
+            return bTime.compareTo(aTime);
+          }
+          return bTime.toString().compareTo(aTime.toString());
+        });
+        await _offlineCacheService.saveJsonList(cacheKey, list);
+        yield list;
+      }
+    } catch (e) {
+      debugPrint('FirestoreService: Error fetching submissions - $e');
+      if (cached.isEmpty) {
+        yield [];
+      }
+    }
   }
 
   Future<void> gradeSubmission(String submissionId, String grade, String feedback) async {
@@ -613,16 +661,32 @@ class FirestoreService {
     }
   }
 
-  Stream<Map<String, dynamic>?> getStudentSubmissionForTask(String studentId, String taskId) {
+  Stream<Map<String, dynamic>?> getStudentSubmissionForTask(String studentId, String taskId) async* {
     final docId = '${taskId}_$studentId';
-    return _firestore.collection('submissions').doc(docId).snapshots().map((doc) {
-      if (doc.exists) {
-        final data = doc.data();
-        data?['id'] = doc.id;
-        return data;
+    final cacheKey = 'cached_submission_$docId';
+    final cached = await _offlineCacheService.loadJson(cacheKey);
+    if (cached != null) {
+      yield cached;
+    }
+
+    try {
+      await for (final doc in _firestore.collection('submissions').doc(docId).snapshots()) {
+        if (doc.exists) {
+          final data = doc.data();
+          data?['id'] = doc.id;
+          await _offlineCacheService.saveJson(cacheKey, data ?? {});
+          yield data;
+        } else {
+          await _offlineCacheService.remove(cacheKey);
+          yield null;
+        }
       }
-      return null;
-    });
+    } catch (e) {
+      debugPrint('FirestoreService: Error fetching student submission - $e');
+      if (cached == null) {
+        yield null;
+      }
+    }
   }
 
   // ====== STREAK OPERATIONS ======
