@@ -13,6 +13,8 @@ import '../../services/update_service.dart';
 import '../auth/login_screen.dart';
 import '../common/class_hub_screen.dart';
 import '../common/test_practice_screen.dart';
+import '../common/feature_hub_screen.dart';
+import '../common/quick_actions_screen.dart';
 import '../../widgets/custom_chart.dart';
 import '../../widgets/explore_institute_section.dart';
 import 'create_tuition_screen.dart';
@@ -88,6 +90,26 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
               Navigator.of(context).pop();
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const TestPracticeScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.apps_outlined),
+            title: const Text('All Features'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FeatureHubScreen(userRole: 'teacher')),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.flash_on_outlined),
+            title: const Text('Quick Actions'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const QuickActionsScreen(userRole: 'teacher')),
               );
             },
           ),

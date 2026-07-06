@@ -69,40 +69,66 @@ class ExploreInstituteSection extends StatelessWidget {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final role = auth.userRole;
     final instituteName = data['name'] ?? 'Institute';
-    final location = '${data['location'] ?? ''}, ${data['city'] ?? ''}';
+    final location = '${data['location'] ?? ''}, ${data['city'] ?? ''}'.trim();
     final contact = data['contact'] ?? '';
     final established = data['yearEstablished']?.toString() ?? '';
     final owner = data['ownerName'] ?? data['ownerId'] ?? 'Institute Owner';
     final description = data['description'] ?? 'A quality learning institute.';
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [Expanded(child: Text(instituteName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))), const Icon(Icons.business, color: Colors.blueGrey, size: 18), const SizedBox(width: 4), Text(owner, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))]),
-          const SizedBox(height: 8),
-          Text(location, style: const TextStyle(color: Colors.grey)),
-          const SizedBox(height: 8),
-          Text(description, style: const TextStyle(fontWeight: FontWeight.w600)),
-          if (contact.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text('Contact: $contact', style: const TextStyle(fontSize: 13)),
-          ],
-          if (established.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text('Est. $established', style: const TextStyle(color: Colors.grey)),
-          ],
-          const SizedBox(height: 12),
-          if (role != 'owner')
-            ElevatedButton(
-              onPressed: () => _showEnrollmentDialog(context, data, role),
-              child: Text(role == 'teacher' ? 'Apply as Teacher' : 'Request Enrollment'),
-            ),
-        ]),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Color(0xFFEEF2FF), Color(0xFFFFF7ED)]),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFFF59E0B)]),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.school_rounded, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(instituteName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
+          const Icon(Icons.location_on_outlined, color: Colors.grey, size: 16),
+          const SizedBox(width: 4),
+          Expanded(child: Text(location.isEmpty ? 'Location shared soon' : location, style: const TextStyle(color: Colors.grey, fontSize: 12))),
+        ]),
+        const SizedBox(height: 10),
+        Text(description, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        const SizedBox(height: 8),
+        Row(children: [
+          const Icon(Icons.person_outline, color: Colors.grey, size: 16),
+          const SizedBox(width: 4),
+          Expanded(child: Text(owner, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
+        ]),
+        if (contact.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text('Contact: $contact', style: const TextStyle(fontSize: 13)),
+        ],
+        if (established.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text('Est. $established', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        ],
+        const SizedBox(height: 12),
+        if (role != 'owner')
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showEnrollmentDialog(context, data, role),
+              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+              label: Text(role == 'teacher' ? 'Apply as Teacher' : 'Request Enrollment'),
+            ),
+          ),
+      ]),
     );
   }
 

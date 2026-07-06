@@ -12,6 +12,8 @@ import '../../services/firestore_service.dart';
 import '../auth/login_screen.dart';
 import '../common/class_hub_screen.dart';
 import '../common/test_practice_screen.dart';
+import '../common/feature_hub_screen.dart';
+import '../common/quick_actions_screen.dart';
 import '../../widgets/custom_chart.dart';
 import 'join_tuition_screen.dart';
 import 'homework_details_screen.dart';
@@ -156,6 +158,26 @@ class _StudentDashboardState extends State<StudentDashboard> with TickerProvider
               Navigator.of(context).pop();
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const TestPracticeScreen()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.apps_outlined),
+            title: const Text('All Features'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FeatureHubScreen(userRole: 'student')),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.flash_on_outlined),
+            title: const Text('Quick Actions'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const QuickActionsScreen(userRole: 'student')),
               );
             },
           ),

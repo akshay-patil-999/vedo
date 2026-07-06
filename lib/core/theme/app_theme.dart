@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF1E6091); // Modern Premium Blue
-  static const Color secondaryColor = Color(0xFFF77F00); // Vibrant Amber/Coral Orange
+  static const Color primaryColor = Color(0xFF6366F1); // Indigo from the web app
+  static const Color secondaryColor = Color(0xFFF59E0B); // Amber from the web app
   
-  static const Color backgroundColor = Color(0xFFF8F9FA);
+  static const Color backgroundColor = Color(0xFFF8FAFC);
   static const Color cardColor = Colors.white;
   static const Color textPrimary = Color(0xFF1E293B);
   static const Color textSecondary = Color(0xFF64748B);
 
   // Dark Mode Colors
-  static const Color primaryDark = Color(0xFF3A86C8);
+  static const Color primaryDark = Color(0xFF818CF8);
   static const Color bgDark = Color(0xFF0F172A); // Deep slate dark
   static const Color cardDark = Color(0xFF1E293B); // Darker slate card
   static const Color textPrimaryDark = Color(0xFFF8FAFC);
@@ -24,7 +24,6 @@ class AppTheme {
         seedColor: primaryColor,
         primary: primaryColor,
         secondary: secondaryColor,
-        background: backgroundColor,
         surface: cardColor,
         brightness: Brightness.light,
       ),
@@ -96,7 +95,6 @@ class AppTheme {
         seedColor: primaryDark,
         primary: primaryDark,
         secondary: secondaryColor,
-        background: bgDark,
         surface: cardDark,
         brightness: Brightness.dark,
       ),

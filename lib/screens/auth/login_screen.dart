@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
@@ -89,10 +91,75 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+      await googleSignIn.signOut();
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        return;
+      }
+
+      final auth = await account.authentication;
+      final credential = GoogleAuthProvider.credential(
+        idToken: auth.idToken,
+        accessToken: auth.accessToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      if (!mounted) return;
+
+      final authProvider = context.read<AuthProvider>();
+      await authProvider.initializeUser();
+
+      if (!mounted) return;
+      await _saveCredentials();
+      final userRole = authProvider.userRole;
+      Widget dashboard;
+      if (userRole == 'teacher') {
+        dashboard = const TeacherDashboard();
+      } else if (userRole == 'owner') {
+        dashboard = const OwnerHomeScreen();
+      } else if (userRole == 'parent') {
+        dashboard = const ParentHomeScreen();
+      } else {
+        dashboard = const StudentDashboard();
+      }
+
+      if (!mounted) return;
+      navigator.pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, anim1, anim2) => dashboard,
+          transitionsBuilder: (context, anim1, anim2, child) => FadeTransition(opacity: anim1, child: child),
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Google sign-in failed: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+
+    if (!mounted) return;
 
     final authProvider = context.read<AuthProvider>();
     bool success;
@@ -526,6 +593,29 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               ],
                               
                               const SizedBox(height: 24),
+
+                              SizedBox(
+                                height: 48,
+                                child: OutlinedButton.icon(
+                                  onPressed: _isLoading ? null : _signInWithGoogle,
+                                  icon: const Icon(Icons.g_mobiledata, color: AppTheme.secondaryColor),
+                                  label: const Text(
+                                    'Continue with Google',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
 
                               // Submit Button
                               _isLoading

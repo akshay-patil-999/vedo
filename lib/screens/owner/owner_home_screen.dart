@@ -164,6 +164,24 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
               },
             ),
             const SizedBox(height: 20),
+            Row(children: [
+              Expanded(child: _buildStatCard('Institute Overview', 'Live', Icons.dashboard_outlined, AppTheme.primaryColor, isDark)),
+              const SizedBox(width: 14),
+              Expanded(child: _buildStatCard('Pending Requests', 'Review now', Icons.notifications_active_outlined, AppTheme.secondaryColor, isDark)),
+            ]),
+            const SizedBox(height: 16),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.apps_outlined, color: AppTheme.primaryColor),
+                title: const Text('All institute features'),
+                subtitle: const Text('Manage standards, batches, enrollments, attendance, and fees.'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EnrollmentRequestsScreen()));
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
             StreamBuilder<QuerySnapshot>(
               stream: auth.currentUser?.uid == null
                   ? const Stream.empty()

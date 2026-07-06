@@ -3,10 +3,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../services/offline_cache_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService();
-  final FirestoreService _firestoreService = FirestoreService();
+  AuthService? _authService;
+  FirestoreService? _firestoreService;
+
+  AuthService get authService => _authService ??= AuthService();
+  FirestoreService get firestoreService => _firestoreService ??= FirestoreService();
 
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -31,22 +35,29 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _isDarkMode = prefs.getBool('is_dark_mode') ?? false;
 
-      final firebaseUser = _authService.currentUser;
+      final cachedUser = await OfflineCacheService().loadJson('cached_user');
+      if (cachedUser != null) {
+        _currentUser = UserModel.fromMap(cachedUser.cast<String, dynamic>());
+      }
+
+      final firebaseUser = authService.currentUser;
       
       if (firebaseUser != null) {
         try {
-          final firestoreUser = await _firestoreService.getUser(firebaseUser.uid);
+          final firestoreUser = await firestoreService.getUser(firebaseUser.uid);
           if (firestoreUser != null) {
             _currentUser = UserModel.fromMap(firestoreUser);
+            await OfflineCacheService().saveJson('cached_user', _currentUser!.toMap());
             debugPrint('AuthProvider: Loaded user profile from Firestore');
           } else {
-            final fetchedRole = await _firestoreService.getUserRole(firebaseUser.uid);
+            final fetchedRole = await firestoreService.getUserRole(firebaseUser.uid);
             _currentUser = UserModel(
               uid: firebaseUser.uid,
               name: firebaseUser.email?.split('@')[0] ?? 'User',
               email: firebaseUser.email ?? '',
               role: fetchedRole ?? 'student',
             );
+            await OfflineCacheService().saveJson('cached_user', _currentUser!.toMap());
             debugPrint('AuthProvider: No Firestore profile found, using defaults');
           }
         } catch (e) {
@@ -77,23 +88,25 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final credential = await _authService.signInWithEmail(email, password);
+      final credential = await authService.signInWithEmail(email, password);
       final user = credential.user;
       
       if (user != null) {
         try {
-          final firestoreUser = await _firestoreService.getUser(user.uid);
+          final firestoreUser = await firestoreService.getUser(user.uid);
           if (firestoreUser != null) {
             _currentUser = UserModel.fromMap(firestoreUser);
+            await OfflineCacheService().saveJson('cached_user', _currentUser!.toMap());
             debugPrint('AuthProvider: User logged in and loaded from Firestore');
           } else {
-            final fetchedRole = await _firestoreService.getUserRole(user.uid);
+            final fetchedRole = await firestoreService.getUserRole(user.uid);
             _currentUser = UserModel(
               uid: user.uid,
               name: user.email?.split('@')[0] ?? 'User',
               email: user.email ?? '',
               role: fetchedRole ?? 'student',
             );
+            await OfflineCacheService().saveJson('cached_user', _currentUser!.toMap());
             debugPrint('AuthProvider: User logged in without Firestore profile');
           }
         } catch (e) {
@@ -130,12 +143,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final credential = await _authService.signUpWithEmail(email, password);
+      final credential = await authService.signUpWithEmail(email, password);
       final user = credential.user;
       
       if (user != null) {
         // Save user data to Firestore (include parent link if provided)
-        await _firestoreService.saveUserData(
+        await firestoreService.saveUserData(
           uid: user.uid,
           name: name,
           email: user.email ?? '',
@@ -148,15 +161,15 @@ class AuthProvider extends ChangeNotifier {
           try {
             String? studentUid;
             if (linkedStudentId.contains('@')) {
-              studentUid = await _firestoreService.findUserByEmail(linkedStudentId);
+              studentUid = await firestoreService.findUserByEmail(linkedStudentId);
             } else {
               // assume it's UID
-              final doc = await _firestoreService.getUser(linkedStudentId);
+              final doc = await firestoreService.getUser(linkedStudentId);
               if (doc != null) studentUid = linkedStudentId;
             }
 
             if (studentUid != null) {
-              await _firestoreService.addParentToStudent(studentUid, user.uid);
+              await firestoreService.addParentToStudent(studentUid, user.uid);
             }
           } catch (e) {
             debugPrint('AuthProvider: Failed to link parent to student: $e');
@@ -169,6 +182,7 @@ class AuthProvider extends ChangeNotifier {
           email: user.email ?? '',
           role: role,
         );
+        await OfflineCacheService().saveJson('cached_user', _currentUser!.toMap());
         _isLoading = false;
         notifyListeners();
         return true;
@@ -189,9 +203,10 @@ class AuthProvider extends ChangeNotifier {
   /// Sign out
   Future<void> signOut() async {
     try {
-      await _authService.signOut();
+      await authService.signOut();
       _currentUser = null;
       _errorMessage = null;
+      await OfflineCacheService().remove('cached_user');
       notifyListeners();
     } catch (e) {
       debugPrint('Error signing out: $e');
@@ -207,7 +222,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _authService.sendPasswordResetEmail(email);
+      await authService.sendPasswordResetEmail(email);
       _isLoading = false;
       notifyListeners();
       return true;
@@ -226,7 +241,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _authService.sendEmailVerification();
+      await authService.sendEmailVerification();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -254,7 +269,7 @@ class AuthProvider extends ChangeNotifier {
 
     // Persist to Firestore
     try {
-      await _firestoreService.setUserRole(uid, role);
+      await firestoreService.setUserRole(uid, role);
     } catch (e) {
       debugPrint('AuthProvider: Failed to persist role change - $e');
     }
@@ -269,7 +284,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _firestoreService.setUserTuitionId(uid, tuitionId);
+      await firestoreService.setUserTuitionId(uid, tuitionId);
       debugPrint('AuthProvider: Tuition ID persisted for user $uid');
     } catch (e) {
       debugPrint('AuthProvider: Failed to persist tuition ID: $e');

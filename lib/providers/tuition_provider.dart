@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import '../models/tuition_model.dart';
 import '../services/firestore_service.dart';
+import '../services/offline_cache_service.dart';
 import '../core/utils/helpers.dart';
 
 class TuitionProvider extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
+  final OfflineCacheService _offlineCacheService = OfflineCacheService();
 
   bool _isLoading = false;
   TuitionModel? _currentTuition;
@@ -52,6 +54,7 @@ class TuitionProvider extends ChangeNotifier {
       // Create tuition with the actual Firestore document ID
       final createdTuition = tuition.copyWith(id: docId);
       _currentTuition = createdTuition;
+      await _offlineCacheService.saveJson('cached_tuition', createdTuition.toMap());
 
       _isLoading = false;
       notifyListeners();
@@ -125,6 +128,7 @@ class TuitionProvider extends ChangeNotifier {
       _currentTuition = tuition.copyWith(
         students: [...students, newStudent],
       );
+      await _offlineCacheService.saveJson('cached_tuition', _currentTuition!.toMap());
 
       _isLoading = false;
       notifyListeners();
@@ -152,6 +156,7 @@ class TuitionProvider extends ChangeNotifier {
       final tuitionsMap = await _firestoreService.getTuitionsByTeacher(teacherId);
       
       _tuitions = tuitionsMap.map((map) => TuitionModel.fromMap(map)).toList();
+      await _offlineCacheService.saveJsonList('cached_tuitions', _tuitions.map((item) => item.toMap()).toList());
       
       _isLoading = false;
       notifyListeners();
@@ -179,6 +184,7 @@ class TuitionProvider extends ChangeNotifier {
       final tuitionsMap = await _firestoreService.getTuitionsByStudent(studentId);
       
       _tuitions = tuitionsMap.map((map) => TuitionModel.fromMap(map)).toList();
+      await _offlineCacheService.saveJsonList('cached_tuitions', _tuitions.map((item) => item.toMap()).toList());
       
       _isLoading = false;
       notifyListeners();
